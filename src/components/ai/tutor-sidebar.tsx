@@ -1,0 +1,474 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUp, Eye, PanelRightClose, ScanLine, Sparkles, Square } from "lucide-react";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { API_BASE, ApiError, fetchHealth, streamTutor, type HealthResponse } from "@/lib/api";
+import { subscribeCircuit, type ScreenCircuit } from "@/lib/circuit-store";
+import { TUTOR_SUGGESTIONS, type ChatTurn } from "@/lib/data";
+import { cn } from "@/lib/utils";
+
+/**
+ * The tutor.
+ *
+ * Answers come from the FastAPI service: it rebuilds the learner's circuit with
+ * Qiskit, computes the state, and streams a reply token by token. With an
+ * OpenAI key the prose is a model's; without one the service streams a
+ * deterministic read-out it computed itself. Either way the numbers quoted are
+ * the learner's own, which is the only version of "reads your screen" worth
+ * shipping.
+ */
+
+interface Message extends ChatTurn {
+  streaming?: boolean;
+  failed?: boolean;
+}
+
+const ROUTE_LABEL: Record<string, string> = {
+  "/": "Landing page",
+  "/sandbox": "Circuit sandbox",
+  "/curriculum": "Curriculum hub",
+  "/dashboard": "Your dashboard",
+};
+
+const CIRCUIT_SUGGESTIONS = [
+  "Are my qubits entangled?",
+  "What will measuring give me?",
+  "What should I fix?",
+];
+
+function routeLabel(pathname: string) {
+  if (ROUTE_LABEL[pathname]) return ROUTE_LABEL[pathname];
+  if (pathname.startsWith("/curriculum/")) return "Module page";
+  return pathname.replace(/^\//, "") || "QuantaVerse";
+}
+
+function ContextStrip({ pathname, circuit }: { pathname: string; circuit: ScreenCircuit }) {
+  return (
+    <div className="relative overflow-hidden border-b border-white/8 bg-[#080d20]/80 px-4 py-2.5">
+      {/* A scan line: the tutor is looking at the page right now. */}
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-8 animate-scan bg-gradient-to-b from-photon/16 to-transparent" />
+      <div className="relative flex items-center gap-2">
+        <Eye className="size-3.5 shrink-0 text-photon" />
+        <span className="eyebrow shrink-0">Reading</span>
+        <span className="truncate font-mono text-[11px] text-paper/90">
+          {routeLabel(pathname)}
+        </span>
+        <span className="ml-auto shrink-0 truncate font-mono text-[10px] text-frost/55">
+          {circuit.summary}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CodeDiff({ code }: { code: string }) {
+  return (
+    <pre className="mt-2.5 overflow-x-auto rounded-lg border border-white/8 bg-[#04070f] p-3 font-mono text-[11px] leading-relaxed">
+      <code>
+        {code.split("\n").map((line, index) => {
+          const added = line.startsWith("+");
+          const removed = line.startsWith("-");
+          return (
+            <span
+              key={index}
+              className={cn(
+                "block whitespace-pre",
+                added && "bg-photon/10 text-photon",
+                removed && "bg-collapse/10 text-collapse/85 line-through decoration-collapse/40",
+                !added && !removed && "text-frost/70",
+              )}
+            >
+              {line}
+            </span>
+          );
+        })}
+      </code>
+    </pre>
+  );
+}
+
+function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void }) {
+  const isTutor = turn.from === "tutor";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className={cn("flex gap-2.5", isTutor ? "flex-row" : "flex-row-reverse")}
+    >
+      {isTutor && (
+        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-photon/35 bg-photon/12">
+          <Sparkles className="size-3 text-photon" />
+        </span>
+      )}
+      <div className={cn("min-w-0 max-w-[86%]", !isTutor && "text-right")}>
+        <div
+          className={cn(
+            "rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed",
+            isTutor
+              ? turn.failed
+                ? "border border-collapse/30 bg-collapse/8 text-paper/90"
+                : "border border-white/8 bg-white/4 text-paper/92"
+              : "border border-phase/30 bg-phase/12 text-paper",
+          )}
+        >
+          <p className="text-left whitespace-pre-wrap">
+            {turn.body}
+            {turn.streaming && (
+              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-breathe bg-photon/80" />
+            )}
+          </p>
+          {turn.code && <CodeDiff code={turn.code} />}
+        </div>
+
+        {turn.looking && (
+          <span className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.1em] text-frost/50 uppercase">
+            <ScanLine className="size-3 text-photon/70" />
+            {turn.looking}
+          </span>
+        )}
+
+        {turn.chips && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {turn.chips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => onChip(chip)}
+                className="rounded-full border border-photon/25 bg-photon/8 px-2.5 py-1 text-[11px] text-photon/90 transition-colors hover:border-photon/50 hover:bg-photon/16"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+export function TutorSidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [circuit, setCircuit] = useState<ScreenCircuit>({
+    ir: null,
+    summary: "no circuit open",
+    lessonId: null,
+  });
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const abort = useRef<AbortController | null>(null);
+  const counter = useRef(0);
+
+  useEffect(() => subscribeCircuit(setCircuit), []);
+
+  /* ⌘/Ctrl + I opens the tutor; Escape closes it. */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "i") {
+        event.preventDefault();
+        setOpen((value) => !value);
+      }
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  /* Probe once the panel is first opened, not on every page load. */
+  useEffect(() => {
+    if (!open || health) return;
+    const controller = new AbortController();
+    fetchHealth(controller.signal)
+      .then(setHealth)
+      .catch(() => setHealth(null));
+    return () => controller.abort();
+  }, [open, health]);
+
+  useEffect(() => () => abort.current?.abort(), []);
+
+  useEffect(() => {
+    if (open) bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [open, messages]);
+
+  const shortcut = useMemo(() => {
+    if (typeof navigator === "undefined") return "Ctrl I";
+    return /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent) ? "⌘ I" : "Ctrl I";
+  }, []);
+
+  const send = useCallback(
+    async (prompt: string) => {
+      const text = prompt.trim();
+      if (!text || busy) return;
+
+      counter.current += 1;
+      const askId = `l${counter.current}`;
+      const replyId = `t${counter.current}`;
+      const history = messages
+        .filter((message) => !message.failed && message.body.trim())
+        .slice(-6)
+        .map((message) => ({
+          role: message.from === "tutor" ? ("assistant" as const) : ("user" as const),
+          content: message.body,
+        }));
+
+      setMessages((current) => [
+        ...current,
+        { id: askId, from: "learner", body: text },
+        { id: replyId, from: "tutor", body: "", streaming: true },
+      ]);
+      setDraft("");
+      setBusy(true);
+
+      const patch = (change: (message: Message) => Message) =>
+        setMessages((current) =>
+          current.map((message) => (message.id === replyId ? change(message) : message)),
+        );
+
+      const controller = new AbortController();
+      abort.current = controller;
+
+      try {
+        await streamTutor(
+          {
+            prompt: text,
+            circuit: circuit.ir,
+            lesson_id: circuit.lessonId,
+            history,
+          },
+          {
+            onMeta: (meta) =>
+              patch((message) => ({
+                ...message,
+                looking: meta.looking?.reading
+                  ? `${meta.looking.qubits} qubits · ${meta.looking.reading}`
+                  : `${meta.live && meta.model ? meta.model : "local read-out"} · no circuit open`,
+              })),
+            onDelta: (chunk) =>
+              patch((message) => ({ ...message, body: message.body + chunk })),
+            onDone: () => patch((message) => ({ ...message, streaming: false })),
+          },
+          controller.signal,
+        );
+        patch((message) => ({ ...message, streaming: false }));
+      } catch (error) {
+        const aborted = controller.signal.aborted;
+        const reason =
+          error instanceof ApiError ? error.message : "the tutor service returned an error";
+        patch((message) => ({
+          ...message,
+          streaming: false,
+          failed: !aborted,
+          body: aborted
+            ? message.body || "Stopped."
+            : `${reason}\n\nStart it from the backend folder and ask again:`,
+          code: aborted ? undefined : "uvicorn app.main:app --reload",
+        }));
+      } finally {
+        abort.current = null;
+        setBusy(false);
+      }
+    },
+    [busy, circuit.ir, circuit.lessonId, messages],
+  );
+
+  /* An empty grid is not a circuit — a measurement on its own is. */
+  const hasCircuit = Boolean(
+    circuit.ir && (circuit.ir.timeline.length || circuit.ir.measurements?.length),
+  );
+  const suggestions = hasCircuit ? CIRCUIT_SUGGESTIONS : TUTOR_SUGGESTIONS;
+  const live = health?.tutor?.live;
+  const status = !health
+    ? "offline · start the API"
+    : live
+      ? `${health.tutor.model} · streaming`
+      : "local read-out · Qiskit";
+
+  return (
+    <>
+      {/* Collapsed handle. */}
+      <AnimatePresence>
+        {!open && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 24 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            onClick={() => setOpen(true)}
+            aria-label="Open the AI tutor"
+            className="glass fixed right-4 bottom-6 z-40 flex items-center gap-2.5 rounded-full py-2.5 pr-4 pl-3 text-sm text-paper shadow-[0_0_40px_-12px_rgba(56,232,255,0.7)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon sm:bottom-8"
+          >
+            <span className="relative flex size-7 items-center justify-center rounded-full border border-photon/40 bg-photon/12">
+              <Sparkles className="size-3.5 text-photon" />
+              <span className="absolute -top-0.5 -right-0.5 size-2 animate-breathe rounded-full bg-collapse shadow-[0_0_8px_2px_rgba(255,77,157,0.8)]" />
+            </span>
+            <span className="hidden sm:inline">Ask the tutor</span>
+            <kbd className="hidden rounded border border-white/12 bg-white/6 px-1.5 py-0.5 font-mono text-[10px] text-frost/70 sm:inline">
+              {shortcut}
+            </kbd>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Expanded panel. */}
+      <AnimatePresence>
+        {open && (
+          <motion.aside
+            initial={{ opacity: 0, x: 34 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 34 }}
+            transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+            className="glass fixed inset-x-3 bottom-3 z-40 flex flex-col overflow-hidden rounded-2xl sm:inset-x-auto sm:top-20 sm:right-4 sm:bottom-5 sm:w-[384px]"
+            aria-label="AI tutor"
+          >
+            <header className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3">
+              <span className="flex size-7 items-center justify-center rounded-full border border-photon/40 bg-photon/12">
+                <Sparkles className="size-3.5 text-photon" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold">Tutor</p>
+                <p
+                  className={cn(
+                    "truncate font-mono text-[10px] tracking-[0.14em] uppercase",
+                    health ? "text-photon/75" : "text-frost/45",
+                  )}
+                >
+                  {status}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Collapse the tutor"
+                className="ml-auto flex size-8 items-center justify-center rounded-full text-frost/70 transition-colors hover:bg-white/6 hover:text-paper"
+              >
+                <PanelRightClose className="size-4" />
+              </button>
+            </header>
+
+            <ContextStrip pathname={pathname} circuit={circuit} />
+
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="space-y-4 px-4 py-4">
+                {/* Opening turn: what it can see, and where the answer comes from. */}
+                <Turn
+                  turn={{
+                    id: "intro",
+                    from: "tutor",
+                    body: hasCircuit
+                      ? `I can see the circuit in your sandbox — ${circuit.summary}. Ask about it and I will rebuild it with Qiskit before answering, so the numbers I quote are yours.`
+                      : "Open the sandbox and build something, and I will read the circuit straight off the page. You can also ask a plain question about any module.",
+                    looking: hasCircuit ? circuit.summary : undefined,
+                  }}
+                  onChip={send}
+                />
+
+                {messages.map((message) => (
+                  <Turn key={message.id} turn={message} onChip={send} />
+                ))}
+
+                {busy && (
+                  <div className="flex items-center gap-2 pl-8">
+                    <span className="flex gap-1">
+                      {[0, 1, 2].map((dot) => (
+                        <motion.span
+                          key={dot}
+                          className="size-1.5 rounded-full bg-photon/70"
+                          animate={{ opacity: [0.25, 1, 0.25] }}
+                          transition={{
+                            duration: 1.3,
+                            repeat: Infinity,
+                            delay: dot * 0.18,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      ))}
+                    </span>
+                    <span className="font-mono text-[10px] tracking-[0.14em] text-frost/45 uppercase">
+                      {live ? "Thinking about your circuit" : "Measuring your circuit"}
+                    </span>
+                  </div>
+                )}
+
+                <div ref={bottomRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="border-t border-white/8 px-4 py-3">
+              <div className="mb-2.5 flex flex-wrap gap-1.5">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => void send(suggestion)}
+                    disabled={busy}
+                    className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-left text-[11px] text-frost/80 transition-colors hover:border-photon/35 hover:text-paper disabled:opacity-40"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void send(draft);
+                }}
+                className="flex items-end gap-2 rounded-xl border border-white/10 bg-[#060b18]/80 p-2 focus-within:border-photon/45"
+              >
+                <textarea
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void send(draft);
+                    }
+                  }}
+                  rows={1}
+                  placeholder="Ask about the circuit on screen…"
+                  className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-paper placeholder:text-frost/40 focus:outline-none"
+                />
+                {busy ? (
+                  <button
+                    type="button"
+                    onClick={() => abort.current?.abort()}
+                    aria-label="Stop the answer"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-collapse/40 bg-collapse/12 text-collapse transition-colors hover:bg-collapse/20"
+                  >
+                    <Square className="size-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    aria-label="Send message"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-photon text-[#03121b] transition-colors hover:bg-[#6ff0ff] disabled:opacity-35"
+                    disabled={!draft.trim()}
+                  >
+                    <ArrowUp className="size-4" />
+                  </button>
+                )}
+              </form>
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-frost/40">
+                {health
+                  ? live
+                    ? "Explanations are generated. Verify anything you plan to submit."
+                    : "No model key on the server, so answers are computed from your circuit."
+                  : `No tutor service at ${API_BASE}. The sandbox still works without it.`}
+              </p>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

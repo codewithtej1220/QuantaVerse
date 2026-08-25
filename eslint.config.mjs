@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The Python service, including the JS that ships inside its site-packages.
+    "backend/**",
   ]),
 ]);
 

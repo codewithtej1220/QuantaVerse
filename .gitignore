@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ...but the templates are meant to be read
+!.env.example
+
+# python service
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
