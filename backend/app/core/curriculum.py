@@ -1,0 +1,229 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class SkillAxis:
+    key: str
+    label: str
+    short: str
+    cohort: int
+
+
+@dataclass(frozen=True)
+class Badge:
+    id: str
+    name: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class Challenge:
+    slug: str
+    title: str
+    qubits: int
+
+
+@dataclass(frozen=True)
+class Module:
+    index: int
+    slug: str
+    ket: str
+    title: str
+    track: str
+    lessons: int
+    minutes: int
+    badge: Badge
+    challenge: Challenge | None
+    skills: tuple[tuple[str, float], ...]
+
+
+SKILL_AXES: tuple[SkillAxis, ...] = (
+    SkillAxis("superposition", "Superposition", "SUP", 71),
+    SkillAxis("entanglement", "Entanglement", "ENT", 55),
+    SkillAxis("gate-algebra", "Gate algebra", "GAT", 62),
+    SkillAxis("circuit-design", "Circuit design", "CIR", 58),
+    SkillAxis("measurement", "Measurement", "MEA", 69),
+    SkillAxis("algorithms", "Algorithms", "ALG", 44),
+    SkillAxis("qiskit-code", "Qiskit code", "QIS", 48),
+    SkillAxis("complexity", "Complexity", "CPX", 39),
+)
+
+TRACK_LABEL: dict[str, str] = {
+    "foundations": "Foundations",
+    "algorithms": "Algorithms",
+    "hardware": "Hardware & Code",
+}
+
+MODULES: tuple[Module, ...] = (
+    Module(
+        index=0,
+        slug="qubit-and-superposition",
+        ket="|000⟩",
+        title="The Qubit & Superposition",
+        track="foundations",
+        lessons=6,
+        minutes=55,
+        badge=Badge(
+            "first-superposition",
+            "First Superposition",
+            "Put a qubit in an equal superposition and read the histogram.",
+        ),
+        challenge=Challenge("qubit-and-superposition", "One qubit, two places", 2),
+        skills=(("superposition", 1.0), ("gate-algebra", 0.3), ("measurement", 0.2)),
+    ),
+    Module(
+        index=1,
+        slug="measurement-and-probability",
+        ket="|001⟩",
+        title="Measurement & Probability",
+        track="foundations",
+        lessons=5,
+        minutes=45,
+        badge=Badge(
+            "thousand-shots",
+            "Thousand Shots",
+            "Ran 1,024 shots and matched the predicted distribution within 2%.",
+        ),
+        challenge=None,
+        skills=(("measurement", 1.0), ("superposition", 0.3), ("complexity", 0.1)),
+    ),
+    Module(
+        index=2,
+        slug="single-qubit-gates",
+        ket="|010⟩",
+        title="Single-Qubit Gates",
+        track="foundations",
+        lessons=7,
+        minutes=70,
+        badge=Badge(
+            "rotation-fluent",
+            "Rotation Fluent",
+            "Reached any point on the Bloch sphere in three gates or fewer.",
+        ),
+        challenge=Challenge("single-qubit-gates", "Reach the minus state", 2),
+        skills=(("gate-algebra", 1.0), ("superposition", 0.4), ("circuit-design", 0.3)),
+    ),
+    Module(
+        index=3,
+        slug="quantum-entanglement",
+        ket="|011⟩",
+        title="Quantum Entanglement",
+        track="foundations",
+        lessons=6,
+        minutes=65,
+        badge=Badge(
+            "bell-pair",
+            "Bell Pair",
+            "Built all four Bell states from scratch without a hint.",
+        ),
+        challenge=Challenge("quantum-entanglement", "Build a Bell pair", 2),
+        skills=(("entanglement", 1.0), ("circuit-design", 0.5), ("measurement", 0.3)),
+    ),
+    Module(
+        index=4,
+        slug="circuits-with-qiskit",
+        ket="|100⟩",
+        title="Circuits with Qiskit",
+        track="hardware",
+        lessons=8,
+        minutes=85,
+        badge=Badge(
+            "transpiler-reader",
+            "Transpiler Reader",
+            "Explain why the transpiler rewrote your circuit.",
+        ),
+        challenge=Challenge("circuits-with-qiskit", "Stretch it to three", 3),
+        skills=(("qiskit-code", 1.0), ("circuit-design", 0.7), ("gate-algebra", 0.3)),
+    ),
+    Module(
+        index=5,
+        slug="deutsch-jozsa",
+        ket="|101⟩",
+        title="The Deutsch–Jozsa Algorithm",
+        track="algorithms",
+        lessons=5,
+        minutes=60,
+        badge=Badge(
+            "one-query-oracle",
+            "One-Query Oracle",
+            "Solve Deutsch–Jozsa in a single oracle call.",
+        ),
+        challenge=Challenge("deutsch-jozsa", "One query, whole answer", 3),
+        skills=(("algorithms", 1.0), ("complexity", 0.6), ("entanglement", 0.3)),
+    ),
+    Module(
+        index=6,
+        slug="grovers-search",
+        ket="|110⟩",
+        title="Grover's Search Algorithm",
+        track="algorithms",
+        lessons=7,
+        minutes=95,
+        badge=Badge(
+            "amplitude-amplifier",
+            "Amplitude Amplifier",
+            "Pick the optimal Grover iteration count for N = 1024.",
+        ),
+        challenge=Challenge("grovers-search", "Mark |11⟩ without touching it", 2),
+        skills=(("algorithms", 1.0), ("complexity", 0.7), ("circuit-design", 0.4)),
+    ),
+    Module(
+        index=7,
+        slug="shors-factoring",
+        ket="|111⟩",
+        title="Shor's Factoring Algorithm",
+        track="algorithms",
+        lessons=9,
+        minutes=120,
+        badge=Badge("period-finder", "Period Finder", "Factor 15 with a hand-built QFT."),
+        challenge=None,
+        skills=(("complexity", 1.0), ("algorithms", 0.8), ("qiskit-code", 0.3)),
+    ),
+)
+
+MODULE_BY_SLUG: dict[str, Module] = {module.slug: module for module in MODULES}
+CHALLENGE_BY_SLUG: dict[str, Challenge] = {
+    module.challenge.slug: module.challenge for module in MODULES if module.challenge
+}
+BADGE_BY_ID: dict[str, Badge] = {module.badge.id: module.badge for module in MODULES}
+MODULE_BY_BADGE: dict[str, Module] = {module.badge.id: module for module in MODULES}
+
+TOTAL_LESSONS: int = sum(module.lessons for module in MODULES)
+TOTAL_MINUTES: int = sum(module.minutes for module in MODULES)
+TOTAL_CHALLENGES: int = len(CHALLENGE_BY_SLUG)
+
+CHALLENGE_POINTS = 3
+
+MASTERY_LEVELS: tuple[tuple[int, str, int], ...] = (
+    (1, "Bit Flipper", 0),
+    (2, "Superposer", 8),
+    (3, "Circuit Builder", 20),
+    (4, "Algorithm Designer", 36),
+    (5, "Oracle Wrangler", 52),
+    (6, "Quantum Engineer", 70),
+)
+
+MAX_POINTS: int = TOTAL_LESSONS + TOTAL_CHALLENGES * CHALLENGE_POINTS
+
+
+def module_units(module: Module) -> int:
+    return module.lessons + (1 if module.challenge else 0)
+
+
+def mastery_for(points: int) -> tuple[int, str, str | None, int]:
+    level, title, floor = MASTERY_LEVELS[0]
+    for candidate in MASTERY_LEVELS:
+        if points >= candidate[2]:
+            level, title, floor = candidate
+        else:
+            break
+
+    following = next((item for item in MASTERY_LEVELS if item[0] == level + 1), None)
+    if following is None:
+        return level, title, None, 100
+
+    span = following[2] - floor
+    percent = 0 if span <= 0 else round(((points - floor) / span) * 100)
+    return level, title, following[1], max(0, min(100, percent))

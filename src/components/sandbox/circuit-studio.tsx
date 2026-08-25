@@ -13,6 +13,8 @@ import {
   type HealthResponse,
   type SimulationResponse,
 } from "@/lib/api";
+import { useAuth } from "@/components/auth/auth-provider";
+import { readSession } from "@/lib/auth";
 import { challengeIR, type Challenge } from "@/lib/challenges";
 import { clearCircuit, describeCircuit, publishCircuit } from "@/lib/circuit-store";
 import { GATE_BY_ID } from "@/lib/data";
@@ -60,6 +62,7 @@ const GRID_LIMITS = {
 };
 
 export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
+  const { user } = useAuth();
   const opening = challenge ? null : PRESETS[0];
   const [qubits, setQubits] = useState(challenge?.qubits ?? 3);
   const [placements, setPlacements] = useState<Placement[]>(() =>
@@ -297,7 +300,15 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setGrading(true);
     setGradeError(null);
 
-    gradeCircuit({ target: challengeIR(challenge), submission })
+    gradeCircuit(
+      {
+        target: challengeIR(challenge),
+        submission,
+        challenge_slug: user ? challenge.slug : null,
+      },
+      undefined,
+      user ? readSession()?.access_token : null,
+    )
       .then((result) => setVerdict({ key, result }))
       .catch((error: unknown) => {
         setGradeError(error instanceof ApiError ? error.message : "the check could not run");

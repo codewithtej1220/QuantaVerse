@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { axisPoint, radarPoints } from "@/lib/geometry";
-import { SKILLS } from "@/lib/data";
+import { SKILLS, type Skill } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 /**
@@ -17,11 +17,10 @@ import { cn } from "@/lib/utils";
 
 const R = 128;
 const RINGS = [0.25, 0.5, 0.75, 1];
-const COUNT = SKILLS.length;
-
-export function SkillGraph() {
+export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
   const [active, setActive] = useState<number | null>(null);
-  const skill = active === null ? null : SKILLS[active];
+  const COUNT = skills.length;
+  const skill = active === null ? null : skills[active];
 
   return (
     <div className="glass rounded-2xl p-5 lg:p-6">
@@ -59,7 +58,7 @@ export function SkillGraph() {
             ))}
 
             {/* Axes. */}
-            {SKILLS.map((s, i) => {
+            {skills.map((s, i) => {
               const outer = axisPoint(i, COUNT, R);
               const label = axisPoint(i, COUNT, R + 26);
               return (
@@ -91,7 +90,7 @@ export function SkillGraph() {
             {/* Cohort median, behind. */}
             <polygon
               points={radarPoints(
-                SKILLS.map((s) => s.cohort),
+                skills.map((s) => s.cohort),
                 R,
               )}
               fill="none"
@@ -104,7 +103,7 @@ export function SkillGraph() {
             {/* The learner. */}
             <polygon
               points={radarPoints(
-                SKILLS.map((s) => s.value),
+                skills.map((s) => s.value),
                 R,
               )}
               fill="#38e8ff"
@@ -116,7 +115,7 @@ export function SkillGraph() {
             />
 
             {/* Vertices double as hit targets. */}
-            {SKILLS.map((s, i) => {
+            {skills.map((s, i) => {
               const point = axisPoint(i, COUNT, (s.value / 100) * R);
               const hit = axisPoint(i, COUNT, R + 12);
               return (
@@ -162,7 +161,7 @@ export function SkillGraph() {
             </div>
           ) : (
             <ul className="space-y-2.5">
-              {[...SKILLS]
+              {[...skills]
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 4)
                 .map((s) => (
@@ -177,7 +176,7 @@ export function SkillGraph() {
               <li className="border-t border-white/8 pt-2.5 text-[12px] leading-relaxed text-frost/55">
                 Hover an axis for the cohort comparison. Weakest axis:{" "}
                 <span className="text-frost/80">
-                  {[...SKILLS].sort((a, b) => a.value - b.value)[0].label}
+                  {[...skills].sort((a, b) => a.value - b.value)[0].label}
                 </span>
                 .
               </li>

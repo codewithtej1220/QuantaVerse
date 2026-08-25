@@ -106,12 +106,21 @@ function deadline(ms: number, external?: AbortSignal) {
   };
 }
 
-async function request<T>(path: string, body?: unknown, signal?: AbortSignal, ms = 20_000) {
+async function request<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+  ms = 20_000,
+  token?: string | null,
+) {
   const gate = deadline(ms, signal);
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = `Bearer ${token}`;
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       method: body === undefined ? "GET" : "POST",
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: gate.signal,
       cache: "no-store",
@@ -160,13 +169,21 @@ export interface GradeResponse {
   passed: boolean;
   checks: { check: string; passed: boolean; score: number; threshold: number; detail: string }[];
   hint: string | null;
+  recorded: boolean;
+  earned_badges: string[];
 }
 
 export function gradeCircuit(
-  body: { target: CircuitIR; submission: CircuitIR; threshold?: number },
+  body: {
+    target: CircuitIR;
+    submission: CircuitIR;
+    threshold?: number;
+    challenge_slug?: string | null;
+  },
   signal?: AbortSignal,
+  token?: string | null,
 ) {
-  return request<GradeResponse>("/api/grade", body, signal, 45_000);
+  return request<GradeResponse>("/api/grade", body, signal, 45_000, token);
 }
 
 /* ------------------------------------------------------------------ */

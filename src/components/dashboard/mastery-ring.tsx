@@ -1,22 +1,27 @@
 import { LEARNER } from "@/lib/data";
 
-/**
- * The mastery ring.
- *
- * Five titles, one arc. The pips on the track are the level boundaries, so the
- * gap between the arc's head and the next pip is literally how far there is to
- * go — the number in the middle and the geometry say the same thing.
- */
-
-const LEVELS = 5;
+const DEFAULT_LEVELS = 5;
 const R = 52;
 const CIRCUMFERENCE = 2 * Math.PI * R;
 
-export function MasteryRing() {
-  const { masteryLevel, masteryProgress, masteryTitle, nextTitle } = LEARNER;
+interface MasteryRingProps {
+  level?: number;
+  title?: string;
+  progress?: number;
+  nextTitle?: string | null;
+  levels?: number;
+  note?: string;
+}
 
-  /* Position on the whole ladder: levels already cleared, plus this one's part. */
-  const overall = ((masteryLevel - 1 + masteryProgress / 100) / LEVELS) * 100;
+export function MasteryRing({
+  level = LEARNER.masteryLevel,
+  title = LEARNER.masteryTitle,
+  progress = LEARNER.masteryProgress,
+  nextTitle = LEARNER.nextTitle,
+  levels = DEFAULT_LEVELS,
+  note = "Levels come from circuits that pass their check, not from lessons opened.",
+}: MasteryRingProps) {
+  const overall = Math.min(100, ((level - 1 + progress / 100) / levels) * 100);
   const dash = (overall / 100) * CIRCUMFERENCE;
 
   return (
@@ -33,16 +38,15 @@ export function MasteryRing() {
             strokeDasharray={`${dash.toFixed(2)} ${CIRCUMFERENCE.toFixed(2)}`}
             style={{ filter: "drop-shadow(0 0 10px rgba(56,232,255,0.5))" }}
           />
-          {/* Level boundaries. */}
-          {Array.from({ length: LEVELS }, (_, i) => {
-            const angle = (2 * Math.PI * i) / LEVELS;
+          {Array.from({ length: levels }, (_, i) => {
+            const angle = (2 * Math.PI * i) / levels;
             return (
               <circle
                 key={i}
                 cx={Math.cos(angle) * R}
                 cy={Math.sin(angle) * R}
                 r="2"
-                fill={i <= masteryLevel - 1 ? "#38e8ff" : "#33427a"}
+                fill={i <= level - 1 ? "#38e8ff" : "#33427a"}
               />
             );
           })}
@@ -58,7 +62,7 @@ export function MasteryRing() {
             level
           </span>
           <span className="font-mono text-[30px] leading-none text-paper tabular-nums">
-            {masteryLevel}
+            {level}
           </span>
         </div>
       </div>
@@ -66,14 +70,18 @@ export function MasteryRing() {
       <div className="min-w-0">
         <p className="eyebrow">Mastery</p>
         <p className="mt-1.5 text-[19px] leading-tight font-semibold tracking-[-0.015em] text-paper">
-          {masteryTitle}
+          {title}
         </p>
         <p className="mt-2 font-mono text-[11.5px] leading-relaxed text-frost/65">
-          <span className="text-photon">{masteryProgress}%</span> of the way to {nextTitle}
+          {nextTitle ? (
+            <>
+              <span className="text-photon">{progress}%</span> of the way to {nextTitle}
+            </>
+          ) : (
+            <span className="text-photon">top of the ladder</span>
+          )}
         </p>
-        <p className="mt-2 text-[12px] leading-relaxed text-frost/50">
-          Levels come from circuits that pass their check, not from lessons opened.
-        </p>
+        <p className="mt-2 text-[12px] leading-relaxed text-frost/50">{note}</p>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Crimson_Pro, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 
 import { TutorSidebar } from "@/components/ai/tutor-sidebar";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import "./globals.css";
@@ -74,12 +75,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
-        <SiteNav />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
-        <TutorSidebar />
+        <AuthProvider>
+          <SiteNav />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+          <TutorSidebar />
+        </AuthProvider>
       </body>
     </html>
   );

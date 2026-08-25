@@ -1,6 +1,6 @@
 import { Award, Lock } from "lucide-react";
 
-import { BADGES } from "@/lib/data";
+import { BADGES, type BadgeItem } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 /**
@@ -25,8 +25,8 @@ const TONE = {
   },
 } as const;
 
-export function BadgeShelf() {
-  const earned = BADGES.filter((badge) => badge.earned).length;
+export function BadgeShelf({ badges = BADGES }: { badges?: BadgeItem[] }) {
+  const earned = badges.filter((badge) => badge.earned).length;
 
   return (
     <section className="glass rounded-2xl p-5 lg:p-6">
@@ -38,12 +38,12 @@ export function BadgeShelf() {
           </h2>
         </div>
         <p className="font-mono text-[11px] text-frost/60 tabular-nums">
-          <span className="text-paper">{earned}</span> of {BADGES.length} earned
+          <span className="text-paper">{earned}</span> of {badges.length} earned
         </p>
       </div>
 
       <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {BADGES.map((badge) => {
+        {badges.map((badge) => {
           const tone = TONE[badge.tone];
           return (
             <li

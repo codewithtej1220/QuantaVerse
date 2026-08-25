@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, Award, Check, Circle, GitFork, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight, GitFork } from "lucide-react";
 
 import { ActionLink } from "@/components/site/action";
-import { AmplitudeBar } from "@/components/site/amplitude-bar";
 import { CHALLENGE_BY_SLUG } from "@/lib/challenges";
 import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
 import { REPO_URL } from "@/lib/site";
-import { cn } from "@/lib/utils";
+import { LessonChecklist } from "@/components/curriculum/lesson-checklist";
+import { ModuleRail } from "@/components/curriculum/module-rail";
 
 /**
  * A module shell.
@@ -92,84 +92,18 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
               </p>
             </header>
 
-            {/* Outline. */}
-            <section className="mt-8">
-              <h2 className="eyebrow">Outline</h2>
-              <ol className="mt-4 overflow-hidden rounded-2xl border border-white/8">
-                {entry.concepts.map((concept, i) => {
-                  const complete = i < done;
-                  const current = i === done && entry.progress > 0 && entry.progress < 100;
-                  return (
-                    <li
-                      key={concept}
-                      className={cn(
-                        "flex items-center gap-4 border-b border-white/6 px-4 py-3.5 last:border-0",
-                        current ? "bg-phase/8" : "bg-white/2",
-                      )}
-                    >
-                      <span className="w-6 shrink-0 font-mono text-[11px] text-frost/40 tabular-nums">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      {complete ? (
-                        <Check className="size-4 shrink-0 text-photon" />
-                      ) : (
-                        <Circle
-                          className={cn(
-                            "size-3.5 shrink-0",
-                            current ? "text-phase" : "text-frost/30",
-                          )}
-                        />
-                      )}
-                      <span
-                        className={cn(
-                          "flex-1 text-[14px]",
-                          complete ? "text-frost/70" : current ? "text-paper" : "text-frost/75",
-                        )}
-                      >
-                        {concept}
-                      </span>
-                      <span className="shrink-0 font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
-                        {complete ? "done" : current ? "in progress" : "queued"}
-                      </span>
-                    </li>
-                  );
-                })}
-                {/* The lab is a real graded task for six of the eight modules. */}
-                {CHALLENGE_BY_SLUG[slug] ? (
-                  <li className="bg-photon/6">
-                    <Link
-                      href={`/sandbox/${slug}`}
-                      className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-photon/12 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
-                    >
-                      <span className="w-6 shrink-0 font-mono text-[11px] text-frost/40 tabular-nums">
-                        {String(entry.concepts.length + 1).padStart(2, "0")}
-                      </span>
-                      <Play className="size-3.5 shrink-0 text-photon" />
-                      <span className="min-w-0 flex-1 text-[14px] text-paper">
-                        Circuit lab — {CHALLENGE_BY_SLUG[slug].title}
-                      </span>
-                      <span className="flex shrink-0 items-center gap-1.5 font-mono text-[9.5px] tracking-[0.14em] text-photon/70 uppercase">
-                        open
-                        <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                      </span>
-                    </Link>
-                  </li>
-                ) : (
-                  <li className="flex items-center gap-4 bg-white/2 px-4 py-3.5">
-                    <span className="w-6 shrink-0 font-mono text-[11px] text-frost/40 tabular-nums">
-                      {String(entry.concepts.length + 1).padStart(2, "0")}
-                    </span>
-                    <Play className="size-3.5 shrink-0 text-frost/35" />
-                    <span className="min-w-0 flex-1 text-[14px] text-frost/70">
-                      Circuit lab — {LAB_PENDING[slug] ?? "coming with the lesson bodies"}
-                    </span>
-                    <span className="shrink-0 font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
-                      not yet
-                    </span>
-                  </li>
-                )}
-              </ol>
-            </section>
+            <LessonChecklist
+              slug={entry.slug}
+              lessons={entry.lessons}
+              concepts={entry.concepts}
+              fallbackDone={done}
+              lab={
+                CHALLENGE_BY_SLUG[slug]
+                  ? { href: `/sandbox/${slug}`, title: CHALLENGE_BY_SLUG[slug].title }
+                  : null
+              }
+              labPending={LAB_PENDING[slug] ?? "coming with the lesson bodies"}
+            />
 
             {/* The honest bit. */}
             <section className="glass mt-8 rounded-2xl p-5">
@@ -194,23 +128,11 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
 
           {/* Side rail. */}
           <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <div className="glass rounded-2xl p-5">
-              <AmplitudeBar value={entry.progress} />
-              <p className="mt-4 flex items-center gap-2 border-t border-white/8 pt-4 text-[12.5px]">
-                <Award
-                  className={cn(
-                    "size-4 shrink-0",
-                    entry.progress === 100 ? "text-photon" : "text-frost/40",
-                  )}
-                />
-                <span className={entry.progress === 100 ? "text-paper" : "text-frost/65"}>
-                  {entry.badge}
-                </span>
-                <span className="ml-auto font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
-                  {entry.progress === 100 ? "earned" : "on completion"}
-                </span>
-              </p>
-            </div>
+            <ModuleRail
+              slug={entry.slug}
+              fallbackProgress={entry.progress}
+              fallbackBadge={entry.badge}
+            />
 
             <div className="glass rounded-2xl p-5">
               <p className="eyebrow">Gates in this module</p>

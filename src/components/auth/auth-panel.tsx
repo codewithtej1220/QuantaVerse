@@ -1,0 +1,189 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { KeyRound, Loader2, UserPlus } from "lucide-react";
+
+import { useAuth } from "@/components/auth/auth-provider";
+import { ActionButton } from "@/components/site/action";
+import { ApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+const FIELD =
+  "h-11 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3.5 text-[14px] " +
+  "text-paper placeholder:text-frost/35 outline-none transition-colors " +
+  "focus:border-photon/55 focus:bg-white/[0.05] focus:ring-2 focus:ring-photon/25";
+
+const LABEL = "font-mono text-[10px] tracking-[0.16em] text-frost/50 uppercase";
+
+export function AuthPanel({ mode }: { mode: "login" | "register" }) {
+  const router = useRouter();
+  const { signIn, signUp } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const registering = mode === "register";
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      if (registering) {
+        await signUp({
+          email,
+          password,
+          display_name: displayName,
+          institution: institution.trim() || null,
+        });
+      } else {
+        await signIn(email, password);
+      }
+      router.push("/dashboard");
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError ? caught.message : "something went wrong — try again",
+      );
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="lattice min-h-screen pt-24 pb-20">
+      <div className="mx-auto max-w-[520px] px-5">
+        <p className="eyebrow">{registering ? "Register · /register" : "Sign in · /login"}</p>
+        <h1 className="mt-3 text-[clamp(1.9rem,4vw,2.5rem)] leading-[1.06] font-semibold tracking-[-0.025em]">
+          {registering ? "Start a student record" : "Welcome back"}
+        </h1>
+        <p className="mt-3 text-[14.5px] leading-relaxed text-frost/75">
+          {registering
+            ? "An account stores the lessons you finish and every graded circuit you submit, so the dashboard counts your work instead of a demo learner's."
+            : "Sign in to pick up your streak, your badges and the module you left open."}
+        </p>
+
+        <form onSubmit={submit} className="glass mt-8 space-y-4 rounded-2xl p-5 lg:p-6">
+          {registering && (
+            <div className="space-y-1.5">
+              <label htmlFor="display_name" className={LABEL}>
+                Display name
+              </label>
+              <input
+                id="display_name"
+                className={FIELD}
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Ada Lovelace"
+                autoComplete="name"
+                minLength={2}
+                maxLength={80}
+                required
+              />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label htmlFor="email" className={LABEL}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className={FIELD}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@university.edu"
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="password" className={LABEL}>
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              className={FIELD}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder={registering ? "at least 10 characters" : "your password"}
+              autoComplete={registering ? "new-password" : "current-password"}
+              minLength={registering ? 10 : 1}
+              required
+            />
+            {registering && (
+              <p className="font-mono text-[10.5px] leading-relaxed text-frost/45">
+                Ten characters or more, mixing at least two of: lower case, upper case, digits,
+                punctuation.
+              </p>
+            )}
+          </div>
+
+          {registering && (
+            <div className="space-y-1.5">
+              <label htmlFor="institution" className={LABEL}>
+                Institution <span className="text-frost/30">optional</span>
+              </label>
+              <input
+                id="institution"
+                className={FIELD}
+                value={institution}
+                onChange={(event) => setInstitution(event.target.value)}
+                placeholder="PSG College of Technology"
+                maxLength={160}
+              />
+            </div>
+          )}
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-xl border border-collapse/35 bg-collapse/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-collapse"
+            >
+              {error}
+            </p>
+          )}
+
+          <ActionButton type="submit" size="lg" className="w-full" disabled={busy}>
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : registering ? (
+              <UserPlus className="size-4" />
+            ) : (
+              <KeyRound className="size-4" />
+            )}
+            {busy
+              ? registering
+                ? "Creating account…"
+                : "Signing in…"
+              : registering
+                ? "Create account"
+                : "Sign in"}
+          </ActionButton>
+
+          <p className={cn("pt-1 text-center text-[12.5px] text-frost/60")}>
+            {registering ? "Already have an account? " : "No account yet? "}
+            <Link
+              href={registering ? "/login" : "/register"}
+              className="text-photon underline-offset-4 hover:underline"
+            >
+              {registering ? "Sign in" : "Create one"}
+            </Link>
+          </p>
+        </form>
+
+        <p className="mt-6 text-[12px] leading-relaxed text-frost/45">
+          Your password is hashed with bcrypt and never leaves the server. The curriculum, the
+          sandbox and the tutor all work without an account — signing in only adds the record.
+        </p>
+      </div>
+    </div>
+  );
+}

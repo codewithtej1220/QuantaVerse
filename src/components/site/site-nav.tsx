@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GitFork, Menu, X } from "lucide-react";
 
+import { AccountMenu } from "@/components/site/account-menu";
 import { ActionLink } from "@/components/site/action";
 import { QuantaMark } from "@/components/site/quantum-wire";
 import { REPO_URL } from "@/lib/site";
@@ -93,7 +94,8 @@ export function SiteNav() {
           >
             <GitFork className="size-4" />
           </a>
-          <ActionLink href="/sandbox" size="md" className="hidden sm:inline-flex">
+          <AccountMenu className="hidden sm:inline-flex" />
+          <ActionLink href="/sandbox" size="md" className="hidden lg:inline-flex">
             Open sandbox
           </ActionLink>
           <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, CircleSlash, Loader2, Target, XCircle } from "lucide-react";
+import { CheckCircle2, CircleSlash, Loader2, Save, Target, XCircle } from "lucide-react";
 
 import type { GradeResponse } from "@/lib/api";
 import type { Challenge } from "@/lib/challenges";
@@ -114,6 +114,15 @@ export function ChallengeCard({
                   )}
                   {verdict.passed ? "Solved — both checks pass." : "Not there yet."}
                 </p>
+
+                {verdict.recorded && (
+                  <p className="mt-2 flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.14em] text-photon/75 uppercase">
+                    <Save className="size-3 shrink-0" />
+                    saved to your record
+                    {verdict.earned_badges.length > 0 &&
+                      ` · badge earned: ${verdict.earned_badges.join(", ")}`}
+                  </p>
+                )}
 
                 <dl className="mt-3 grid gap-2 sm:grid-cols-2">
                   {verdict.checks.map((check) => (

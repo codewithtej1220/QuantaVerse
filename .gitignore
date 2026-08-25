@@ -48,5 +48,9 @@ backend/.venv/
 backend/__pycache__/
 **/__pycache__/
 *.pyc
+
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
 # ai
 

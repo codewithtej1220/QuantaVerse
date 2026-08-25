@@ -47,6 +47,11 @@ class GradeRequest(BaseModel):
         validation_alias=AliasChoices("submission", "candidate", "user")
     )
     threshold: float = Field(default=0.99, ge=0.0, le=1.0)
+    challenge_slug: str | None = Field(
+        default=None,
+        max_length=64,
+        validation_alias=AliasChoices("challenge_slug", "challengeSlug", "challenge"),
+    )
 
 
 class GradeCheck(BaseModel):
@@ -61,6 +66,8 @@ class GradeResponse(BaseModel):
     passed: bool
     checks: list[GradeCheck]
     hint: str | None = None
+    recorded: bool = False
+    earned_badges: list[str] = Field(default_factory=list)
 
 
 class SandboxRequest(BaseModel):
@@ -105,3 +112,4 @@ class HealthResponse(BaseModel):
     version: str
     backends: dict[str, Any]
     tutor: dict[str, Any]
+    accounts: dict[str, Any] = Field(default_factory=dict)

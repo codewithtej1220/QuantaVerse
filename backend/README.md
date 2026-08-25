@@ -1,12 +1,17 @@
 # QuantaVerse API
 
 The simulation, grading and tutoring service behind the QuantaVerse site. FastAPI,
-one canonical circuit IR, and four adapters that all answer in the same shape.
+one canonical circuit IR, four adapters that all answer in the same shape, and a
+student record that remembers what a learner has finished.
 
 The site runs without this service — the sandbox has its own statevector
 simulator in the browser. Start the API when you want real Qiskit, Cirq or
-PennyLane behind the run button, a graded circuit task, or a tutor that reads the
-circuit you have on screen.
+PennyLane behind the run button, a graded circuit task, a tutor that reads the
+circuit you have on screen, or an account whose progress survives a page reload.
+
+Accounts are opt-in and local. The database is a SQLite file next to this README,
+nothing is sent anywhere, and every simulation, grading and tutor endpoint still
+answers without a token.
 
 ## Setup
 
@@ -53,6 +58,13 @@ file is a valid file.
 | `QUANTAVERSE_DEFAULT_SHOTS` | `1024` | Used when a request omits `shots`. |
 | `QUANTAVERSE_SANDBOX_TIMEOUT` | `5` | Seconds of user code before the child process is killed. |
 | `QUANTAVERSE_HOST` / `QUANTAVERSE_PORT` | `127.0.0.1` / `8000` | Only used by `python -m app.main`. |
+| `QUANTAVERSE_DATABASE_URL` | `sqlite:///backend/quantaverse.db` | Any SQLAlchemy URL. Point it at Postgres to share one record across machines. |
+| `QUANTAVERSE_DATABASE_ECHO` | `0` | Log every statement. Loud; useful once. |
+| `QUANTAVERSE_JWT_SECRET` | empty | **Set this.** Left empty, a random key is minted per boot and every token dies on restart. |
+| `QUANTAVERSE_ACCESS_TOKEN_MINUTES` | `30` | Access token lifetime. |
+| `QUANTAVERSE_REFRESH_TOKEN_DAYS` | `30` | Refresh token lifetime. |
+| `QUANTAVERSE_MAX_SESSIONS` | `10` | Live refresh tokens per student. The oldest is retired past the cap. |
+| `QUANTAVERSE_REGISTRATION_OPEN` | `1` | Set `0` to close `/api/auth/register` on a shared instance. |
 
 ## Endpoints
 
@@ -61,11 +73,36 @@ file is a valid file.
 | GET | `/api/health` | Version, per-framework install status and version, tutor mode. |
 | GET | `/api/backends` | Backend names, aliases and the supported gate set. |
 | POST | `/api/simulate` | Run a circuit IR on `qiskit`, `cirq`, `pennylane` or `qbraid`. |
-| POST | `/api/grade` | Compare a submission against a target circuit. |
+| POST | `/api/grade` | Compare a submission against a target circuit. Send `challenge_slug` with a token and the attempt is filed against the student's record. |
 | POST | `/api/introspect` | Execute a Qiskit snippet and return the circuit it built. |
 | POST | `/api/tutor/ask` | SSE stream of an answer about the learner's circuit. |
 | POST | `/api/tutor/explain` | The same analysis as one JSON response, no streaming. |
 | GET | `/api/tutor/status` | Whether a model key is present. |
+
+### Accounts
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Create a student. Returns the profile and a token pair. |
+| POST | `/api/auth/login` | Exchange email and password for a token pair. |
+| POST | `/api/auth/refresh` | Rotate a refresh token. The old one dies on use. |
+| POST | `/api/auth/logout` | Retire one session, or every session with `{"everywhere": true}`. |
+| GET | `/api/auth/me` | The signed-in student's profile. |
+| PATCH | `/api/auth/me` | Change display name or institution. |
+| POST | `/api/auth/password` | Change password. Signs out every other session and returns fresh tokens. |
+| GET | `/api/auth/sessions` | Live sessions, with the current one flagged. |
+
+### Progress
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/catalog` | The curriculum: modules, lessons, labs, badges, skill axes. No token needed. |
+| GET | `/api/progress` | Stats, mastery, per-module rows, skills, badges and what to do next. |
+| POST | `/api/progress/lessons` | Mark a lesson finished. Idempotent; repeat calls only add time. |
+| DELETE | `/api/progress/lessons/{module}/{index}` | Undo a lesson. |
+| GET | `/api/progress/exercises` | Every lab with attempts, best score and success rate. |
+| POST | `/api/progress/exercises` | File a lab attempt scored on the client. |
+| GET | `/api/dashboard` | Everything the dashboard draws, in one call. |
 
 ### The circuit IR
 
@@ -139,6 +176,38 @@ Frames are `data: {json}\n\n`, typed `meta`, `delta`, `done` or `error`. The
 client parses them off a plain `fetch` body rather than `EventSource`, which
 cannot POST.
 
+## Accounts and progress
+
+Five tables, all keyed to `users.id` and all cascading on delete:
+
+| Table | Holds |
+| --- | --- |
+| `users` | Email, derived handle, display name, bcrypt hash, institution, timestamps. |
+| `auth_sessions` | One row per live refresh token, stored as a SHA-256 digest. |
+| `lesson_completions` | One row per lesson a student finished, plus time spent. Unique on `(user, module, lesson)`. |
+| `exercise_attempts` | Every graded circuit submission: pass, score, fidelities, gate count, depth. |
+| `earned_badges` | One row per module badge, awarded once. |
+
+Passwords are bcrypt at 12 rounds and never leave the database. A login that
+names an unknown account still runs a hash so it takes the same time as a wrong
+password, and both answer with the same message.
+
+Access tokens are short-lived HS256 JWTs carried in `Authorization: Bearer`.
+Refresh tokens are opaque random strings; only their digest is stored, and each
+one dies the moment it is used. Presenting an already-spent refresh token is
+treated as theft: every session on that account is signed out. Changing a
+password does the same, then hands back a fresh pair.
+
+Progress is derived, not stored. `GET /api/progress` and `GET /api/dashboard`
+recompute stats, mastery, skill axes and the next step from the raw rows on every
+call, so there is no summary to fall out of sync. Badges are the one exception —
+finishing every lesson and lab in a module writes an `earned_badges` row, and
+that write is idempotent.
+
+Grading and progress are joined at `/api/grade`: send `challenge_slug` with a
+token and the attempt is recorded and any newly earned badge comes back on the
+response. Without a token the endpoint grades and returns exactly as before.
+
 ## The sandbox is not a security boundary
 
 `/api/introspect` runs learner code with `exec()`. The defences are real but they
@@ -180,6 +249,19 @@ app/
   api/routes/
     execute.py               /simulate /grade /introspect /backends
     tutor.py                 /tutor/ask /tutor/explain /tutor/status
+    auth.py                  /auth/register /login /refresh /logout /me
+    progress.py              /catalog /progress /dashboard
+  api/deps.py                bearer parsing, current_user, db session
+  core/clock.py              naive-UTC helpers used by every timestamp
+  core/curriculum.py         modules, lessons, labs, badges, mastery ladder
+  core/security.py           bcrypt, JWT mint and verify, refresh hashing
+  db/models.py               users, auth_sessions, lesson_completions,
+                             exercise_attempts, earned_badges
+  db/session.py              engine, session factory, create_all
+  models/auth.py             account request and response models
+  models/progress.py         progress and dashboard response models
+  services/accounts.py       registration, login, session rotation
+  services/progress.py       the snapshot the dashboard is built from
 ```
 
 MIT licensed, like the rest of the repository.
