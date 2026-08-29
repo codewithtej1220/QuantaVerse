@@ -52,7 +52,12 @@ export function ProfessorConsole({ focus }: { focus: BlochVector }) {
 
   const live = link === "live";
   const target = ghost ? vectorOf(ghost.theta, ghost.phi) : null;
-  const deviation = target ? (angleBetween(focus, target) * 180) / Math.PI : null;
+  /* A maximally mixed qubit has no direction, so there is no angle to a target
+     and reporting one is worse than reporting nothing — an entangled qubit
+     would read "180° off" when it is not pointing anywhere at all. */
+  const hasDirection = Math.hypot(focus.x, focus.y, focus.z) > 1e-3;
+  const deviation =
+    target && hasDirection ? (angleBetween(focus, target) * 180) / Math.PI : null;
   const onTarget = deviation !== null && deviation < 6;
 
   return (
@@ -135,11 +140,19 @@ export function ProfessorConsole({ focus }: { focus: BlochVector }) {
             {ghost ? (
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="font-mono text-[11.5px] text-frost tabular-nums">
-                  deviation{" "}
-                  <span className={onTarget ? "text-photon" : "text-paper"}>
-                    {deviation?.toFixed(1)}°
-                  </span>
-                  {onTarget && <span className="ml-2 text-photon">matched</span>}
+                  {deviation === null ? (
+                    <span className="text-frost">
+                      no direction to compare · qubit is mixed
+                    </span>
+                  ) : (
+                    <>
+                      deviation{" "}
+                      <span className={onTarget ? "text-photon" : "text-paper"}>
+                        {deviation.toFixed(1)}°
+                      </span>
+                      {onTarget && <span className="ml-2 text-photon">matched</span>}
+                    </>
+                  )}
                 </p>
                 <button
                   type="button"
