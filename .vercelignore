@@ -1,0 +1,3 @@
+# The Python service is deployed separately; shipping it to Vercel only slows
+# the build and cannot run there anyway.
+backend/
