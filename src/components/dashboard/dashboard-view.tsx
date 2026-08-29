@@ -97,8 +97,10 @@ function demoModel(banner: React.ReactNode): DashboardModel {
     badges: BADGES,
     log: COHERENCE_LOG,
     logStart: Date.UTC(2026, 5, 1),
+    intro:
+      "These are sample figures, for a learner who does not exist, so the page has something to show you. Sign in and every number here is replaced by one counted from your own work.",
     footnote:
-      "This is a sample record so the page has something to show. Sign in and the numbers become your own — lessons you finish and circuits you submit, stored on the API.",
+      "Nothing on this page is yours yet. Create an account and the lessons you finish and the circuits you submit are stored on the API and counted here.",
     banner,
   };
 }
@@ -174,27 +176,29 @@ function liveModel(data: DashboardResponse): DashboardModel {
     })),
     log: data.activity,
     logStart: activityStart(weeks),
+    intro:
+      "Everything here is derived from circuits that ran and checks that passed. Nothing counts a video watched or a page scrolled, because neither one teaches you to build a Bell pair.",
     footnote:
       "Every number above is counted on the server from lessons you marked complete and circuits the grader checked.",
   };
 }
 
 const SIGNED_OUT_BANNER = (
-  <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-photon/25 bg-photon/[0.06] px-5 py-4">
-    <p className="flex items-center gap-2.5 text-[13.5px] text-frost/85">
+  <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-photon bg-photon/[0.06] px-5 py-4">
+    <p className="flex items-center gap-2.5 text-[13.5px] text-frost">
       <Sparkles className="size-4 shrink-0 text-photon" />
       You are looking at a sample record. Sign in to track your own lessons, scores and badges.
     </p>
     <span className="flex items-center gap-2">
       <Link
         href="/login"
-        className="inline-flex h-9 items-center rounded-full px-4 text-[13px] text-frost/85 transition-colors hover:bg-white/8 hover:text-paper"
+        className="inline-flex h-9 items-center px-4 text-[13px] text-frost transition-colors hover:bg-strata hover:text-paper"
       >
         Sign in
       </Link>
       <Link
         href="/register"
-        className="inline-flex h-9 items-center rounded-full bg-photon px-4 text-[13px] font-medium text-[#03121b] transition-colors hover:bg-[#6ff0ff]"
+        className="inline-flex h-9 items-center bg-photon px-4 text-[13px] font-medium text-[#000000] transition-colors hover:bg-[#8af2ff]"
       >
         Create account
       </Link>
@@ -242,8 +246,8 @@ export function DashboardView() {
 
   if (!ready || (user && loading)) {
     return (
-      <div className="lattice grid min-h-screen place-items-center pt-24 pb-20">
-        <p className="flex items-center gap-3 font-mono text-[12px] tracking-[0.14em] text-frost/50 uppercase">
+      <div className="grid min-h-screen place-items-center pt-32 pb-24">
+        <p className="flex items-center gap-3 font-mono text-[12px] tracking-[0.14em] text-frost uppercase">
           <Loader2 className="size-4 animate-spin text-photon" />
           loading your record
         </p>
@@ -253,15 +257,15 @@ export function DashboardView() {
 
   if (user && error) {
     return (
-      <div className="lattice min-h-screen pt-24 pb-20">
+      <div className="min-h-screen pt-32 pb-24">
         <div className="mx-auto max-w-[720px] px-5">
-          <div className="glass rounded-2xl p-6">
+          <div className="panel rounded-2xl p-6">
             <p className="flex items-center gap-2.5 text-[15px] font-medium text-paper">
               <AlertTriangle className="size-4 text-collapse" />
               Your record could not be loaded
             </p>
-            <p className="mt-3 text-[13.5px] leading-relaxed text-frost/75">{error}</p>
-            <p className="mt-4 font-mono text-[11.5px] leading-relaxed text-frost/50">
+            <p className="mt-3 text-[13.5px] leading-relaxed text-frost">{error}</p>
+            <p className="mt-4 font-mono text-[11.5px] leading-relaxed text-frost">
               The API needs to be running for the dashboard to count anything. Start it with
               uvicorn and reload this page.
             </p>

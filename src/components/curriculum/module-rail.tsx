@@ -20,17 +20,17 @@ export function ModuleRail({ slug, fallbackProgress, fallbackBadge }: ModuleRail
   const earned = entry ? entry.badge_earned : fallbackProgress === 100;
 
   return (
-    <div className="glass rounded-2xl p-5">
+    <div className="panel rounded-2xl p-5">
       <AmplitudeBar value={percent} />
-      <p className="mt-4 flex items-center gap-2 border-t border-white/8 pt-4 text-[12.5px]">
-        <Award className={cn("size-4 shrink-0", earned ? "text-photon" : "text-frost/40")} />
-        <span className={earned ? "text-paper" : "text-frost/65"}>{badge}</span>
-        <span className="ml-auto font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
+      <p className="mt-4 flex items-center gap-2 border-t border-edge pt-4 text-[12.5px]">
+        <Award className={cn("size-4 shrink-0", earned ? "text-photon" : "text-frost")} />
+        <span className={earned ? "text-paper" : "text-frost"}>{badge}</span>
+        <span className="ml-auto font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
           {earned ? "earned" : "on completion"}
         </span>
       </p>
       {entry && (
-        <p className="mt-3 font-mono text-[10.5px] leading-relaxed text-frost/45">
+        <p className="mt-3 font-mono text-[11px] leading-relaxed text-frost">
           {entry.lessons_completed}/{entry.lessons} lessons
           {entry.challenge
             ? entry.challenge.passed

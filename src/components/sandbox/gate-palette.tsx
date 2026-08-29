@@ -23,7 +23,7 @@ export function GatePalette({
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <p className="eyebrow">Gate palette</p>
-        <p className="font-mono text-[10.5px] text-frost/50">
+        <p className="font-mono text-[11px] text-frost">
           {armed ? "click a slot to place" : "drag, or click to arm"}
         </p>
       </div>
@@ -50,20 +50,30 @@ export function GatePalette({
                   gate.name.toLowerCase().includes("gate") ? gate.name : `${gate.name} gate`
                 }
                 className={cn(
-                  "flex w-full cursor-grab flex-col items-center gap-1 rounded-lg border py-2.5",
-                  "transition-[transform,box-shadow,background-color] duration-150 active:cursor-grabbing",
+                  "flex w-full cursor-grab flex-col items-center gap-1 border py-3",
+                  "transition-colors duration-150 active:cursor-grabbing",
                   "focus-visible:outline-2 focus-visible:outline-offset-2",
                   tone.border,
                   tone.ring,
-                  isArmed
-                    ? cn(tone.bg, tone.glow, "-translate-y-0.5")
-                    : "bg-[#0a1020] hover:-translate-y-0.5 hover:bg-white/4",
+                  // Armed is a solid fill: the gate is now in your hand, and
+                  // there is no mistaking a filled swatch for an outlined one.
+                  isArmed ? tone.glow : "bg-nebula hover:bg-strata",
                 )}
               >
-                <span className={cn("font-mono text-base leading-none font-semibold", tone.text)}>
+                <span
+                  className={cn(
+                    "font-mono text-lg leading-none font-semibold",
+                    isArmed ? "text-void" : tone.text,
+                  )}
+                >
                   {gate.id === "cnot" ? "CX" : gate.symbol}
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.1em] text-frost/50 uppercase">
+                <span
+                  className={cn(
+                    "font-mono text-[11px] tracking-[0.1em] uppercase",
+                    isArmed ? "text-void" : "text-frost",
+                  )}
+                >
                   {gate.arity === 2 ? "2q" : "1q"}
                 </span>
               </button>
@@ -71,7 +81,7 @@ export function GatePalette({
               {/* Reference card: the matrix, because that is what the gate is. */}
               <div
                 className={cn(
-                  "glass pointer-events-none absolute top-full left-1/2 z-30 mt-2 w-56 -translate-x-1/2 rounded-lg p-3",
+                  "panel pointer-events-none absolute top-full left-1/2 z-30 mt-2 w-56 -translate-x-1/2 p-4",
                   "opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100",
                 )}
                 role="tooltip"
@@ -83,17 +93,17 @@ export function GatePalette({
                   </span>
                 </p>
                 <div className="mt-2.5 flex items-center gap-1.5">
-                  <span className="text-lg leading-none text-frost/40">[</span>
-                  <span className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[11px] text-frost/85">
+                  <span className="text-lg leading-none text-frost">[</span>
+                  <span className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[11px] text-frost">
                     {gate.matrix.flat().map((cell, i) => (
                       <span key={i} className="text-center tabular-nums">
                         {cell}
                       </span>
                     ))}
                   </span>
-                  <span className="text-lg leading-none text-frost/40">]</span>
+                  <span className="text-lg leading-none text-frost">]</span>
                 </div>
-                <p className="mt-2.5 text-[11.5px] leading-snug text-frost/65">{gate.blurb}</p>
+                <p className="mt-2.5 text-[11.5px] leading-snug text-frost">{gate.blurb}</p>
               </div>
             </div>
           );

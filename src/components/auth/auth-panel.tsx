@@ -10,12 +10,14 @@ import { ActionButton } from "@/components/site/action";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+/* A field is a well with a hairline. Focus moves the hairline to copper —
+   no ring, no halo, because the border already says which one is live. */
 const FIELD =
-  "h-11 w-full rounded-xl border border-white/12 bg-white/[0.03] px-3.5 text-[14px] " +
-  "text-paper placeholder:text-frost/35 outline-none transition-colors " +
-  "focus:border-photon/55 focus:bg-white/[0.05] focus:ring-2 focus:ring-photon/25";
+  "h-12 w-full border border-edge bg-strata px-4 text-[15px] " +
+  "text-paper placeholder:text-dim outline-none transition-colors " +
+  "focus:border-photon";
 
-const LABEL = "font-mono text-[10px] tracking-[0.16em] text-frost/50 uppercase";
+const LABEL = "font-mono text-[12px] tracking-[0.16em] text-frost uppercase";
 
 export function AuthPanel({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
@@ -55,19 +57,19 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
   };
 
   return (
-    <div className="lattice min-h-screen pt-24 pb-20">
+    <div className="min-h-screen pt-32 pb-24">
       <div className="mx-auto max-w-[520px] px-5">
         <p className="eyebrow">{registering ? "Register · /register" : "Sign in · /login"}</p>
-        <h1 className="mt-3 text-[clamp(1.9rem,4vw,2.5rem)] leading-[1.06] font-semibold tracking-[-0.025em]">
+        <h1 className="mt-3 display-2">
           {registering ? "Start a student record" : "Welcome back"}
         </h1>
-        <p className="mt-3 text-[14.5px] leading-relaxed text-frost/75">
+        <p className="mt-3 text-[14.5px] leading-relaxed text-frost">
           {registering
             ? "An account stores the lessons you finish and every graded circuit you submit, so the dashboard counts your work instead of a demo learner's."
             : "Sign in to pick up your streak, your badges and the module you left open."}
         </p>
 
-        <form onSubmit={submit} className="glass mt-8 space-y-4 rounded-2xl p-5 lg:p-6">
+        <form onSubmit={submit} className="panel mt-8 space-y-4 rounded-2xl p-5 lg:p-6">
           {registering && (
             <div className="space-y-1.5">
               <label htmlFor="display_name" className={LABEL}>
@@ -119,7 +121,7 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
               required
             />
             {registering && (
-              <p className="font-mono text-[10.5px] leading-relaxed text-frost/45">
+              <p className="font-mono text-[11px] leading-relaxed text-frost">
                 Ten characters or more, mixing at least two of: lower case, upper case, digits,
                 punctuation.
               </p>
@@ -129,7 +131,7 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
           {registering && (
             <div className="space-y-1.5">
               <label htmlFor="institution" className={LABEL}>
-                Institution <span className="text-frost/30">optional</span>
+                Institution <span className="text-frost">optional</span>
               </label>
               <input
                 id="institution"
@@ -145,7 +147,7 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
           {error && (
             <p
               role="alert"
-              className="rounded-xl border border-collapse/35 bg-collapse/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-collapse"
+              className="rounded-xl border border-edge-hi bg-strata px-3.5 py-2.5 text-[12.5px] leading-relaxed text-collapse"
             >
               {error}
             </p>
@@ -168,7 +170,7 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
                 : "Sign in"}
           </ActionButton>
 
-          <p className={cn("pt-1 text-center text-[12.5px] text-frost/60")}>
+          <p className={cn("pt-1 text-center text-[12.5px] text-frost")}>
             {registering ? "Already have an account? " : "No account yet? "}
             <Link
               href={registering ? "/login" : "/register"}
@@ -179,7 +181,7 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
           </p>
         </form>
 
-        <p className="mt-6 text-[12px] leading-relaxed text-frost/45">
+        <p className="mt-6 text-[12px] leading-relaxed text-frost">
           Your password is hashed with bcrypt and never leaves the server. The curriculum, the
           sandbox and the tutor all work without an account — signing in only adds the record.
         </p>

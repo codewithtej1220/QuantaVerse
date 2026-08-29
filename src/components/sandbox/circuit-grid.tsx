@@ -61,7 +61,7 @@ export function CircuitGrid({
           {steps.map((c) => (
             <span
               key={c}
-              className="flex-1 pb-2 text-center font-mono text-[9px] tracking-[0.1em] text-frost/30"
+              className="flex-1 pb-2 text-center font-mono text-[11px] tracking-[0.1em] text-frost"
             >
               {c + 1}
             </span>
@@ -71,8 +71,8 @@ export function CircuitGrid({
         {grid.map((row, w) => (
           <div key={w} className="flex items-center" style={{ height: ROW_H }}>
             <div className="w-[56px] shrink-0 pr-3 text-right">
-              <span className="block font-mono text-[11px] leading-tight text-frost/75">q{w}</span>
-              <span className="ket block text-[11px] leading-tight text-photon/55">|0⟩</span>
+              <span className="block font-mono text-[11px] leading-tight text-frost">q{w}</span>
+              <span className="ket block text-[11px] leading-tight text-photon">|0⟩</span>
             </div>
 
             {row.map((cell, c) => {
@@ -84,12 +84,12 @@ export function CircuitGrid({
               return (
                 <div key={c} className="relative flex h-full flex-1 items-center justify-center">
                   {/* The wire. */}
-                  <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-[#6f8bd8]/28" />
+                  <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-edge-hi" />
 
                   {/* CNOT connector, drawn from the control down to the target. */}
                   {cell?.role === "control" && (
                     <span
-                      className="absolute left-1/2 z-0 w-px -translate-x-1/2 bg-photon/70"
+                      className="absolute left-1/2 z-0 w-px -translate-x-1/2 bg-photon"
                       style={
                         cell.placement.wires[1] > cell.placement.wires[0]
                           ? {
@@ -107,7 +107,7 @@ export function CircuitGrid({
                   {/* Measurement dropline into the classical register. */}
                   {gate?.id === "m" && (
                     <span
-                      className="absolute left-1/2 z-0 w-px -translate-x-1/2 bg-collapse/45"
+                      className="absolute left-1/2 z-0 w-px -translate-x-1/2 bg-collapse"
                       style={{ top: "50%", height: (qubits - w - 0.5) * ROW_H + 14 }}
                     />
                   )}
@@ -131,13 +131,13 @@ export function CircuitGrid({
                       onClick={() => armed && onPlace(armed, w, c)}
                       aria-label={`Empty slot, qubit ${w}, step ${c + 1}`}
                       className={cn(
-                        "relative z-10 size-9 rounded-[7px] border transition-colors duration-150",
+                        "relative z-10 size-9 border transition-colors duration-150",
                         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                         hovered
-                          ? "border-photon/80 bg-photon/15 shadow-[0_0_20px_-4px_rgba(56,232,255,0.9)]"
+                          ? "border-photon bg-photon/10"
                           : armed
-                            ? "border-dashed border-white/18 bg-white/2 hover:border-photon/60 hover:bg-photon/8"
-                            : "border-transparent hover:border-white/12 hover:bg-white/4",
+                            ? "border-dashed border-edge bg-strata hover:border-photon hover:bg-photon/10"
+                            : "border-transparent hover:border-edge-hi hover:bg-strata",
                       )}
                     />
                   )}
@@ -148,13 +148,12 @@ export function CircuitGrid({
                       onClick={() => onRemove(cell.placement.id)}
                       aria-label={`Remove ${gate.name} on qubit ${w}, step ${c + 1}`}
                       className={cn(
-                        "relative z-10 grid size-9 place-items-center rounded-[7px] border bg-[#0a1020]",
-                        "font-mono text-sm font-semibold transition-transform duration-150",
-                        "hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2",
+                        "relative z-10 grid size-9 place-items-center border bg-nebula",
+                        "font-mono text-base font-semibold transition-colors duration-150",
+                        "hover:bg-strata focus-visible:outline-2 focus-visible:outline-offset-2",
                         tone.border,
                         tone.text,
                         tone.ring,
-                        tone.glow,
                       )}
                     >
                       {gate.symbol}
@@ -166,9 +165,9 @@ export function CircuitGrid({
                       type="button"
                       onClick={() => onRemove(cell.placement.id)}
                       aria-label={`Remove CNOT control on qubit ${w}, step ${c + 1}`}
-                      className="relative z-10 grid size-9 place-items-center rounded-[7px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                      className="relative z-10 grid size-9 place-items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
                     >
-                      <span className="size-3 rounded-full bg-photon shadow-[0_0_14px_3px_rgba(56,232,255,0.6)]" />
+                      <span className="size-3 rounded-full bg-photon" />
                     </button>
                   )}
 
@@ -179,7 +178,7 @@ export function CircuitGrid({
                       aria-label={`Remove CNOT target on qubit ${w}, step ${c + 1}`}
                       className="relative z-10 grid size-9 place-items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
                     >
-                      <span className="relative grid size-7 place-items-center rounded-full border border-photon/75 bg-[#0a1020]">
+                      <span className="relative grid size-7 place-items-center rounded-full border border-photon bg-nebula">
                         <span className="absolute h-4 w-px bg-photon" />
                         <span className="absolute h-px w-4 bg-photon" />
                       </span>
@@ -194,14 +193,14 @@ export function CircuitGrid({
         {/* Classical register: measurement has to land somewhere. */}
         <div className="flex items-start" style={{ height: 34 }}>
           <div className="w-[56px] shrink-0 pt-2 pr-3 text-right">
-            <span className="font-mono text-[11px] text-collapse/75">c{qubits}</span>
+            <span className="font-mono text-[11px] text-collapse">c{qubits}</span>
           </div>
           {steps.map((c) => (
             <div key={c} className="relative h-full flex-1">
-              <span className="absolute inset-x-0 top-3 h-px bg-collapse/30" />
-              <span className="absolute inset-x-0 top-[14px] h-px bg-collapse/30" />
+              <span className="absolute inset-x-0 top-3 h-px bg-edge-hi" />
+              <span className="absolute inset-x-0 top-[14px] h-px bg-edge-hi" />
               {measuredColumns.includes(c) && (
-                <span className="absolute top-[7px] left-1/2 h-[14px] w-px -translate-x-1/2 bg-collapse/70" />
+                <span className="absolute top-[7px] left-1/2 h-[14px] w-px -translate-x-1/2 bg-collapse" />
               )}
             </div>
           ))}

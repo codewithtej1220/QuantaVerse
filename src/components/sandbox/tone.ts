@@ -3,8 +3,16 @@ import type { GateTone } from "@/lib/data";
 /**
  * Gate colouring, kept in one place because the same three tones appear in the
  * palette, the circuit grid, the histogram and the tutor's diffs.
- *   photon (cyan) — basis-changing, phase (violet) — phase-only,
- *   collapse (magenta) — irreversible.
+ *
+ * The site has one accent, so the three classes of gate are told apart by
+ * material rather than by hue:
+ *   photon   (copper) — basis-changing. The gates that move amplitude.
+ *   phase    (white)  — phase-only. Invisible until you interfere.
+ *   collapse (steel)  — irreversible. Measurement makes a classical bit, and
+ *                       classical things are drawn in steel everywhere here.
+ *
+ * `glow` is now the armed state: a solid fill, not a halo. The name is kept so
+ * the three call sites keep working.
  */
 export const TONE: Record<
   GateTone,
@@ -12,24 +20,24 @@ export const TONE: Record<
 > = {
   photon: {
     text: "text-photon",
-    border: "border-photon/55",
-    bg: "bg-photon/8",
+    border: "border-photon",
+    bg: "bg-photon/12",
     ring: "outline-photon",
-    glow: "shadow-[0_0_20px_-6px_rgba(56,232,255,0.85)]",
+    glow: "bg-photon text-void",
   },
   phase: {
-    text: "text-phase",
-    border: "border-phase/55",
-    bg: "bg-phase/10",
-    ring: "outline-phase",
-    glow: "shadow-[0_0_20px_-6px_rgba(177,78,255,0.85)]",
+    text: "text-paper",
+    border: "border-paper",
+    bg: "bg-strata",
+    ring: "outline-paper",
+    glow: "bg-paper text-void",
   },
   collapse: {
     text: "text-collapse",
-    border: "border-collapse/55",
-    bg: "bg-collapse/10",
+    border: "border-edge-hi",
+    bg: "bg-strata",
     ring: "outline-collapse",
-    glow: "shadow-[0_0_20px_-6px_rgba(255,77,157,0.85)]",
+    glow: "bg-collapse text-void",
   },
 };
 

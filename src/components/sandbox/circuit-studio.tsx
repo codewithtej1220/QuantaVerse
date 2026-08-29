@@ -337,13 +337,13 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       )}
 
       {/* Toolbar. */}
-      <div className="glass flex flex-wrap items-center gap-x-2 gap-y-3 rounded-2xl px-3 py-3">
+      <div className="panel flex flex-wrap items-center gap-x-2 gap-y-3 rounded-2xl px-3 py-3">
         {challenge ? (
           // Four of the five presets are the answer to a graded build, so a lab
           // page says where they went rather than quietly dropping the row.
-          <p className="px-1 text-[12.5px] text-frost/55">
+          <p className="px-1 text-[12.5px] text-frost">
             <span className="eyebrow">Build it yourself</span>
-            <span className="mx-2 text-frost/25">·</span>
+            <span className="mx-2 text-frost">·</span>
             presets are hidden on a graded page — most of them are an answer
           </p>
         ) : (
@@ -369,8 +369,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
                     "rounded-lg border px-2.5 py-1.5 text-[12px] transition-colors",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                     preset?.id === p.id
-                      ? "border-photon/55 bg-photon/12 text-photon"
-                      : "border-white/10 text-frost/70 hover:border-white/20 hover:bg-white/5 hover:text-paper",
+                      ? "border-photon bg-photon/10 text-photon"
+                      : "border-edge text-frost hover:border-edge-hi hover:bg-strata hover:text-paper",
                   )}
                 >
                   {p.name}
@@ -394,11 +394,11 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
           />
 
           <div
-            className="flex items-center gap-1 rounded-lg border border-white/10 p-1"
+            className="flex items-center gap-1 rounded-lg border border-edge p-1"
             role="group"
             aria-label="Register width"
           >
-            <span className="px-1.5 font-mono text-[10px] tracking-[0.12em] text-frost/45 uppercase">
+            <span className="px-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
               qubits
             </span>
             {QUBIT_OPTIONS.map((n) => (
@@ -410,8 +410,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
                 className={cn(
                   "rounded-md px-2 py-1 font-mono text-[12px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                   qubits === n
-                    ? "bg-phase/18 text-phase"
-                    : "text-frost/55 hover:bg-white/6 hover:text-paper",
+                    ? "bg-paper text-void"
+                    : "text-frost hover:bg-strata hover:text-paper",
                 )}
               >
                 {n}
@@ -422,7 +422,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
           <button
             type="button"
             onClick={clear}
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-2 font-mono text-[10.5px] tracking-[0.1em] text-frost/65 uppercase transition-colors hover:border-collapse/45 hover:text-collapse focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collapse"
+            className="flex items-center gap-1.5 border border-edge px-3 py-2.5 font-mono text-[12px] tracking-[0.1em] text-frost uppercase transition-colors hover:border-paper hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collapse"
           >
             <Trash2 className="size-3.5" />
             clear
@@ -433,10 +433,12 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             onClick={run}
             disabled={running}
             className={cn(
-              "glow-photon flex items-center gap-2 rounded-lg border border-photon/50 bg-photon/12 px-3.5 py-2",
-              "font-mono text-[11px] tracking-[0.12em] text-photon uppercase transition-[background-color,transform]",
-              "hover:bg-photon/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
-              "disabled:cursor-not-allowed disabled:opacity-60",
+              // The one thing this page exists to do, so it is the one solid
+              // copper control on it.
+              "flex items-center gap-2 bg-photon px-4 py-2.5",
+              "font-mono text-[12px] font-semibold tracking-[0.12em] text-void uppercase transition-colors",
+              "hover:bg-photon-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
+              "disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
             {running ? (
@@ -454,7 +456,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
         {/* What produced the last histogram, or why the fallback took over. */}
         {runNote && (
-          <p className="w-full border-t border-white/8 px-1 pt-2.5 font-mono text-[10.5px] leading-relaxed text-frost/55">
+          <p className="w-full border-t border-edge px-1 pt-2.5 font-mono text-[11px] leading-relaxed text-frost">
             {runNote}
           </p>
         )}
@@ -462,10 +464,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
       {/* Two panes: build on the left, code on the right. */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="glass flex min-w-0 flex-col gap-5 rounded-2xl p-4 lg:p-5">
+        <div className="panel flex min-w-0 flex-col gap-5 rounded-2xl p-4 lg:p-5">
           <GatePalette armed={armed} onArm={setArmed} />
 
-          <div className="rounded-xl border border-white/8 bg-[#060a16]/70 p-3 pt-2">
+          <div className="rounded-xl border border-edge bg-void p-3 pt-2">
             <CircuitGrid
               qubits={qubits}
               columns={COLUMNS}
@@ -476,7 +478,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             />
           </div>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-white/8 pt-4 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-edge pt-4 sm:grid-cols-4">
             {(
               [
                 ["Depth", String(result.depth)],
@@ -486,7 +488,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               ] as const
             ).map(([label, value]) => (
               <div key={label}>
-                <dt className="font-mono text-[9.5px] tracking-[0.16em] text-frost/40 uppercase">
+                <dt className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
                   {label}
                 </dt>
                 <dd className="mt-0.5 font-mono text-[13px] text-paper tabular-nums">{value}</dd>
@@ -494,7 +496,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             ))}
           </dl>
 
-          <p className="text-[12.5px] leading-relaxed text-frost/65">
+          <p className="text-[12.5px] leading-relaxed text-frost">
             {preset ? (
               <>
                 <span className="text-paper">{preset.name}: </span>

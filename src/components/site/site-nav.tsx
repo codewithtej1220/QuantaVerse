@@ -3,17 +3,29 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GitFork, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { AccountMenu } from "@/components/site/account-menu";
 import { ActionLink } from "@/components/site/action";
-import { QuantaMark } from "@/components/site/quantum-wire";
-import { REPO_URL } from "@/lib/site";
+import { QuantaMark, Wordmark } from "@/components/site/mark";
 import { cn } from "@/lib/utils";
+
+/**
+ * The header.
+ *
+ * Four things: where you are, where you can go, who you are, and the one action
+ * worth putting in a header. The status pill, the pulsing "live" dot and the
+ * repository shortcut that used to sit here have gone to the footer or gone
+ * entirely — a header is navigation, and everything else in it is weight.
+ *
+ * The active route is marked with a solid copper rule under the label. It is
+ * the only copper in the bar, so it is unmissable without being loud.
+ */
 
 const LINKS = [
   { href: "/curriculum", label: "Curriculum" },
   { href: "/sandbox", label: "Sandbox" },
+  { href: "/lab", label: "Lab" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
@@ -40,62 +52,39 @@ export function SiteNav() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
-        scrolled
-          ? "border-b border-white/8 bg-void/72 backdrop-blur-xl"
-          : "border-b border-transparent",
+        "fixed inset-x-0 top-0 z-50 transition-colors duration-200",
+        scrolled || open ? "border-b border-edge bg-void" : "border-b border-transparent",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-5 lg:px-10">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 rounded-full outline-offset-4 focus-visible:outline-2 focus-visible:outline-photon"
-        >
+      <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-8 px-5 lg:px-10">
+        <Link href="/" className="flex items-center gap-2.5" aria-label="QuantaVerse home">
           <QuantaMark />
-          <span className="text-[15px] font-semibold tracking-[-0.01em]">
-            Quanta<span className="text-photon">Verse</span>
-          </span>
+          <Wordmark />
         </Link>
 
-        <nav className="ml-2 hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {LINKS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative rounded-full px-3.5 py-2 text-sm transition-colors",
-                  active ? "text-paper" : "text-frost/75 hover:text-paper",
+                  "relative px-3.5 py-2 font-mono text-[12px] tracking-[0.14em] uppercase transition-colors",
+                  active ? "text-paper" : "text-frost hover:text-paper",
                 )}
               >
                 {link.label}
-                {active && (
-                  <span className="absolute inset-x-3.5 -bottom-0.5 h-px bg-photon shadow-[0_0_10px_1px_rgba(56,232,255,0.9)]" />
-                )}
+                {active && <span className="absolute inset-x-3.5 -bottom-px h-0.5 bg-photon" />}
               </Link>
             );
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2.5">
-          <span className="hidden items-center gap-2 rounded-full border border-photon/25 bg-photon/8 px-3 py-1.5 lg:inline-flex">
-            <span className="size-1.5 animate-breathe rounded-full bg-photon" />
-            <span className="font-mono text-[10px] tracking-[0.2em] text-photon/90 uppercase">
-              Free · MIT · Open source
-            </span>
-          </span>
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Source on GitHub"
-            className="hidden size-9 items-center justify-center rounded-full text-frost/80 transition-colors hover:bg-white/6 hover:text-paper sm:flex"
-          >
-            <GitFork className="size-4" />
-          </a>
+        <div className="ml-auto flex items-center gap-3">
           <AccountMenu className="hidden sm:inline-flex" />
-          <ActionLink href="/sandbox" size="md" className="hidden lg:inline-flex">
+          <ActionLink href="/sandbox" className="hidden lg:inline-flex">
             Open sandbox
           </ActionLink>
           <button
@@ -103,7 +92,7 @@ export function SiteNav() {
             onClick={() => setOpen((value) => !value)}
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
-            className="flex size-9 items-center justify-center rounded-full text-frost transition-colors hover:bg-white/6 hover:text-paper md:hidden"
+            className="flex size-10 items-center justify-center text-paper md:hidden"
           >
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -111,21 +100,24 @@ export function SiteNav() {
       </div>
 
       {open && (
-        <div className="border-t border-white/8 bg-void/95 px-5 pb-5 backdrop-blur-xl md:hidden">
-          <nav className="flex flex-col py-2">
+        <div className="border-t border-edge bg-void px-5 pb-6 md:hidden">
+          <nav className="flex flex-col">
             {LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="border-b border-white/6 py-3.5 text-sm text-frost last:border-0 hover:text-paper"
+                className="border-b border-edge py-4 font-mono text-[13px] tracking-[0.14em] text-paper uppercase"
               >
                 {link.label}
               </Link>
             ))}
           </nav>
-          <ActionLink href="/sandbox" className="w-full">
-            Open sandbox
-          </ActionLink>
+          <div className="mt-5 flex flex-col gap-3">
+            <AccountMenu className="sm:hidden" />
+            <ActionLink href="/sandbox" className="w-full">
+              Open sandbox
+            </ActionLink>
+          </div>
         </div>
       )}
     </header>

@@ -23,7 +23,7 @@ export default function MonacoInner({
       theme="quantaverse"
       onChange={(next) => onChange(next ?? "")}
       loading={
-        <pre className="w-full overflow-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed text-frost/70">
+        <pre className="w-full overflow-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed text-frost">
           {value}
         </pre>
       }
@@ -31,28 +31,33 @@ export default function MonacoInner({
         monaco.editor.defineTheme("quantaverse", {
           base: "vs-dark",
           inherit: true,
+          /* Four values, not seven colours. Copper marks the language's own
+             words, white is what the author named, silver is a literal and
+             steel is anything the interpreter ignores. A learner reading
+             Qiskit for the first time gets structure out of the colour
+             instead of a fruit salad. */
           rules: [
-            { token: "comment", foreground: "5a6b96", fontStyle: "italic" },
-            { token: "keyword", foreground: "b14eff" },
-            { token: "keyword.flow", foreground: "b14eff" },
-            { token: "string", foreground: "38e8ff" },
-            { token: "number", foreground: "ff4d9d" },
-            { token: "identifier", foreground: "eaf1ff" },
-            { token: "type", foreground: "6ee7ff" },
-            { token: "delimiter", foreground: "8fa2cf" },
+            { token: "comment", foreground: "7a7a75", fontStyle: "italic" },
+            { token: "keyword", foreground: "2fe4ff" },
+            { token: "keyword.flow", foreground: "2fe4ff" },
+            { token: "string", foreground: "a8a8a3" },
+            { token: "number", foreground: "a8a8a3" },
+            { token: "identifier", foreground: "f2f2ef" },
+            { token: "type", foreground: "f2f2ef" },
+            { token: "delimiter", foreground: "8e8e89" },
           ],
           colors: {
-            "editor.background": "#05080f",
-            "editor.foreground": "#eaf1ff",
-            "editorLineNumber.foreground": "#2c3968",
-            "editorLineNumber.activeForeground": "#38e8ff",
-            "editor.lineHighlightBackground": "#0a1020",
-            "editor.selectionBackground": "#1b2555",
-            "editorCursor.foreground": "#38e8ff",
-            "editorIndentGuide.background1": "#141d3d",
-            "editorWidget.background": "#0a0f22",
-            "scrollbarSlider.background": "#1b255588",
-            "scrollbarSlider.hoverBackground": "#2a3a70aa",
+            "editor.background": "#000000",
+            "editor.foreground": "#f2f2ef",
+            "editorLineNumber.foreground": "#262626",
+            "editorLineNumber.activeForeground": "#2fe4ff",
+            "editor.lineHighlightBackground": "#0b0b0b",
+            "editor.selectionBackground": "#262626",
+            "editorCursor.foreground": "#2fe4ff",
+            "editorIndentGuide.background1": "#151515",
+            "editorWidget.background": "#0b0b0b",
+            "scrollbarSlider.background": "#26262688",
+            "scrollbarSlider.hoverBackground": "#3d3d3daa",
           },
         });
       }}

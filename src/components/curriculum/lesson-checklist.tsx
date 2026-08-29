@@ -64,12 +64,12 @@ export function LessonChecklist({
     <section className="mt-8">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="eyebrow">Outline</h2>
-        <p className="font-mono text-[10.5px] tracking-[0.14em] text-frost/45 uppercase">
+        <p className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
           {live ? `${doneCount}/${lessons} marked complete` : "sign in to track"}
         </p>
       </div>
 
-      <ol className="mt-4 overflow-hidden rounded-2xl border border-white/8">
+      <ol className="mt-4 overflow-hidden rounded-2xl border border-edge">
         {rows.map(({ index, label }) => {
           const complete = live ? completed!.includes(index) : index < fallbackDone;
           const current = !complete && (live ? doneCount === index : index === fallbackDone);
@@ -77,7 +77,7 @@ export function LessonChecklist({
 
           const body = (
             <>
-              <span className="w-6 shrink-0 font-mono text-[11px] text-frost/40 tabular-nums">
+              <span className="w-6 shrink-0 font-mono text-[11px] text-frost tabular-nums">
                 {String(index + 1).padStart(2, "0")}
               </span>
               {busy ? (
@@ -88,19 +88,19 @@ export function LessonChecklist({
                 <Circle
                   className={cn(
                     "size-3.5 shrink-0",
-                    current ? "text-phase" : "text-frost/30",
+                    current ? "text-paper" : "text-frost",
                   )}
                 />
               )}
               <span
                 className={cn(
                   "flex-1 text-left text-[14px]",
-                  complete ? "text-frost/70" : current ? "text-paper" : "text-frost/75",
+                  complete ? "text-frost" : current ? "text-paper" : "text-frost",
                 )}
               >
                 {label}
               </span>
-              <span className="shrink-0 font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
+              <span className="shrink-0 font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
                 {complete ? "done" : current ? "in progress" : "queued"}
               </span>
             </>
@@ -110,8 +110,8 @@ export function LessonChecklist({
             <li
               key={index}
               className={cn(
-                "border-b border-white/6 last:border-0",
-                current ? "bg-phase/8" : "bg-white/2",
+                "border-b border-edge last:border-0",
+                current ? "bg-strata" : "bg-strata",
               )}
             >
               {live ? (
@@ -120,7 +120,7 @@ export function LessonChecklist({
                   onClick={() => toggle(index)}
                   disabled={busy}
                   aria-pressed={complete}
-                  className="flex w-full items-center gap-4 px-4 py-3.5 transition-colors hover:bg-photon/8 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon disabled:opacity-60"
+                  className="flex w-full items-center gap-4 px-4 py-3.5 transition-colors hover:bg-photon/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon disabled:opacity-60"
                 >
                   {body}
                 </button>
@@ -132,34 +132,34 @@ export function LessonChecklist({
         })}
 
         {lab ? (
-          <li className="bg-photon/6">
+          <li className="bg-photon/10">
             <Link
               href={lab.href}
-              className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-photon/12 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
+              className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-photon/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
             >
-              <span className="w-6 shrink-0 font-mono text-[11px] text-frost/40 tabular-nums">
+              <span className="w-6 shrink-0 font-mono text-[11px] text-frost tabular-nums">
                 {String(lessons + 1).padStart(2, "0")}
               </span>
               <Play className="size-3.5 shrink-0 text-photon" />
               <span className="min-w-0 flex-1 text-[14px] text-paper">
                 Circuit lab — {lab.title}
               </span>
-              <span className="flex shrink-0 items-center gap-1.5 font-mono text-[9.5px] tracking-[0.14em] text-photon/70 uppercase">
+              <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-photon uppercase">
                 open
                 <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </Link>
           </li>
         ) : (
-          <li className="flex items-center gap-4 bg-white/2 px-4 py-3.5">
-            <span className="w-6 shrink-0 font-mono text-[11px] text-frost/40 tabular-nums">
+          <li className="flex items-center gap-4 bg-strata px-4 py-3.5">
+            <span className="w-6 shrink-0 font-mono text-[11px] text-frost tabular-nums">
               {String(lessons + 1).padStart(2, "0")}
             </span>
-            <Play className="size-3.5 shrink-0 text-frost/35" />
-            <span className="min-w-0 flex-1 text-[14px] text-frost/70">
+            <Play className="size-3.5 shrink-0 text-frost" />
+            <span className="min-w-0 flex-1 text-[14px] text-frost">
               Circuit lab — {labPending}
             </span>
-            <span className="shrink-0 font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
+            <span className="shrink-0 font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
               not yet
             </span>
           </li>
@@ -172,7 +172,7 @@ export function LessonChecklist({
         </p>
       )}
 
-      <p className="mt-3 text-[12px] leading-relaxed text-frost/50">
+      <p className="mt-3 text-[12px] leading-relaxed text-frost">
         {live ? (
           "Tick a lesson to record it. The dashboard counts it straight away, and finishing every lesson plus the circuit lab earns the module badge."
         ) : (

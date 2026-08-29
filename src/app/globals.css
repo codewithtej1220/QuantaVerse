@@ -5,28 +5,52 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   QuantaVerse design tokens
-   Colour carries meaning, not decoration:
-     photon   (cyan)    -> |0> amplitude
-     phase    (violet)  -> |1> amplitude
-     collapse (magenta) -> measured / collapsed state
+   QuantaVerse — instrument palette
+
+   An anodised black chassis, machined steel, and one piercing
+   laser cyan — 488nm, the argon-ion line, the colour of the light
+   these machines are actually built around and the colour every
+   trapped-ion and photonic lab photograph comes back full of.
+
+   Exactly one accent. Everything else is black, white or steel.
+   Flat and solid in the interface; the only place light is allowed
+   to bloom is the particle field, where the particles *are* light
+   and glowing is the honest thing for them to do.
+
+     photon   (cyan)  -> |0> amplitude, live/active, the accent
+     phase    (white) -> |1> amplitude, highest emphasis
+     collapse (steel) -> measured, classical, inert
+
+   Token names are unchanged from the first build so that every
+   component keeps compiling; only what they point at has moved.
    ============================================================ */
 @theme inline {
-  /* --- quantum palette --- */
-  --color-void: #05060e;
-  --color-nebula: #0a0f22;
-  --color-strata: #131c3d;
-  --color-photon: #38e8ff;
-  --color-phase: #b14eff;
-  --color-collapse: #ff4d9d;
-  --color-frost: #afc0e8;
-  --color-paper: #eaf1ff;
+  /* --- chassis --- */
+  --color-void: #000000; /* the page */
+  --color-nebula: #0b0b0b; /* a panel raised off the page */
+  --color-strata: #151515; /* a well sunk into a panel */
+  --color-edge: #262626; /* hairline */
+  --color-edge-hi: #3d3d3d; /* hairline, hovered or focused */
+
+  /* --- ink --- */
+  --color-paper: #f2f2ef; /* body text */
+  --color-frost: #a8a8a3; /* secondary text — 8.8:1 on black */
+  --color-dim: #7a7a75; /* tertiary text — 4.9:1, still AA */
+
+  /* --- meaning --- */
+  --color-photon: #2fe4ff; /* laser cyan — 13.7:1 on black */
+  --color-photon-hi: #8af2ff; /* cyan, hovered */
+  --color-photon-deep: #0b6b82; /* cyan, sunk */
+  --color-phase: #ffffff;
+  --color-collapse: #8e8e89;
 
   /* --- type roles --- */
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), var(--font-plex-sans), ui-sans-serif, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-math: var(--font-crimson), ui-serif, Georgia, serif;
+  /* Notation is set in the mono face: kets, gates and code all come
+     from the same machine, so they should look like it. */
+  --font-math: var(--font-plex-mono), ui-monospace, monospace;
 
   /* --- shadcn surface mappings --- */
   --color-background: var(--background);
@@ -61,60 +85,36 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Machined, not rounded. Every rounded-* utility in the codebase
+     derives from --radius, so one number sharpens the whole site. */
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 3px;
+  --radius-3xl: 3px;
+  --radius-4xl: 4px;
 
-  /* --- motion --- */
-  --animate-drift: drift 26s linear infinite;
-  --animate-breathe: breathe 5s ease-in-out infinite;
-  --animate-scan: scan 4.5s linear infinite;
-  --animate-rise: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* --- motion ---
+     Two animations, both of which carry information. Anything that
+     only pulsed or scanned for atmosphere has been deleted. */
+  --animate-rise: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-wire: wire-run 4.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
 
-  @keyframes drift {
-    from {
-      transform: translate3d(0, 0, 0);
-    }
-    to {
-      transform: translate3d(-60px, -60px, 0);
-    }
-  }
-  @keyframes breathe {
-    0%,
-    100% {
-      opacity: 0.35;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.85;
-      transform: scale(1.08);
-    }
-  }
-  @keyframes scan {
-    0% {
-      transform: translateY(-110%);
-    }
-    100% {
-      transform: translateY(560%);
-    }
-  }
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(18px);
+      transform: translateY(14px);
     }
     to {
       opacity: 1;
       transform: none;
     }
   }
-  /* An amplitude travelling left-to-right along a circuit wire. Distances are
-     SVG user units, so this only makes sense on the workflow diagram. */
+  /* An amplitude travelling left-to-right along a circuit wire.
+     Distances are SVG user units, so this only makes sense on the
+     workflow diagram. */
   @keyframes wire-run {
     0% {
       transform: translateX(0);
@@ -131,42 +131,52 @@
       opacity: 0;
     }
   }
+  /* Opacity only: a live indicator, not a glowing orb. */
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.28;
+    }
+  }
 }
 
-/* shadcn variables repointed at the quantum palette ---------- */
+/* shadcn variables repointed at the instrument palette ---------- */
 :root {
-  --radius: 0.5rem;
-  --background: #05060e;
-  --foreground: #eaf1ff;
-  --card: #0a0f22;
-  --card-foreground: #eaf1ff;
-  --popover: #0a0f22;
-  --popover-foreground: #eaf1ff;
-  --primary: #38e8ff;
-  --primary-foreground: #03121b;
-  --secondary: #16204a;
-  --secondary-foreground: #eaf1ff;
-  --muted: #131c3d;
-  --muted-foreground: #8fa2cf;
-  --accent: #1b2555;
-  --accent-foreground: #eaf1ff;
-  --destructive: #ff4d9d;
-  --border: color-mix(in oklab, #6f8bd8 22%, transparent);
-  --input: color-mix(in oklab, #6f8bd8 26%, transparent);
-  --ring: #38e8ff;
-  --chart-1: #38e8ff;
-  --chart-2: #b14eff;
-  --chart-3: #ff4d9d;
-  --chart-4: #6ee7ff;
-  --chart-5: #7c6bff;
-  --sidebar: #0a0f22;
-  --sidebar-foreground: #eaf1ff;
-  --sidebar-primary: #38e8ff;
-  --sidebar-primary-foreground: #03121b;
-  --sidebar-accent: #16204a;
-  --sidebar-accent-foreground: #eaf1ff;
-  --sidebar-border: color-mix(in oklab, #6f8bd8 22%, transparent);
-  --sidebar-ring: #38e8ff;
+  --radius: 2px;
+  --background: #000000;
+  --foreground: #f2f2ef;
+  --card: #0b0b0b;
+  --card-foreground: #f2f2ef;
+  --popover: #0b0b0b;
+  --popover-foreground: #f2f2ef;
+  --primary: #2fe4ff;
+  --primary-foreground: #000000;
+  --secondary: #151515;
+  --secondary-foreground: #f2f2ef;
+  --muted: #151515;
+  --muted-foreground: #a8a8a3;
+  --accent: #151515;
+  --accent-foreground: #f2f2ef;
+  --destructive: #2fe4ff;
+  --border: #262626;
+  --input: #2f2f2f;
+  --ring: #2fe4ff;
+  --chart-1: #2fe4ff;
+  --chart-2: #f2f2ef;
+  --chart-3: #8e8e89;
+  --chart-4: #0b6b82;
+  --chart-5: #5a5a56;
+  --sidebar: #0b0b0b;
+  --sidebar-foreground: #f2f2ef;
+  --sidebar-primary: #2fe4ff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #151515;
+  --sidebar-accent-foreground: #f2f2ef;
+  --sidebar-border: #262626;
+  --sidebar-ring: #2fe4ff;
 }
 
 .dark {
@@ -175,39 +185,56 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
 
   html {
     @apply font-sans;
     scroll-behavior: smooth;
+    /* Never let a 3D canvas or an oversized headline scroll the page
+       sideways on a phone. */
+    overflow-x: clip;
   }
 
   body {
     @apply bg-void text-paper antialiased;
-    /* Deep-space field: two nebula pools over a near-black base. */
-    background-image:
-      radial-gradient(
-        ellipse 90% 55% at 12% -8%,
-        color-mix(in oklab, var(--color-photon) 16%, transparent),
-        transparent 68%
-      ),
-      radial-gradient(
-        ellipse 70% 60% at 92% 4%,
-        color-mix(in oklab, var(--color-phase) 18%, transparent),
-        transparent 66%
-      ),
-      radial-gradient(
-        ellipse 120% 70% at 50% 108%,
-        color-mix(in oklab, #2a1d6b 40%, transparent),
-        transparent 70%
-      );
-    background-attachment: fixed;
+    font-size: 1rem;
+    line-height: 1.6;
+    /* Flat. The background is a colour, not an effect. */
+    background-color: #000000;
+  }
+
+  /* ---- typographic hierarchy -----------------------------------
+     Headings are set in Archivo: a grotesque with enough weight at
+     800 to carry a full-bleed line, tightened optically because
+     display sizes need less letter-space than text sizes do.
+     Body copy stays in Plex Sans, which was drawn to be read. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--color-photon) 34%, transparent);
-    color: #fff;
+    background: var(--color-photon);
+    color: #000;
   }
 
   ::-webkit-scrollbar {
@@ -215,21 +242,27 @@
     height: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: #070b18;
+    background: #000;
   }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in oklab, var(--color-phase) 45%, #1b2555);
-    border-radius: 99px;
-    border: 2px solid #070b18;
+    background: #2f2f2f;
+    border: 3px solid #000;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--color-photon) 55%, #1b2555);
+    background: var(--color-photon);
   }
 
-  /* Physics notation reads like a paper, not like UI chrome. */
+  /* Notation reads as machine output. */
   .ket,
   .math {
     font-family: var(--font-math);
+    font-feature-settings: "tnum";
+  }
+
+  /* One focus treatment everywhere: a solid copper rule. */
+  :focus-visible {
+    outline: 2px solid var(--color-photon);
+    outline-offset: 2px;
   }
 }
 
@@ -237,80 +270,134 @@
    Utilities
    ============================================================ */
 
-/* Frosted instrument panel. */
+/**
+ * A panel.
+ *
+ * Solid black-grey with one hairline. No blur, no inner highlight,
+ * no drop shadow — depth comes from the border and the gap around
+ * it, the way it does on a machined faceplate.
+ */
+@utility panel {
+  background-color: var(--color-nebula);
+  border: 1px solid var(--color-edge);
+}
+
+@utility panel-quiet {
+  background-color: transparent;
+  border: 1px solid var(--color-edge);
+}
+
+/* A well: the recessed area a control or a read-out sits in. */
+@utility well {
+  background-color: var(--color-strata);
+  border: 1px solid var(--color-edge);
+}
+
+/* Aliases kept so components not yet touched still render flat.
+   These used to be frosted glass; they are now plain panels. */
 @utility glass {
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in oklab, #7ea2ff 9%, transparent),
-      color-mix(in oklab, #0a0f22 82%, transparent) 46%
-    ),
-    color-mix(in oklab, #0a0f22 62%, transparent);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border: 1px solid color-mix(in oklab, #8fb0ff 16%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, #ffffff 8%, transparent),
-    0 24px 60px -30px #000;
+  background-color: var(--color-nebula);
+  border: 1px solid var(--color-edge);
 }
 
 @utility glass-quiet {
-  background: color-mix(in oklab, #0a0f22 55%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid color-mix(in oklab, #8fb0ff 11%, transparent);
+  background-color: transparent;
+  border: 1px solid var(--color-edge);
 }
 
-/* Hairline lattice — the reference frame everything sits on. */
-@utility lattice {
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in oklab, #7ea2ff 7%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in oklab, #7ea2ff 7%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 46px 46px;
-}
-
+/**
+ * The section label.
+ *
+ * Set at 12px rather than the 11px it started at — this is an
+ * education platform and a label nobody can read is not a label.
+ */
 @utility eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  line-height: 1;
-  letter-spacing: 0.22em;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: color-mix(in oklab, var(--color-frost) 82%, transparent);
+  color: var(--color-frost);
 }
 
+/**
+ * A display heading.
+ *
+ * One clamp, used everywhere a section opens, so every page shares
+ * the same rhythm instead of each inventing its own size.
+ *
+ * display-1 is measured in `cqw` — the width of its own column, not
+ * the width of the window. The hero headline is a stack of single
+ * words, and a single word cannot wrap: sized against the viewport
+ * it fits at 1440 and at 375 but blows straight through the column
+ * at 1024, where the layout has just gone two-up and the text
+ * column is suddenly the narrowest it will ever be. Sized against
+ * the column, that cannot happen at any width.
+ */
+@utility display-1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 13cqw, 6.5rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+@utility display-2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+@utility display-3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+/* Body copy, at a size that survives being read for an hour. */
+@utility lede {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--color-frost);
+}
+
+@utility body-text {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-frost);
+}
+
+/* Progress drawn as a flat copper bar. Formerly a three-stop
+   gradient with a glow under it. */
+@utility amplitude-fill {
+  background-color: var(--color-photon);
+}
+
+/* Was a lattice of hairlines behind every page. Deleted — it was
+   decoration, and the brief for this build is that nothing on the
+   page is decoration. Kept as a no-op so old markup is harmless. */
+@utility lattice {
+  background-image: none;
+}
+
+/* Formerly neon halos. Now a solid ring, which is what they were
+   actually being used to mean. */
 @utility glow-photon {
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--color-photon) 40%, transparent),
-    0 0 28px -6px color-mix(in oklab, var(--color-photon) 55%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-photon);
 }
 
 @utility glow-phase {
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--color-phase) 42%, transparent),
-    0 0 30px -6px color-mix(in oklab, var(--color-phase) 55%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-phase);
 }
 
 @utility text-glow {
-  text-shadow: 0 0 26px color-mix(in oklab, var(--color-photon) 45%, transparent);
-}
-
-/* Amplitude bar: progress rendered as a measurement probability. */
-@utility amplitude-fill {
-  background: linear-gradient(
-    90deg,
-    var(--color-photon),
-    var(--color-phase) 78%,
-    var(--color-collapse)
-  );
-  box-shadow: 0 0 18px -2px color-mix(in oklab, var(--color-photon) 70%, transparent);
+  text-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

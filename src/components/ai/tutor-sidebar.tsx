@@ -48,16 +48,14 @@ function routeLabel(pathname: string) {
 
 function ContextStrip({ pathname, circuit }: { pathname: string; circuit: ScreenCircuit }) {
   return (
-    <div className="relative overflow-hidden border-b border-white/8 bg-[#080d20]/80 px-4 py-2.5">
-      {/* A scan line: the tutor is looking at the page right now. */}
-      <span className="pointer-events-none absolute inset-x-0 top-0 h-8 animate-scan bg-gradient-to-b from-photon/16 to-transparent" />
+    <div className="relative overflow-hidden border-b border-edge bg-nebula px-4 py-2.5">
       <div className="relative flex items-center gap-2">
         <Eye className="size-3.5 shrink-0 text-photon" />
         <span className="eyebrow shrink-0">Reading</span>
-        <span className="truncate font-mono text-[11px] text-paper/90">
+        <span className="truncate font-mono text-[11px] text-paper">
           {routeLabel(pathname)}
         </span>
-        <span className="ml-auto shrink-0 truncate font-mono text-[10px] text-frost/55">
+        <span className="ml-auto shrink-0 truncate font-mono text-[11px] text-frost">
           {circuit.summary}
         </span>
       </div>
@@ -67,7 +65,7 @@ function ContextStrip({ pathname, circuit }: { pathname: string; circuit: Screen
 
 function CodeDiff({ code }: { code: string }) {
   return (
-    <pre className="mt-2.5 overflow-x-auto rounded-lg border border-white/8 bg-[#04070f] p-3 font-mono text-[11px] leading-relaxed">
+    <pre className="mt-2.5 overflow-x-auto rounded-lg border border-edge bg-[#000000] p-3 font-mono text-[11px] leading-relaxed">
       <code>
         {code.split("\n").map((line, index) => {
           const added = line.startsWith("+");
@@ -78,8 +76,8 @@ function CodeDiff({ code }: { code: string }) {
               className={cn(
                 "block whitespace-pre",
                 added && "bg-photon/10 text-photon",
-                removed && "bg-collapse/10 text-collapse/85 line-through decoration-collapse/40",
-                !added && !removed && "text-frost/70",
+                removed && "bg-strata text-collapse line-through decoration-collapse/40",
+                !added && !removed && "text-frost",
               )}
             >
               {line}
@@ -102,8 +100,8 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
       className={cn("flex gap-2.5", isTutor ? "flex-row" : "flex-row-reverse")}
     >
       {isTutor && (
-        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-photon/35 bg-photon/12">
-          <Sparkles className="size-3 text-photon" />
+        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center bg-photon">
+          <Sparkles className="size-3 text-void" />
         </span>
       )}
       <div className={cn("min-w-0 max-w-[86%]", !isTutor && "text-right")}>
@@ -112,23 +110,23 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
             "rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed",
             isTutor
               ? turn.failed
-                ? "border border-collapse/30 bg-collapse/8 text-paper/90"
-                : "border border-white/8 bg-white/4 text-paper/92"
-              : "border border-phase/30 bg-phase/12 text-paper",
+                ? "border border-edge-hi bg-strata text-paper"
+                : "border border-edge bg-strata text-paper"
+              : "border border-paper bg-strata text-paper",
           )}
         >
           <p className="text-left whitespace-pre-wrap">
             {turn.body}
             {turn.streaming && (
-              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-breathe bg-photon/80" />
+              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-breathe bg-photon" />
             )}
           </p>
           {turn.code && <CodeDiff code={turn.code} />}
         </div>
 
         {turn.looking && (
-          <span className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.1em] text-frost/50 uppercase">
-            <ScanLine className="size-3 text-photon/70" />
+          <span className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-frost uppercase">
+            <ScanLine className="size-3 text-photon" />
             {turn.looking}
           </span>
         )}
@@ -140,7 +138,7 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
                 key={chip}
                 type="button"
                 onClick={() => onChip(chip)}
-                className="rounded-full border border-photon/25 bg-photon/8 px-2.5 py-1 text-[11px] text-photon/90 transition-colors hover:border-photon/50 hover:bg-photon/16"
+                className="border border-photon px-2.5 py-1 font-mono text-[11px] text-photon transition-colors hover:bg-photon hover:text-void"
               >
                 {chip}
               </button>
@@ -306,14 +304,13 @@ export function TutorSidebar() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             onClick={() => setOpen(true)}
             aria-label="Open the AI tutor"
-            className="glass fixed right-4 bottom-6 z-40 flex items-center gap-2.5 rounded-full py-2.5 pr-4 pl-3 text-sm text-paper shadow-[0_0_40px_-12px_rgba(56,232,255,0.7)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon sm:bottom-8"
+            className="panel fixed right-4 bottom-6 z-40 flex items-center gap-2.5 py-3 pr-4 pl-3 text-sm text-paper transition-colors hover:border-photon focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon sm:bottom-8"
           >
-            <span className="relative flex size-7 items-center justify-center rounded-full border border-photon/40 bg-photon/12">
-              <Sparkles className="size-3.5 text-photon" />
-              <span className="absolute -top-0.5 -right-0.5 size-2 animate-breathe rounded-full bg-collapse shadow-[0_0_8px_2px_rgba(255,77,157,0.8)]" />
+            <span className="flex size-7 items-center justify-center bg-photon">
+              <Sparkles className="size-3.5 text-void" />
             </span>
             <span className="hidden sm:inline">Ask the tutor</span>
-            <kbd className="hidden rounded border border-white/12 bg-white/6 px-1.5 py-0.5 font-mono text-[10px] text-frost/70 sm:inline">
+            <kbd className="hidden rounded border border-edge bg-strata px-1.5 py-0.5 font-mono text-[11px] text-frost sm:inline">
               {shortcut}
             </kbd>
           </motion.button>
@@ -328,19 +325,19 @@ export function TutorSidebar() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 34 }}
             transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
-            className="glass fixed inset-x-3 bottom-3 z-40 flex flex-col overflow-hidden rounded-2xl sm:inset-x-auto sm:top-20 sm:right-4 sm:bottom-5 sm:w-[384px]"
+            className="panel fixed inset-x-3 bottom-3 z-40 flex flex-col overflow-hidden rounded-2xl sm:inset-x-auto sm:top-20 sm:right-4 sm:bottom-5 sm:w-[384px]"
             aria-label="AI tutor"
           >
-            <header className="flex items-center gap-2.5 border-b border-white/8 px-4 py-3">
-              <span className="flex size-7 items-center justify-center rounded-full border border-photon/40 bg-photon/12">
-                <Sparkles className="size-3.5 text-photon" />
+            <header className="flex items-center gap-2.5 border-b border-edge px-4 py-3">
+              <span className="flex size-7 items-center justify-center bg-photon">
+                <Sparkles className="size-3.5 text-void" />
               </span>
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold">Tutor</p>
                 <p
                   className={cn(
-                    "truncate font-mono text-[10px] tracking-[0.14em] uppercase",
-                    health ? "text-photon/75" : "text-frost/45",
+                    "truncate font-mono text-[11px] tracking-[0.14em] uppercase",
+                    health ? "text-photon" : "text-frost",
                   )}
                 >
                   {status}
@@ -350,7 +347,7 @@ export function TutorSidebar() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Collapse the tutor"
-                className="ml-auto flex size-8 items-center justify-center rounded-full text-frost/70 transition-colors hover:bg-white/6 hover:text-paper"
+                className="ml-auto flex size-8 items-center justify-center rounded-full text-frost transition-colors hover:bg-strata hover:text-paper"
               >
                 <PanelRightClose className="size-4" />
               </button>
@@ -383,7 +380,7 @@ export function TutorSidebar() {
                       {[0, 1, 2].map((dot) => (
                         <motion.span
                           key={dot}
-                          className="size-1.5 rounded-full bg-photon/70"
+                          className="size-1.5 bg-photon"
                           animate={{ opacity: [0.25, 1, 0.25] }}
                           transition={{
                             duration: 1.3,
@@ -394,7 +391,7 @@ export function TutorSidebar() {
                         />
                       ))}
                     </span>
-                    <span className="font-mono text-[10px] tracking-[0.14em] text-frost/45 uppercase">
+                    <span className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
                       {live ? "Thinking about your circuit" : "Measuring your circuit"}
                     </span>
                   </div>
@@ -404,7 +401,7 @@ export function TutorSidebar() {
               </div>
             </ScrollArea>
 
-            <div className="border-t border-white/8 px-4 py-3">
+            <div className="border-t border-edge px-4 py-3">
               <div className="mb-2.5 flex flex-wrap gap-1.5">
                 {suggestions.map((suggestion) => (
                   <button
@@ -412,7 +409,7 @@ export function TutorSidebar() {
                     type="button"
                     onClick={() => void send(suggestion)}
                     disabled={busy}
-                    className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-left text-[11px] text-frost/80 transition-colors hover:border-photon/35 hover:text-paper disabled:opacity-40"
+                    className="border border-edge bg-strata px-2.5 py-1 text-left text-[11px] text-frost transition-colors hover:border-photon hover:text-paper disabled:opacity-40"
                   >
                     {suggestion}
                   </button>
@@ -423,7 +420,7 @@ export function TutorSidebar() {
                   event.preventDefault();
                   void send(draft);
                 }}
-                className="flex items-end gap-2 rounded-xl border border-white/10 bg-[#060b18]/80 p-2 focus-within:border-photon/45"
+                className="flex items-end gap-2 rounded-xl border border-edge bg-[#000000]/80 p-2 focus-within:border-photon"
               >
                 <textarea
                   value={draft}
@@ -436,14 +433,14 @@ export function TutorSidebar() {
                   }}
                   rows={1}
                   placeholder="Ask about the circuit on screen…"
-                  className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-paper placeholder:text-frost/40 focus:outline-none"
+                  className="max-h-28 min-h-8 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[13px] text-paper placeholder:text-frost focus:outline-none"
                 />
                 {busy ? (
                   <button
                     type="button"
                     onClick={() => abort.current?.abort()}
                     aria-label="Stop the answer"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-collapse/40 bg-collapse/12 text-collapse transition-colors hover:bg-collapse/20"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-edge-hi bg-strata text-collapse transition-colors hover:bg-strata"
                   >
                     <Square className="size-3.5" />
                   </button>
@@ -451,14 +448,14 @@ export function TutorSidebar() {
                   <button
                     type="submit"
                     aria-label="Send message"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-photon text-[#03121b] transition-colors hover:bg-[#6ff0ff] disabled:opacity-35"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-photon text-[#000000] transition-colors hover:bg-[#8af2ff] disabled:opacity-35"
                     disabled={!draft.trim()}
                   >
                     <ArrowUp className="size-4" />
                   </button>
                 )}
               </form>
-              <p className="mt-2 font-mono text-[10px] leading-relaxed text-frost/40">
+              <p className="mt-2 font-mono text-[11px] leading-relaxed text-frost">
                 {health
                   ? live
                     ? "Explanations are generated. Verify anything you plan to submit."

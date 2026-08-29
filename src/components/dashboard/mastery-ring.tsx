@@ -28,15 +28,13 @@ export function MasteryRing({
     <div className="flex items-center gap-5">
       <div className="relative shrink-0">
         <svg viewBox="-64 -64 128 128" className="size-[128px] -rotate-90">
-          <circle r={R} fill="none" stroke="#101835" strokeWidth="7" />
+          <circle r={R} fill="none" stroke="#151515" strokeWidth="7" />
           <circle
             r={R}
             fill="none"
-            stroke="url(#mastery-arc)"
+            stroke="#2fe4ff"
             strokeWidth="7"
-            strokeLinecap="round"
             strokeDasharray={`${dash.toFixed(2)} ${CIRCUMFERENCE.toFixed(2)}`}
-            style={{ filter: "drop-shadow(0 0 10px rgba(56,232,255,0.5))" }}
           />
           {Array.from({ length: levels }, (_, i) => {
             const angle = (2 * Math.PI * i) / levels;
@@ -46,19 +44,13 @@ export function MasteryRing({
                 cx={Math.cos(angle) * R}
                 cy={Math.sin(angle) * R}
                 r="2"
-                fill={i <= level - 1 ? "#38e8ff" : "#33427a"}
+                fill={i <= level - 1 ? "#2fe4ff" : "#3d3d3d"}
               />
             );
           })}
-          <defs>
-            <linearGradient id="mastery-arc" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#38e8ff" />
-              <stop offset="100%" stopColor="#b14eff" />
-            </linearGradient>
-          </defs>
         </svg>
         <div className="absolute inset-0 grid place-items-center">
-          <span className="font-mono text-[9px] tracking-[0.18em] text-frost/45 uppercase">
+          <span className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">
             level
           </span>
           <span className="font-mono text-[30px] leading-none text-paper tabular-nums">
@@ -72,7 +64,7 @@ export function MasteryRing({
         <p className="mt-1.5 text-[19px] leading-tight font-semibold tracking-[-0.015em] text-paper">
           {title}
         </p>
-        <p className="mt-2 font-mono text-[11.5px] leading-relaxed text-frost/65">
+        <p className="mt-2 font-mono text-[11.5px] leading-relaxed text-frost">
           {nextTitle ? (
             <>
               <span className="text-photon">{progress}%</span> of the way to {nextTitle}
@@ -81,7 +73,7 @@ export function MasteryRing({
             <span className="text-photon">top of the ladder</span>
           )}
         </p>
-        <p className="mt-2 text-[12px] leading-relaxed text-frost/50">{note}</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-frost">{note}</p>
       </div>
     </div>
   );

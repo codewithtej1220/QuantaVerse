@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import { ModuleGrid } from "@/components/curriculum/module-grid";
-import { ActionLink } from "@/components/site/action";
-import { AmplitudeBar } from "@/components/site/amplitude-bar";
-import { LEARNER, MODULES } from "@/lib/data";
+import { ModuleTrack } from "@/components/curriculum/module-track";
+import { LEARNER, MODULES, TRACK_LABEL } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Curriculum",
@@ -16,79 +15,111 @@ const TOTAL_MINUTES = MODULES.reduce((sum, m) => sum + m.minutes, 0);
 const TOTAL_LESSONS = MODULES.reduce((sum, m) => sum + m.lessons, 0);
 const MASTERED = MODULES.filter((m) => m.state === "mastered").length;
 
+/* The one thing this page is for. Everything else on it is reference. */
+const RESUME = MODULES.find((m) => m.state === "active") ?? MODULES.find((m) => m.progress < 100);
+
 export default function CurriculumPage() {
-  const completion = Math.round((LEARNER.lessonsDone / TOTAL_LESSONS) * 100);
+  const lessonsDone = RESUME ? Math.round((RESUME.lessons * RESUME.progress) / 100) : 0;
 
   return (
-    <div className="lattice min-h-screen overflow-x-clip pt-24 pb-20">
-      <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
-        <header className="border-b border-white/8 pb-8">
-          <div className="grid gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
-            <div>
-              <p className="eyebrow">Curriculum · /curriculum</p>
-              <h1 className="mt-3 text-[clamp(2rem,4vw,2.9rem)] leading-[1.05] font-semibold tracking-[-0.025em]">
-                Eight modules,{" "}
-                <span className="ket text-photon text-glow">|000⟩ → |111⟩</span>
-              </h1>
-              <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-frost/80">
-                A three-qubit register has exactly eight states, and this course has exactly
-                eight modules — so a module&rsquo;s index is a basis state, and the order you
-                read them in is the prerequisite chain. Every one is free, and every one opens
-                today.
-              </p>
-            </div>
+    <div className="min-h-screen overflow-x-clip pt-32 pb-24">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+        {/* Deliberately unbalanced: the heading gets the room, the totals get a
+            single tight line rather than a panel of their own. */}
+        <header className="grid gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-end">
+          <div>
+            <p className="eyebrow">Curriculum · /curriculum</p>
+            <h1 className="display-1 mt-5 max-w-[11ch]">Eight modules</h1>
+            {/* The index, set below the heading rather than inside it: at
+                display size the monospace kets are wider than the words and
+                were wrapping, which made the subtitle shout over the title. */}
+            <p className="ket mt-4 text-[clamp(1.5rem,3.6vw,2.75rem)] leading-none text-photon">
+              |000⟩ &rarr; |111⟩
+            </p>
+          </div>
 
-            {/* Where the learner stands, in the register's own terms. */}
-            <div className="glass rounded-2xl p-5">
-              <AmplitudeBar value={completion} label="Course completion" />
-              <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-white/8 pt-4">
-                {(
-                  [
-                    ["Lessons", `${LEARNER.lessonsDone}/${TOTAL_LESSONS}`],
-                    ["Mastered", `${MASTERED}/${MODULES.length}`],
-                    ["Runtime", `${Math.round(TOTAL_MINUTES / 60)}h`],
-                  ] as const
-                ).map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="font-mono text-[9.5px] tracking-[0.16em] text-frost/40 uppercase">
-                      {label}
-                    </dt>
-                    <dd className="mt-1 font-mono text-[15px] text-paper tabular-nums">
-                      {value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-4 text-[12px] leading-relaxed text-frost/55">
-                Progress is stored in this browser. No account, so nothing to sign up for and
-                nothing to lose.
-              </p>
-            </div>
+          <div className="lg:pb-2">
+            <p className="lede max-w-md">
+              A three-qubit register has exactly eight states, and this course has exactly eight
+              modules — so a module&rsquo;s index is a basis state, and the order you read them in
+              is the prerequisite chain.
+            </p>
+            <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 border-t border-edge pt-5">
+              {(
+                [
+                  ["Lessons", `${LEARNER.lessonsDone}/${TOTAL_LESSONS}`],
+                  ["Mastered", `${MASTERED}/${MODULES.length}`],
+                  ["Runtime", `${Math.round(TOTAL_MINUTES / 60)}h`],
+                ] as const
+              ).map(([label, value]) => (
+                <div key={label}>
+                  <dt className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
+                    {label}
+                  </dt>
+                  <dd className="font-display mt-1 text-2xl font-extrabold text-paper tabular-nums">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </header>
 
-        <div className="mt-8">
-          <ModuleGrid />
+        {/* The dominant element. If a visitor reads one thing, it is this. */}
+        {RESUME && (
+          <Link
+            href={`/curriculum/${RESUME.slug}`}
+            className="group mt-16 grid gap-x-8 gap-y-6 border-y-2 border-photon py-8 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+          >
+            <div className="min-w-0">
+              <p className="font-mono text-[12px] tracking-[0.2em] text-photon uppercase">
+                Continue where you stopped
+              </p>
+              <h2 className="display-2 mt-4 text-paper">{RESUME.title}</h2>
+              <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[13px] text-frost tabular-nums">
+                <span className="ket text-photon">{RESUME.ket}</span>
+                <span className="h-3 w-px bg-edge-hi" />
+                <span>
+                  lesson {Math.min(RESUME.lessons, lessonsDone + 1)} of {RESUME.lessons}
+                </span>
+                <span className="h-3 w-px bg-edge-hi" />
+                <span>{TRACK_LABEL[RESUME.track]}</span>
+                <span className="h-3 w-px bg-edge-hi" />
+                <span>finishing it earns {RESUME.badge}</span>
+              </p>
+            </div>
+
+            <span className="flex items-center gap-5 sm:flex-col sm:items-end sm:gap-3">
+              <span className="font-display text-[4rem] leading-[0.8] font-extrabold text-photon tabular-nums sm:text-[5rem]">
+                {RESUME.progress}
+                <span className="text-2xl">%</span>
+              </span>
+              <span className="inline-flex items-center gap-2 bg-photon px-5 py-2.5 font-mono text-[12px] tracking-[0.14em] text-void uppercase">
+                Resume
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </span>
+          </Link>
+        )}
+
+        <div className="mt-14">
+          <ModuleTrack />
         </div>
 
-        {/* Closing: the sandbox is where the modules are practised. */}
-        <section className="glass mt-10 flex flex-wrap items-center justify-between gap-6 rounded-2xl p-6 lg:p-8">
-          <div className="max-w-xl">
-            <p className="eyebrow">Practice</p>
-            <h2 className="mt-2.5 text-[clamp(1.3rem,2.4vw,1.7rem)] leading-tight font-semibold tracking-[-0.02em]">
-              Every module ends in the sandbox.
-            </h2>
-            <p className="mt-2.5 text-[14px] leading-relaxed text-frost/75">
-              Reading about a Bell pair is not the same as building one. Each module hands you
-              a circuit to finish, and the simulator marks it by measuring the state you
-              actually produced.
-            </p>
-          </div>
-          <ActionLink href="/sandbox" size="lg">
-            Open the sandbox
-            <ArrowRight className="size-4" />
-          </ActionLink>
-        </section>
+        {/* No closing call-to-action card. One sentence and a link is the whole
+            thought, and a boxed banner around it would only add a border. */}
+        <p className="mt-14 max-w-2xl text-[15px] leading-relaxed text-frost">
+          Reading about a Bell pair is not the same as building one. Each module ends with a
+          circuit to finish, and the simulator marks it by measuring the state you actually
+          produced —{" "}
+          <Link
+            href="/sandbox"
+            className="text-photon underline-offset-4 hover:underline focus-visible:underline"
+          >
+            open the sandbox
+          </Link>{" "}
+          to try any of it early. A lock is a suggested order, never a paywall.
+        </p>
       </div>
     </div>
   );

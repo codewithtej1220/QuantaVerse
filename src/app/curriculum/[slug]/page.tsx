@@ -63,11 +63,11 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
   const done = Math.round((entry.concepts.length * entry.progress) / 100);
 
   return (
-    <div className="lattice min-h-screen overflow-x-clip pt-24 pb-20">
-      <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
+    <div className="min-h-screen overflow-x-clip pt-32 pb-24">
+      <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
         <Link
           href="/curriculum"
-          className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-frost/60 uppercase transition-colors hover:text-photon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+          className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors hover:text-photon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
         >
           <ArrowLeft className="size-3.5" />
           All modules
@@ -75,19 +75,19 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
 
         <div className="mt-6 grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
           <div>
-            <header className="border-b border-white/8 pb-7">
+            <header className="border-b border-edge pb-7">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="ket rounded-lg border border-photon/35 bg-photon/8 px-2.5 py-1 text-[14px] text-photon">
+                <span className="ket rounded-lg border border-photon bg-photon/10 px-2.5 py-1 text-[14px] text-photon">
                   {entry.ket}
                 </span>
-                <span className="font-mono text-[10px] tracking-[0.16em] text-frost/50 uppercase">
+                <span className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
                   {TRACK_LABEL[entry.track]} · {entry.lessons} lessons · {entry.minutes} min
                 </span>
               </div>
-              <h1 className="mt-4 text-[clamp(1.9rem,3.6vw,2.6rem)] leading-[1.06] font-semibold tracking-[-0.025em]">
+              <h1 className="mt-4 display-2">
                 {entry.title}
               </h1>
-              <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-frost/80">
+              <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-frost">
                 {entry.summary}
               </p>
             </header>
@@ -106,9 +106,9 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
             />
 
             {/* The honest bit. */}
-            <section className="glass mt-8 rounded-2xl p-5">
+            <section className="panel mt-8 rounded-2xl p-5">
               <p className="eyebrow">Status</p>
-              <p className="mt-2.5 text-[14px] leading-relaxed text-frost/75">
+              <p className="mt-2.5 text-[14px] leading-relaxed text-frost">
                 The lesson bodies for this module are being written in the open. The outline, the
                 gate set and — where the module has one — the graded circuit lab are final; the
                 prose is not, so this page shows the shape of the module rather than filled-in
@@ -118,7 +118,7 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
                 href={REPO_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/12 px-3.5 py-2 text-[13px] text-frost/85 transition-colors hover:border-photon/40 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                className="mt-4 inline-flex items-center gap-2 border border-edge px-3.5 py-2 text-[13px] text-frost transition-colors hover:border-photon hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
               >
                 <GitFork className="size-3.5" />
                 Write a lesson with us
@@ -134,7 +134,7 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
               fallbackBadge={entry.badge}
             />
 
-            <div className="glass rounded-2xl p-5">
+            <div className="panel rounded-2xl p-5">
               <p className="eyebrow">Gates in this module</p>
               <ul className="mt-3 space-y-2">
                 {entry.gates.map((gate) => {
@@ -142,10 +142,10 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
                   const known = GATE_BY_ID[key];
                   return (
                     <li key={gate} className="flex items-center gap-3">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-md border border-photon/25 bg-photon/8 font-mono text-[11px] font-semibold text-photon">
+                      <span className="grid size-7 shrink-0 place-items-center rounded-md border border-photon bg-photon/10 font-mono text-[11px] font-semibold text-photon">
                         {gate === "CNOT" ? "CX" : gate}
                       </span>
-                      <span className="text-[13px] text-frost/75">
+                      <span className="text-[13px] text-frost">
                         {known?.name ?? EXTRA_GATE_NAMES[key] ?? gate}
                       </span>
                     </li>
@@ -162,29 +162,29 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
             </div>
 
             {/* Prerequisite chain. */}
-            <nav className="glass rounded-2xl p-5" aria-label="Module order">
+            <nav className="panel rounded-2xl p-5" aria-label="Module order">
               <p className="eyebrow">Order</p>
               <div className="mt-3 space-y-2.5">
                 {previous ? (
                   <Link
                     href={`/curriculum/${previous.slug}`}
-                    className="group flex items-center gap-3 rounded-xl border border-white/8 px-3 py-2.5 transition-colors hover:border-photon/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                    className="group flex items-center gap-3 rounded-xl border border-edge px-3 py-2.5 transition-colors hover:border-photon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
                   >
-                    <ArrowLeft className="size-3.5 shrink-0 text-frost/50 transition-transform group-hover:-translate-x-0.5" />
+                    <ArrowLeft className="size-3.5 shrink-0 text-frost transition-transform group-hover:-translate-x-0.5" />
                     <span className="min-w-0">
-                      <span className="block font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
+                      <span className="block font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
                         Comes before
                       </span>
-                      <span className="block truncate text-[13px] text-frost/85">
+                      <span className="block truncate text-[13px] text-frost">
                         {previous.title}
                       </span>
                     </span>
-                    <span className="ket ml-auto shrink-0 text-[11px] text-photon/60">
+                    <span className="ket ml-auto shrink-0 text-[11px] text-photon">
                       {previous.ket}
                     </span>
                   </Link>
                 ) : (
-                  <p className="rounded-xl border border-white/8 px-3 py-2.5 text-[12.5px] text-frost/55">
+                  <p className="rounded-xl border border-edge px-3 py-2.5 text-[12.5px] text-frost">
                     This is the first module — no prerequisites at all.
                   </p>
                 )}
@@ -192,20 +192,20 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
                 {next && (
                   <Link
                     href={`/curriculum/${next.slug}`}
-                    className="group flex items-center gap-3 rounded-xl border border-white/8 px-3 py-2.5 transition-colors hover:border-photon/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                    className="group flex items-center gap-3 rounded-xl border border-edge px-3 py-2.5 transition-colors hover:border-photon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
                   >
                     <span className="min-w-0">
-                      <span className="block font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase">
+                      <span className="block font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
                         Comes after
                       </span>
-                      <span className="block truncate text-[13px] text-frost/85">
+                      <span className="block truncate text-[13px] text-frost">
                         {next.title}
                       </span>
                     </span>
-                    <span className="ket ml-auto shrink-0 text-[11px] text-photon/60">
+                    <span className="ket ml-auto shrink-0 text-[11px] text-photon">
                       {next.ket}
                     </span>
-                    <ArrowRight className="size-3.5 shrink-0 text-frost/50 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="size-3.5 shrink-0 text-frost transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 )}
               </div>

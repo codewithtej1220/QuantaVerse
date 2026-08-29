@@ -1,33 +1,33 @@
+import { Film } from "@/components/landing/film";
 import { Hero } from "@/components/landing/hero";
 import { OpenSource } from "@/components/landing/open-source";
 import { RegisterPreview } from "@/components/landing/register-preview";
 import { Surfaces } from "@/components/landing/surfaces";
 import { Workflow } from "@/components/landing/workflow";
-import { QuantumWire } from "@/components/site/quantum-wire";
+import { BootScreen } from "@/components/site/boot-screen";
+import { StageMount } from "@/components/three/stage-mount";
 
+/**
+ * The landing page.
+ *
+ * One continuous field of points runs behind the whole document, and the page
+ * is arranged around it: the hero puts a qubit in it, the film hands it four
+ * screens of scroll to re-form through, and the sections below let it settle
+ * into a haze so the reading is not fighting the motion.
+ */
 export default function Home() {
   return (
     <>
+      <BootScreen />
+
+      {/* One field, one stage, behind everything on this route. */}
+      <StageMount />
+
       <Hero />
-
-      <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
-        <QuantumWire label="prepare · evolve · measure" />
-      </div>
+      <Film />
       <Workflow />
-
-      <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
-        <QuantumWire label="the platform" tone="phase" />
-      </div>
       <Surfaces />
-
-      <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
-        <QuantumWire label="|000⟩ → |111⟩" />
-      </div>
       <RegisterPreview />
-
-      <div className="mx-auto max-w-[1400px] px-5 lg:px-10">
-        <QuantumWire label="mit · cc by-sa 4.0" tone="phase" />
-      </div>
       <OpenSource />
     </>
   );

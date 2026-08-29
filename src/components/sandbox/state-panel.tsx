@@ -23,7 +23,7 @@ const BlochCanvas = dynamic(() => import("@/components/three/bloch-canvas"), {
 function purityNote(length: number) {
   if (length > 0.999) return { text: "pure state", tone: "text-photon" };
   if (length < 0.02) return { text: "maximally mixed · fully entangled", tone: "text-collapse" };
-  return { text: `|r| = ${length.toFixed(2)} · partially entangled`, tone: "text-phase" };
+  return { text: `|r| = ${length.toFixed(2)} · partially entangled`, tone: "text-paper" };
 }
 
 function formatState(result: SimulationResult) {
@@ -65,8 +65,8 @@ export function StatePanel({
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
       {/* Bloch sphere for one qubit at a time. */}
-      <section className="glass flex flex-col overflow-hidden rounded-2xl">
-        <header className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5">
+      <section className="panel flex flex-col overflow-hidden rounded-2xl">
+        <header className="flex items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
           <p className="eyebrow">Bloch sphere</p>
           <div className="flex gap-1" role="group" aria-label="Choose a qubit">
             {Array.from({ length: qubits }, (_, q) => (
@@ -78,8 +78,8 @@ export function StatePanel({
                 className={cn(
                   "rounded-md px-2 py-1 font-mono text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                   wire === q
-                    ? "bg-photon/15 text-photon shadow-[0_0_16px_-6px_rgba(56,232,255,0.9)]"
-                    : "text-frost/55 hover:bg-white/6 hover:text-paper",
+                    ? "bg-photon text-void"
+                    : "text-frost hover:bg-strata hover:text-paper",
                 )}
               >
                 q{q}
@@ -90,7 +90,7 @@ export function StatePanel({
 
         <BlochCanvas vector={vector} className="h-[248px] w-full" />
 
-        <dl className="grid grid-cols-3 gap-px border-t border-white/8 text-center">
+        <dl className="grid grid-cols-3 gap-px border-t border-edge text-center">
           {(
             [
               ["x", vector.x],
@@ -99,7 +99,7 @@ export function StatePanel({
             ] as const
           ).map(([axis, value]) => (
             <div key={axis} className="px-2 py-2.5">
-              <dt className="font-mono text-[10px] tracking-[0.16em] text-frost/45 uppercase">
+              <dt className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
                 ⟨σ{axis}⟩
               </dt>
               <dd className="mt-1 font-mono text-[13px] text-paper tabular-nums">
@@ -110,7 +110,7 @@ export function StatePanel({
         </dl>
         <p
           className={cn(
-            "border-t border-white/8 px-4 py-2.5 font-mono text-[10.5px] tracking-[0.1em] uppercase",
+            "border-t border-edge px-4 py-2.5 font-mono text-[11px] tracking-[0.1em] uppercase",
             note.tone,
           )}
         >
@@ -119,17 +119,17 @@ export function StatePanel({
       </section>
 
       {/* Measurement probabilities. */}
-      <section className="glass flex flex-col overflow-hidden rounded-2xl">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 px-4 py-2.5">
+      <section className="panel flex flex-col overflow-hidden rounded-2xl">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
           <p className="eyebrow">Measurement probability</p>
-          <p className="flex items-center gap-3 font-mono text-[10.5px] tracking-[0.12em] uppercase">
-            <span className="flex items-center gap-1.5 text-frost/60">
-              <span className="h-2 w-3 rounded-sm amplitude-fill" />
+          <p className="flex items-center gap-3 font-mono text-[11px] tracking-[0.12em] uppercase">
+            <span className="flex items-center gap-1.5 text-frost">
+              <span className="h-2 w-3 amplitude-fill" />
               exact
             </span>
             {shots && (
-              <span className="flex items-center gap-1.5 text-frost/60">
-                <span className="h-2 w-3 rounded-sm border border-collapse/70" />
+              <span className="flex items-center gap-1.5 text-frost">
+                <span className="h-2 w-3 border border-edge-hi" />
                 {shotCount.toLocaleString("en-IN")} shots
               </span>
             )}
@@ -145,10 +145,10 @@ export function StatePanel({
                 className="absolute inset-x-0 flex items-center gap-2"
                 style={{ bottom: `${tick * 100}%` }}
               >
-                <span className="w-7 shrink-0 text-right font-mono text-[9px] text-frost/35 tabular-nums">
+                <span className="w-7 shrink-0 text-right font-mono text-[11px] text-frost tabular-nums">
                   {(tick * 100).toFixed(0)}
                 </span>
-                <span className="h-px flex-1 bg-white/6" />
+                <span className="h-px flex-1 bg-edge" />
               </div>
             ))}
 
@@ -162,7 +162,7 @@ export function StatePanel({
                   >
                     {p > 0.004 && (
                       <span
-                        className="absolute w-full text-center font-mono text-[9.5px] text-frost/75 tabular-nums"
+                        className="absolute w-full text-center font-mono text-[11px] text-frost tabular-nums"
                         style={{ bottom: `calc(${p * 100}% + 6px)` }}
                       >
                         {(p * 100).toFixed(1)}
@@ -170,21 +170,21 @@ export function StatePanel({
                     )}
                     <span
                       className={cn(
-                        "amplitude-fill w-full max-w-[26px] rounded-t-[3px] transition-[height] duration-500 ease-out",
+                        "amplitude-fill w-full max-w-[26px] transition-[height] duration-500 ease-out",
                         sampled !== null && "max-w-[18px]",
                       )}
                       style={{ height: `${Math.max(p * 100, p > 0 ? 0.8 : 0)}%` }}
                     />
                     {sampled !== null && (
                       <span
-                        className="w-full max-w-[12px] rounded-t-[3px] border border-b-0 border-collapse/70 bg-collapse/12 transition-[height] duration-500 ease-out"
+                        className="w-full max-w-[12px] border border-b-0 border-edge-hi bg-strata transition-[height] duration-500 ease-out"
                         style={{ height: `${Math.max(sampled * 100, sampled > 0 ? 0.8 : 0)}%` }}
                       />
                     )}
 
                     {/* Exact vs sampled, on hover — shot noise is the lesson here. */}
                     <span
-                      className="glass pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 -translate-x-1/2 rounded-md px-2 py-1.5 text-center font-mono text-[10px] whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100"
+                      className="panel pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 -translate-x-1/2 rounded-md px-2 py-1.5 text-center font-mono text-[11px] whitespace-nowrap opacity-0 transition-opacity group-hover:opacity-100"
                       role="tooltip"
                     >
                       <span className="ket block text-[11px] text-paper">
@@ -192,7 +192,7 @@ export function StatePanel({
                       </span>
                       <span className="block text-photon">{(p * 100).toFixed(2)}% exact</span>
                       {shots && (
-                        <span className="block text-collapse/85">
+                        <span className="block text-collapse">
                           {shots[i].toLocaleString("en-IN")} of{" "}
                           {shotCount.toLocaleString("en-IN")}
                         </span>
@@ -209,8 +209,8 @@ export function StatePanel({
               <span
                 key={label}
                 className={cn(
-                  "ket flex-1 text-center text-frost/60",
-                  tight ? "text-[9px]" : "text-[12px]",
+                  "ket flex-1 text-center text-frost",
+                  tight ? "text-[11px]" : "text-[12px]",
                 )}
               >
                 |{label}⟩
@@ -219,9 +219,9 @@ export function StatePanel({
           </div>
         </div>
 
-        <div className="border-t border-white/8 px-4 py-3">
+        <div className="border-t border-edge px-4 py-3">
           <p className="eyebrow">State vector</p>
-          <p className="math mt-1.5 overflow-x-auto text-[15px] leading-snug whitespace-nowrap text-paper/90">
+          <p className="math mt-1.5 overflow-x-auto text-[15px] leading-snug whitespace-nowrap text-paper">
             |ψ⟩ = {formatState(result)}
           </p>
         </div>

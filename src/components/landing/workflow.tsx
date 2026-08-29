@@ -1,3 +1,5 @@
+import { Zone } from "@/components/three/stage";
+
 /**
  * The workflow section.
  *
@@ -7,15 +9,21 @@
  * regions, and the prose blocks sit underneath the region they describe. The
  * structure is the content: no invented 01 / 02 / 03 numbering needed, because
  * the stages already have names the subject uses.
+ *
+ * The block turning alongside the heading is the H in the diagram, milled out
+ * of steel. It completes most of a revolution as the section crosses the
+ * viewport, so by the time the diagram is centred the face is square on.
  */
 
 const WIRES = [56, 104, 152] as const;
 const WIRE_START = 34;
 const WIRE_END = 880;
 
-const PHOTON = "#38e8ff";
-const PHASE = "#b14eff";
-const COLLAPSE = "#ff4d9d";
+const COPPER = "#2fe4ff";
+const CHALK = "#ffffff";
+const STEEL = "#8e8e89";
+const WIRE = "#3d3d3d";
+const CHASSIS = "#0b0b0b";
 
 function GateBox({
   x,
@@ -31,21 +39,20 @@ function GateBox({
   return (
     <g>
       <rect
-        x={x - 15}
-        y={y - 15}
-        width={30}
-        height={30}
-        rx={7}
-        fill="#080d1c"
+        x={x - 16}
+        y={y - 16}
+        width={32}
+        height={32}
+        fill={CHASSIS}
         stroke={tone}
-        strokeWidth={1.3}
+        strokeWidth={1.5}
       />
       <text
         x={x}
         y={y + 0.5}
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={13.5}
+        fontSize={14}
         fontWeight={600}
         fill={tone}
         style={{ fontFamily: "var(--font-mono)" }}
@@ -58,12 +65,12 @@ function GateBox({
 
 function Cnot({ x, control, target }: { x: number; control: number; target: number }) {
   return (
-    <g stroke={PHOTON} strokeWidth={1.4} strokeLinecap="round">
+    <g stroke={COPPER} strokeWidth={1.6} strokeLinecap="round">
       <line x1={x} y1={control} x2={x} y2={target} />
-      <circle cx={x} cy={control} r={4.6} fill={PHOTON} stroke="none" />
-      <circle cx={x} cy={target} r={10} fill="#080d1c" />
-      <line x1={x - 10} y1={target} x2={x + 10} y2={target} />
-      <line x1={x} y1={target - 10} x2={x} y2={target + 10} />
+      <circle cx={x} cy={control} r={5} fill={COPPER} stroke="none" />
+      <circle cx={x} cy={target} r={10.5} fill={CHASSIS} />
+      <line x1={x - 10.5} y1={target} x2={x + 10.5} y2={target} />
+      <line x1={x} y1={target - 10.5} x2={x} y2={target + 10.5} />
     </g>
   );
 }
@@ -91,32 +98,32 @@ const STAGES = [
 
 export function Workflow() {
   return (
-    <section className="relative mx-auto max-w-[1400px] px-5 py-20 lg:px-10 lg:py-28">
-      <header className="max-w-2xl">
-        <p className="eyebrow">Three stages, every time</p>
-        <h2 className="mt-4 text-[clamp(1.9rem,3.4vw,2.9rem)] leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
-          A quantum computation has three stages. So does every lesson here.
-        </h2>
-      </header>
+    <section className="relative mx-auto max-w-[1440px] px-5 py-24 lg:px-10 lg:py-32">
+      <div className="grid items-center gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+        <header>
+          <p className="eyebrow">Three stages, every time</p>
+          <h2 className="display-2 mt-5 max-w-2xl text-paper">
+            A quantum computation has three stages. So does every lesson here.
+          </h2>
+        </header>
+        <Zone
+          id="workflow-gate"
+          focus="gate"
+          scale={1.45}
+          className="h-[16rem] w-full lg:h-[20rem]"
+        />
+      </div>
 
       {/* The diagram is decorative in the accessibility tree — the prose below
           carries the same information in text. */}
-      <div className="glass mt-12 overflow-hidden rounded-2xl">
-        <div className="overflow-x-auto px-4 py-6 sm:px-8 sm:py-8">
+      <div className="panel mt-14">
+        <div className="overflow-x-auto px-4 py-7 sm:px-8">
           <svg
             viewBox="0 0 900 190"
             className="h-[190px] w-full min-w-[680px]"
             role="img"
             aria-label="A three-qubit circuit split into prepare, evolve and measure regions."
           >
-            <defs>
-              <linearGradient id="wf-wire" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#4a63b8" stopOpacity="0.15" />
-                <stop offset="18%" stopColor="#6f8bd8" stopOpacity="0.6" />
-                <stop offset="100%" stopColor="#6f8bd8" stopOpacity="0.35" />
-              </linearGradient>
-            </defs>
-
             {/* Region boundaries at exact thirds, matched by the grid below. */}
             {[300, 600].map((x) => (
               <line
@@ -125,10 +132,8 @@ export function Workflow() {
                 y1={6}
                 x2={x}
                 y2={184}
-                stroke="#6f8bd8"
-                strokeOpacity={0.22}
+                stroke="#262626"
                 strokeWidth={1}
-                strokeDasharray="3 6"
               />
             ))}
 
@@ -138,11 +143,10 @@ export function Workflow() {
                 x={150 + i * 300}
                 y={20}
                 textAnchor="middle"
-                fontSize={9.5}
-                letterSpacing="3.4"
-                fill="#afc0e8"
-                fillOpacity={0.7}
-                style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
+                fontSize={11}
+                letterSpacing="2.6"
+                fill={STEEL}
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 {label.toUpperCase()}
               </text>
@@ -152,24 +156,16 @@ export function Workflow() {
             {WIRES.map((y, i) => (
               <g key={y}>
                 <text
-                  x={4}
+                  x={2}
                   y={y}
                   dominantBaseline="central"
-                  fontSize={11}
-                  fill="#afc0e8"
-                  fillOpacity={0.55}
+                  fontSize={12}
+                  fill={STEEL}
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
                   q{i}
                 </text>
-                <line
-                  x1={WIRE_START}
-                  y1={y}
-                  x2={WIRE_END}
-                  y2={y}
-                  stroke="url(#wf-wire)"
-                  strokeWidth={1.2}
-                />
+                <line x1={WIRE_START} y1={y} x2={WIRE_END} y2={y} stroke={WIRE} strokeWidth={1.5} />
               </g>
             ))}
 
@@ -180,57 +176,38 @@ export function Workflow() {
                 className="animate-wire"
                 style={{ animationDelay: `${i * 0.45}s` }}
               >
-                <circle cx={WIRE_START} cy={y} r={9} fill={PHOTON} fillOpacity={0.13} />
-                <circle cx={WIRE_START} cy={y} r={2.6} fill={PHOTON} />
+                <circle cx={WIRE_START} cy={y} r={3.2} fill={COPPER} />
               </g>
             ))}
 
             {/* Prepare: a Hadamard on the control wire. */}
-            <GateBox x={150} y={WIRES[0]} label="H" tone={PHOTON} />
+            <GateBox x={150} y={WIRES[0]} label="H" tone={COPPER} />
 
             {/* Evolve: entangle down the register, then add a phase. */}
             <Cnot x={370} control={WIRES[0]} target={WIRES[1]} />
             <Cnot x={455} control={WIRES[1]} target={WIRES[2]} />
-            <GateBox x={545} y={WIRES[0]} label="Z" tone={PHASE} />
+            <GateBox x={545} y={WIRES[0]} label="Z" tone={CHALK} />
 
             {/* Measure: collapse all three onto the classical register. */}
             {WIRES.map((y) => (
-              <GateBox key={`m-${y}`} x={750} y={y} label="M" tone={COLLAPSE} />
+              <GateBox key={`m-${y}`} x={750} y={y} label="M" tone={STEEL} />
             ))}
             <line
               x1={750}
-              y1={WIRES[2] + 15}
+              y1={WIRES[2] + 16}
               x2={750}
-              y2={176}
-              stroke={COLLAPSE}
-              strokeOpacity={0.45}
+              y2={175}
+              stroke={STEEL}
               strokeWidth={1}
             />
-            <line
-              x1={WIRE_START}
-              y1={176}
-              x2={WIRE_END}
-              y2={176}
-              stroke={COLLAPSE}
-              strokeOpacity={0.28}
-              strokeWidth={2.4}
-            />
-            <line
-              x1={WIRE_START}
-              y1={180}
-              x2={WIRE_END}
-              y2={180}
-              stroke={COLLAPSE}
-              strokeOpacity={0.28}
-              strokeWidth={1}
-            />
+            <line x1={WIRE_START} y1={175} x2={WIRE_END} y2={175} stroke={STEEL} strokeWidth={1} />
+            <line x1={WIRE_START} y1={179} x2={WIRE_END} y2={179} stroke={STEEL} strokeWidth={1} />
             <text
               x={WIRE_END - 2}
-              y={169}
+              y={167}
               textAnchor="end"
-              fontSize={9.5}
-              fill="#ff4d9d"
-              fillOpacity={0.65}
+              fontSize={12}
+              fill={STEEL}
               style={{ fontFamily: "var(--font-mono)" }}
             >
               c3
@@ -238,17 +215,15 @@ export function Workflow() {
           </svg>
         </div>
 
-        <div className="grid divide-y divide-white/6 border-t border-white/6 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <div className="grid divide-y divide-edge border-t border-edge lg:grid-cols-3 lg:divide-x lg:divide-y-0">
           {STAGES.map((stage) => (
-            <div key={stage.stage} className="px-6 py-7 sm:px-8">
+            <div key={stage.stage} className="px-6 py-8 sm:px-8">
               <div className="flex items-baseline gap-3">
-                <span className="eyebrow text-photon/85">{stage.stage}</span>
-                <span className="math text-sm text-frost/60">{stage.ket}</span>
+                <span className="eyebrow text-photon">{stage.stage}</span>
+                <span className="math text-[13px] text-dim">{stage.ket}</span>
               </div>
-              <h3 className="mt-3 text-lg font-semibold tracking-[-0.015em] text-paper">
-                {stage.heading}
-              </h3>
-              <p className="mt-2.5 text-[0.9375rem] leading-relaxed text-frost/75">{stage.body}</p>
+              <h3 className="mt-4 text-[1.375rem] text-paper">{stage.heading}</h3>
+              <p className="body-text mt-3">{stage.body}</p>
             </div>
           ))}
         </div>

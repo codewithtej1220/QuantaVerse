@@ -10,7 +10,7 @@ const MonacoInner = dynamic(() => import("./monaco-inner"), {
   ssr: false,
   loading: () => (
     <div className="grid h-full place-items-center">
-      <span className="font-mono text-[11px] tracking-[0.18em] text-frost/40 uppercase">
+      <span className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">
         loading editor
       </span>
     </div>
@@ -67,15 +67,15 @@ export function CodePane({
   };
 
   return (
-    <div className="glass flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-white/8 px-4 py-2.5">
-        <span className="flex items-center gap-2 rounded-md border border-photon/25 bg-photon/8 px-2.5 py-1 font-mono text-[11px] text-photon">
+    <div className="panel flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-edge px-4 py-2.5">
+        <span className="flex items-center gap-2 rounded-md border border-photon bg-photon/10 px-2.5 py-1 font-mono text-[11px] text-photon">
           circuit.py
         </span>
         <span
           className={cn(
-            "font-mono text-[10px] tracking-[0.14em] uppercase",
-            edited ? "text-collapse/80" : "text-frost/45",
+            "font-mono text-[11px] tracking-[0.14em] uppercase",
+            edited ? "text-collapse" : "text-frost",
           )}
         >
           {edited ? "edited · diagram follows the code" : "generated from the diagram"}
@@ -88,10 +88,10 @@ export function CodePane({
             disabled={building || !canBuild}
             title={canBuild ? undefined : "Running the file needs the QuantaVerse API"}
             className={cn(
-              "flex items-center gap-1.5 rounded-md border border-photon/35 bg-photon/8 px-2.5 py-1.5",
-              "font-mono text-[10.5px] tracking-[0.1em] text-photon uppercase transition-colors",
-              "hover:bg-photon/16 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
-              "disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-transparent disabled:text-frost/40",
+              "flex items-center gap-1.5 rounded-md border border-photon bg-photon/10 px-2.5 py-1.5",
+              "font-mono text-[11px] tracking-[0.1em] text-photon uppercase transition-colors",
+              "hover:bg-photon/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
+              "disabled:cursor-not-allowed disabled:border-edge disabled:bg-transparent disabled:text-frost",
             )}
           >
             {building ? (
@@ -106,7 +106,7 @@ export function CodePane({
             <button
               type="button"
               onClick={onRegenerate}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-[10.5px] tracking-[0.1em] text-frost/70 uppercase transition-colors hover:bg-white/6 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-[11px] tracking-[0.1em] text-frost uppercase transition-colors hover:bg-strata hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
             >
               <RotateCcw className="size-3.5" />
               regenerate
@@ -116,7 +116,7 @@ export function CodePane({
             type="button"
             onClick={copy}
             aria-label="Copy the circuit source"
-            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-[10.5px] tracking-[0.1em] text-frost/70 uppercase transition-colors hover:bg-white/6 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-[11px] tracking-[0.1em] text-frost uppercase transition-colors hover:bg-strata hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
           >
             {copied ? (
               <Check className="size-3.5 text-photon" />
@@ -128,7 +128,7 @@ export function CodePane({
         </div>
       </div>
 
-      <div className="min-h-[360px] flex-1 bg-[#05080f]">
+      <div className="min-h-[360px] flex-1 bg-[#000000]">
         <MonacoInner value={code} onChange={onChange} />
       </div>
 
@@ -137,31 +137,31 @@ export function CodePane({
         <div
           className={cn(
             "border-t px-4 py-2.5",
-            note.failed ? "border-collapse/25 bg-collapse/6" : "border-photon/20 bg-photon/5",
+            note.failed ? "border-edge-hi bg-strata" : "border-photon bg-photon/10",
           )}
           role="status"
         >
           <p
             className={cn(
-              "font-mono text-[10.5px] leading-relaxed",
-              note.failed ? "text-collapse/90" : "text-photon/85",
+              "font-mono text-[11px] leading-relaxed",
+              note.failed ? "text-collapse" : "text-photon",
             )}
           >
             {note.text}
           </p>
           {note.stdout && (
-            <pre className="mt-2 max-h-24 overflow-auto border-l-2 border-white/12 pl-2.5 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap text-frost/65">
+            <pre className="mt-2 max-h-24 overflow-auto border-l-2 border-edge pl-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-frost">
               {note.stdout}
             </pre>
           )}
         </div>
       )}
 
-      <p className="border-t border-white/8 px-4 py-2.5 font-mono text-[10.5px] leading-relaxed text-frost/45">
-        Drawn as you type: <span className="text-frost/70">qc.h/x/y/z/s/t(q)</span> ·{" "}
-        <span className="text-frost/70">qc.cx(c, t)</span> ·{" "}
-        <span className="text-frost/70">qc.measure(...)</span>. Anything else — loops, functions,
-        numpy — needs <span className="text-photon/70">build from code</span>.
+      <p className="border-t border-edge px-4 py-2.5 font-mono text-[11px] leading-relaxed text-frost">
+        Drawn as you type: <span className="text-frost">qc.h/x/y/z/s/t(q)</span> ·{" "}
+        <span className="text-frost">qc.cx(c, t)</span> ·{" "}
+        <span className="text-frost">qc.measure(...)</span>. Anything else — loops, functions,
+        numpy — needs <span className="text-photon">build from code</span>.
       </p>
     </div>
   );

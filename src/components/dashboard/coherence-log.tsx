@@ -34,12 +34,15 @@ const MONTH_FULL = [
 const DEMO_START = Date.UTC(2026, 5, 1);
 const DAY_MS = 86_400_000;
 
+/* A heatmap needs its steps to be tellable apart, so this is the one place
+   on the site with a ramp. It is still one colour — cyan at four strengths
+   over black — rather than a hue shift. */
 const LEVEL = [
-  "bg-white/[0.055]",
+  "bg-strata",
   "bg-photon/25",
-  "bg-photon/45",
-  "bg-photon/70",
-  "bg-photon shadow-[0_0_10px_-2px_rgba(56,232,255,0.95)]",
+  "bg-photon/50",
+  "bg-photon/75",
+  "bg-photon",
 ];
 
 function monthBands(start: number, weeks: number) {
@@ -86,8 +89,8 @@ export function CoherenceLog({
   };
 
   return (
-    <section className="glass rounded-2xl p-5 lg:p-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+    <section>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-edge pb-4">
         <div>
           <p className="eyebrow">Coherence log</p>
           <h2 className="mt-1.5 text-[17px] font-semibold tracking-[-0.01em]">
@@ -96,7 +99,7 @@ export function CoherenceLog({
               : `${streakDays} day${streakDays === 1 ? "" : "s"} without a gap`}
           </h2>
         </div>
-        <p className="font-mono text-[11px] text-frost/55 tabular-nums">
+        <p className="font-mono text-[11px] text-frost tabular-nums">
           {weeks} weeks to {endLabel}
         </p>
       </div>
@@ -107,7 +110,7 @@ export function CoherenceLog({
             {bands.map((band) => (
               <span
                 key={band.label}
-                className="font-mono text-[9.5px] tracking-[0.14em] text-frost/40 uppercase"
+                className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase"
                 style={{ flex: `${band.weeks} 0 0%` }}
               >
                 {band.label}
@@ -120,7 +123,7 @@ export function CoherenceLog({
               {DAY_LABELS.map((day, row) => (
                 <span
                   key={day}
-                  className="flex items-center font-mono text-[8.5px] text-frost/35"
+                  className="flex items-center font-mono text-[8.5px] text-frost"
                 >
                   {row % 2 === 0 ? day[0] : ""}
                 </span>
@@ -147,13 +150,13 @@ export function CoherenceLog({
           </div>
 
           <div className="mt-3 flex items-center gap-1.5 pl-8">
-            <span className="mr-1 font-mono text-[9px] tracking-[0.14em] text-frost/35 uppercase">
+            <span className="mr-1 font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
               quiet
             </span>
             {LEVEL.map((level, i) => (
               <span key={i} className={cn("size-2.5 rounded-[2px]", level)} />
             ))}
-            <span className="ml-1 font-mono text-[9px] tracking-[0.14em] text-frost/35 uppercase">
+            <span className="ml-1 font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
               4 sessions
             </span>
           </div>
@@ -168,7 +171,7 @@ export function CoherenceLog({
             ] as const
           ).map(([label, value]) => (
             <div key={label}>
-              <dt className="font-mono text-[9.5px] tracking-[0.16em] text-frost/40 uppercase">
+              <dt className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
                 {label}
               </dt>
               <dd className="mt-1 font-mono text-[17px] text-paper tabular-nums">{value}</dd>
@@ -177,7 +180,7 @@ export function CoherenceLog({
         </dl>
       </div>
 
-      <p className="mt-4 border-t border-white/8 pt-4 text-[12px] leading-relaxed text-frost/55">
+      <p className="mt-4 border-t border-edge pt-4 text-[12px] leading-relaxed text-frost">
         A day counts when a circuit runs, not when a page loads. Hover a cell for the date.
       </p>
     </section>

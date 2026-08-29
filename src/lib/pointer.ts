@@ -18,15 +18,42 @@ export interface PointerState {
   active: boolean;
   /** Seconds timestamp of the last click, for the collapse shockwave. */
   clickAt: number;
+  /** Pointer speed in viewports per second, damped. Drives the wake. */
+  speed: number;
 }
 
-export const pointerState: PointerState = { x: 0, y: 0, active: false, clickAt: -999 };
+export const pointerState: PointerState = {
+  x: 0,
+  y: 0,
+  active: false,
+  clickAt: -999,
+  speed: 0,
+};
+
+let lastX = 0;
+let lastY = 0;
+let lastAt = 0;
 
 let listeners = 0;
 
 function read(clientX: number, clientY: number) {
-  pointerState.x = (clientX / window.innerWidth) * 2 - 1;
-  pointerState.y = 1 - (clientY / window.innerHeight) * 2;
+  const x = (clientX / window.innerWidth) * 2 - 1;
+  const y = 1 - (clientY / window.innerHeight) * 2;
+
+  const now = performance.now();
+  const dt = Math.max(16, now - lastAt);
+  const travelled = Math.hypot(x - lastX, y - lastY);
+  // Blend rather than replace, so the wake decays instead of flickering.
+  pointerState.speed = Math.min(
+    1,
+    pointerState.speed * 0.75 + (travelled / dt) * 260 * 0.25,
+  );
+  lastX = x;
+  lastY = y;
+  lastAt = now;
+
+  pointerState.x = x;
+  pointerState.y = y;
   pointerState.active = true;
 }
 
@@ -46,6 +73,39 @@ function onPointerDown(event: PointerEvent) {
 
 function onLeave() {
   pointerState.active = false;
+}
+
+/** Seconds since the pointer last moved. Drives everything that idles. */
+export function pointerIdle() {
+  if (!pointerState.active) return Infinity;
+  return (performance.now() - lastAt) / 1000;
+}
+
+/**
+ * Seconds since the last click, on the same clock the click was stamped with.
+ *
+ * The shockwave used to be driven by subtracting this timestamp from the
+ * renderer's own elapsed time, which is a different origin — it starts when
+ * the canvas mounts, not when the page loads. The ring therefore fired late by
+ * however long the canvas had taken to come up, which on a cold load is about
+ * a second and a half of a visitor clicking and nothing happening.
+ */
+export function secondsSinceClick() {
+  return performance.now() / 1000 - pointerState.clickAt;
+}
+
+/**
+ * Pointer speed, decayed by wall-clock time rather than by frames.
+ *
+ * The wake has to settle about a third of a second after the pointer stops,
+ * and it has to settle on a machine dropping frames, on a background tab that
+ * has had its rAF suspended, and on a 144Hz display. Decaying inside the
+ * render loop makes the settle time a function of frame rate; decaying against
+ * the clock makes it a function of time, which is what it is supposed to be.
+ */
+export function pointerSpeed() {
+  const idle = (performance.now() - lastAt) / 1000;
+  return pointerState.speed * Math.max(0, 1 - idle * 3);
 }
 
 /** Attaches the global listeners once, however many scenes are mounted. */

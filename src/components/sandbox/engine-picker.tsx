@@ -38,17 +38,17 @@ export function EnginePicker({
 
   return (
     <div
-      className="flex items-center gap-1 rounded-lg border border-white/10 p-1"
+      className="flex max-w-full flex-wrap items-center gap-1 border border-edge p-1"
       role="group"
       aria-label="Simulation engine"
     >
-      <span className="flex items-center gap-1.5 px-1.5 font-mono text-[10px] tracking-[0.12em] text-frost/45 uppercase">
+      <span className="flex items-center gap-1.5 px-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
         {probing ? (
           <Loader2 className="size-3 animate-spin" />
         ) : offline ? (
-          <WifiOff className="size-3 text-frost/40" />
+          <WifiOff className="size-3 text-frost" />
         ) : (
-          <ServerCog className="size-3 text-photon/70" />
+          <ServerCog className="size-3 text-photon" />
         )}
         engine
       </span>
@@ -64,8 +64,8 @@ export function EnginePicker({
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
           "disabled:cursor-not-allowed disabled:opacity-50",
           engine === "browser"
-            ? "bg-photon/15 text-photon"
-            : "text-frost/55 hover:bg-white/6 hover:text-paper",
+            ? "bg-photon/10 text-photon"
+            : "text-frost hover:bg-strata hover:text-paper",
         )}
       >
         <MonitorSmartphone className="size-3" />
@@ -94,8 +94,8 @@ export function EnginePicker({
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
               "disabled:cursor-not-allowed disabled:opacity-40",
               engine === id
-                ? "bg-phase/18 text-phase"
-                : "text-frost/55 hover:bg-white/6 hover:text-paper",
+                ? "bg-strata text-paper"
+                : "text-frost hover:bg-strata hover:text-paper",
             )}
           >
             <Cpu className="size-3" />
