@@ -6,6 +6,7 @@ import { CoherenceLog } from "@/components/dashboard/coherence-log";
 import { MasteryRing } from "@/components/dashboard/mastery-ring";
 import { SkillGraph } from "@/components/dashboard/skill-graph";
 import { AmplitudeBar } from "@/components/site/amplitude-bar";
+import { Reveal } from "@/components/site/reveal";
 import type { BadgeItem, Skill } from "@/lib/data";
 import type { ReactNode } from "react";
 
@@ -116,7 +117,11 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
         )}
 
         {/* Counted, not boxed: one rule and four columns. */}
-        <dl className="mt-14 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-edge pt-8 lg:grid-cols-4">
+        <Reveal
+          as="dl"
+          className="mt-14 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-edge pt-8 lg:grid-cols-4"
+          step={100}
+        >
           {model.tiles.map((tile) => (
             <div key={tile.label}>
               <dt className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
@@ -128,19 +133,21 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
               <dd className="mt-1.5 font-mono text-[11.5px] text-frost">{tile.detail}</dd>
             </div>
           ))}
-        </dl>
+        </Reveal>
 
-        <div className="mt-16">
+        {/* Each panel arrives as you reach it, so the page reads as a record
+            being counted out rather than one screen dumped at once. */}
+        <Reveal className="mt-16">
           <SkillGraph skills={model.skills} />
-        </div>
+        </Reveal>
 
-        <div className="mt-16">
+        <Reveal className="mt-16">
           <CoherenceLog log={model.log} streakDays={model.streakDays} start={model.logStart} />
-        </div>
+        </Reveal>
 
-        <div className="mt-16">
+        <Reveal className="mt-16">
           <BadgeShelf badges={model.badges} />
-        </div>
+        </Reveal>
 
         <p className="mt-16 max-w-3xl border-t border-edge pt-6 text-[13px] leading-relaxed text-frost">
           {model.footnote}{" "}

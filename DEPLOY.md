@@ -94,7 +94,9 @@ origin call the API with a bearer token.
 | `QUANTAVERSE_JWT_SECRET` | yes | Generate a fresh one. Do not reuse the local value in `backend/.env` |
 | `QUANTAVERSE_DATABASE_URL` | yes | Postgres. SQLite on a container is wiped on every redeploy |
 | `QUANTAVERSE_ALLOWED_ORIGINS` | yes | The Vercel URL |
-| `OPENAI_API_KEY` | no | Without it the tutor uses its deterministic Qiskit read-out |
+| `OPENAI_API_KEY` | no | Without it the tutor uses its deterministic Qiskit read-out. Any OpenAI-compatible key works |
+| `OPENAI_BASE_URL` | no | Pinned in `render.yaml` to Groq, which is free. Empty means OpenAI itself |
+| `QUANTAVERSE_TUTOR_MODEL` | no | Pinned in `render.yaml`. **Must match the provider** — a mismatch fails silently into the read-out |
 | `QUANTAVERSE_REGISTRATION_OPEN` | no | `1` by default |
 
 ## A note on secrets

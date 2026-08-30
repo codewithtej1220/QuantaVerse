@@ -202,9 +202,9 @@ def offline_answer(prompt: str, ir: CircuitIR | None, lesson_id: str | None = No
 
     if ir is None or not ir.timeline:
         return (
-            "The tutor's language model is not configured on this server, so here is the "
-            "deterministic read-out instead: there is no circuit on the grid yet. Place a gate "
-            "and ask again."
+            "The tutor is running without a language model, so here is the deterministic "
+            "read-out instead: there is no circuit on the grid yet. Place a gate and ask "
+            "again."
         )
 
     support, _ = _distribution(ir)
@@ -212,8 +212,8 @@ def offline_answer(prompt: str, ir: CircuitIR | None, lesson_id: str | None = No
     return (
         f"Reading your circuit directly: {ir.qubits} qubits, depth {ir.depth}, "
         f"{len(ir.timeline)} gate(s), and the state is {classify(ir)}. The measurement "
-        f"probabilities are {top}. Set OPENAI_API_KEY on the API server for a conversational "
-        "answer; this read-out is computed from your circuit either way."
+        f"probabilities are {top}. This read-out is computed from your circuit either way; "
+        "a language model on the server would add the conversation around it."
     )
 
 

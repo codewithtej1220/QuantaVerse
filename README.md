@@ -76,6 +76,12 @@ instance.
 Set `OPENAI_API_KEY` to make the tutor stream from a model. Without it the tutor
 still answers, from its own analysis of the circuit on screen.
 
+That key does not have to be OpenAI's, and paying for one is not part of running
+this. The variable names come from the SDK, which is an HTTP client that talks to
+whatever `OPENAI_BASE_URL` points at — Groq serves the same API on a free tier.
+See `backend/README.md` for the three values, and note the model name has to
+match whichever provider the key belongs to.
+
 **`.env.local`** — only needed if the API is not on the default port:
 
 ```bash

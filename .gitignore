@@ -54,3 +54,6 @@ backend/*.db-shm
 backend/*.db-wal
 # ai
 
+# A stray nested clone. It was committed as a gitlink with no .gitmodules, so a
+# fresh clone got an empty directory and a warning. Nothing imports it.
+/QuantaVerse/

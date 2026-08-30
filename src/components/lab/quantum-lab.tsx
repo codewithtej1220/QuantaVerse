@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Activity, Radiation, RotateCcw } from "lucide-react";
 
 import { Arena } from "@/components/lab/arena";
+import { Bench } from "@/components/sandbox/bench";
 import { ProfessorConsole } from "@/components/lab/professor-console";
 import { CircuitGrid } from "@/components/sandbox/circuit-grid";
 import { GatePalette } from "@/components/sandbox/gate-palette";
@@ -34,6 +35,7 @@ const nextId = () => `p${(seq += 1)}`;
 export function QuantumLab() {
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [armed, setArmed] = useState<string | null>(null);
+  const [bench, setBench] = useState(false);
   const [qubits, setQubits] = useState(2);
   const [impulse, setImpulse] = useState(0);
   const [measured, setMeasured] = useState<{ at: number; outcome: 0 | 1 } | null>(null);
@@ -119,26 +121,28 @@ export function QuantumLab() {
   const pairView = qubits >= 2;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
-      <div className="min-w-0">
+    <div className="space-y-5">
+      {/* The instrument, and the task it is being judged against. */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start">
         <div
           className={cn(
-            "relative border border-edge bg-nebula transition-colors",
+            "relative min-w-0 border border-edge bg-nebula transition-colors",
             disrupted > 0 && "border-frost",
           )}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-edge px-5 py-3">
             <p className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">
               {pairView ? "Two-qubit rig" : "Gyroscope"}
             </p>
-            <div className="flex items-center gap-3 font-mono text-[11px] text-dim tabular-nums">
+            <div className="flex items-center gap-4 font-mono text-[11px] text-dim tabular-nums">
               <span>
                 q<span className="text-paper">{focus}</span> · P(|0⟩){" "}
                 <span className="text-photon">{p0.toFixed(3)}</span>
               </span>
               {pairView && (
                 <span>
-                  C <span className={tension > 0.02 ? "text-photon" : "text-dim"}>
+                  C{" "}
+                  <span className={tension > 0.02 ? "text-photon" : "text-dim"}>
                     {tension.toFixed(2)}
                   </span>
                 </span>
@@ -146,12 +150,14 @@ export function QuantumLab() {
             </div>
           </div>
 
+          {/* Taller than it was. The rig is the thing this page is for, and at
+              340px it was a strip of instrument under a stack of controls. */}
           {pairView ? (
             <EntangledRig
               bloch={result.bloch}
               ghost={ghost ? vectorOf(ghost.theta, ghost.phi) : null}
               focus={focus}
-              className="h-[340px] w-full"
+              className="h-[420px] w-full"
             />
           ) : (
             <BlochCanvas
@@ -159,11 +165,11 @@ export function QuantumLab() {
               ghost={ghost ? vectorOf(ghost.theta, ghost.phi) : null}
               cloud={{ p0, measuredAt: measured?.at ?? null, outcome: measured?.outcome ?? 0 }}
               impulse={impulse}
-              className="h-[340px] w-full"
+              className="h-[420px] w-full"
             />
           )}
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-edge px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-edge px-5 py-3.5">
             <button
               type="button"
               onClick={measure}
@@ -174,8 +180,7 @@ export function QuantumLab() {
             </button>
             {measured && (
               <p className="font-mono text-[11.5px] text-frost">
-                collapsed to{" "}
-                <span className="ket text-photon">|{measured.outcome}⟩</span>
+                collapsed to <span className="ket text-photon">|{measured.outcome}⟩</span>
               </p>
             )}
             <span className="ml-auto flex items-center gap-1.5">
@@ -198,12 +203,26 @@ export function QuantumLab() {
           </div>
         </div>
 
-        <div className="mt-4 border border-edge bg-nebula p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <GatePalette armed={armed} onArm={setArmed} />
-          </div>
+        <div className="flex min-w-0 flex-col gap-5">
+          <ProfessorConsole focus={vector} />
+          <Arena placements={placements} qubits={qubits} onVerdict={onVerdict} />
+        </div>
+      </div>
 
-          <div className="mt-4">
+      {/* The bench, across the full page.
+
+          It used to sit in the left column, which is a little over half the
+          width — and the deck is a wide instrument. A ten-step circuit had to
+          be scrolled sideways to see five of its steps, under a palette folded
+          into four columns of two. Neither of those is a layout problem you can
+          fix with spacing; the panel simply needed the width it always wanted,
+          and moving it down here also evens out two columns that were running
+          six hundred pixels apart in height. */}
+      <div className="border border-edge bg-nebula p-4 lg:p-5">
+        <Bench expanded={bench} onExit={() => setBench(false)}>
+          <GatePalette armed={armed} onArm={setArmed} />
+
+          <div className="mt-5">
             <CircuitGrid
               qubits={qubits}
               columns={COLUMNS}
@@ -211,13 +230,17 @@ export function QuantumLab() {
               armed={armed}
               onPlace={place}
               onRemove={remove}
+              expanded={bench}
+              onToggleExpand={() => setBench((open) => !open)}
             />
           </div>
+        </Bench>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-edge pt-3.5">
-            <span className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
-              Register
-            </span>
+        <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-edge pt-4">
+          <span className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
+            Register
+          </span>
+          <span className="flex items-center gap-1.5">
             {Array.from({ length: MAX_QUBITS }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
@@ -230,33 +253,30 @@ export function QuantumLab() {
                 }}
                 className={cn(
                   "border px-2.5 py-1 font-mono text-[11px] transition-colors",
-                  n === qubits ? "border-photon text-photon" : "border-edge text-dim hover:text-frost",
+                  n === qubits
+                    ? "border-photon text-photon"
+                    : "border-edge text-dim hover:text-frost",
                 )}
               >
                 {n}
               </button>
             ))}
-            <span className="ml-auto flex items-center gap-4 font-mono text-[11px] text-dim tabular-nums">
-              <span className="inline-flex items-center gap-1.5">
-                <Activity className="size-3.5" />
-                depth {result.depth}
-              </span>
-              <button
-                type="button"
-                onClick={reset}
-                className="inline-flex items-center gap-1.5 tracking-[0.14em] uppercase hover:text-paper"
-              >
-                <RotateCcw className="size-3.5" />
-                clear
-              </button>
+          </span>
+          <span className="ml-auto flex items-center gap-5 font-mono text-[11px] text-dim tabular-nums">
+            <span className="inline-flex items-center gap-1.5">
+              <Activity className="size-3.5" />
+              depth {result.depth}
             </span>
-          </div>
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex items-center gap-1.5 tracking-[0.14em] uppercase hover:text-paper"
+            >
+              <RotateCcw className="size-3.5" />
+              clear
+            </button>
+          </span>
         </div>
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-4">
-        <ProfessorConsole focus={vector} />
-        <Arena placements={placements} qubits={qubits} onVerdict={onVerdict} />
       </div>
     </div>
   );

@@ -49,10 +49,39 @@ file is a valid file.
 | Variable | Default | What it does |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | empty | Unset, the tutor answers from its own analysis. Set, it streams from a model. |
-| `OPENAI_BASE_URL` | unset | Any OpenAI-compatible endpoint. |
-| `QUANTAVERSE_TUTOR_MODEL` | `gpt-4o-mini` | Model for the live tutor. |
+| `OPENAI_BASE_URL` | unset | Any OpenAI-compatible endpoint. Empty means OpenAI itself. |
+| `QUANTAVERSE_TUTOR_MODEL` | `gpt-4o-mini` | Model for the live tutor. Must match the provider. |
 | `QUANTAVERSE_TUTOR_TEMPERATURE` | `0.3` | Low: it is explaining maths. |
-| `QUANTAVERSE_TUTOR_MAX_TOKENS` | `700` | Cap per answer. |
+| `QUANTAVERSE_TUTOR_MAX_TOKENS` | `700` | Cap per answer, reasoning included. |
+
+### Running the tutor for free
+
+The names are the OpenAI SDK's conventions, not a commitment to OpenAI. The
+package is Apache-2.0 and only sends HTTP; it talks to whatever `OPENAI_BASE_URL`
+names. Groq implements the same API and has a free tier:
+
+```
+OPENAI_API_KEY=<a groq key>
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+QUANTAVERSE_TUTOR_MODEL=openai/gpt-oss-120b
+QUANTAVERSE_TUTOR_MAX_TOKENS=1200
+```
+
+Two things that will bite otherwise:
+
+- **The model must match the provider.** `gpt-4o-mini` is the default and Groq
+  does not serve it, so a Groq key on its own fails on every request.
+- **Failure is quiet by design.** Any error falls back to the read-out so the
+  site never breaks, which means a misconfigured tutor looks like a working one
+  that gives short answers. `GET /api/tutor/status` reports `configured_model`
+  and `configured_base_url` whether or not the tutor is live, and the exception
+  is logged at warning level.
+
+Groq's catalogue rotates, so confirm the model still exists rather than trusting
+this file: `curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer $KEY"`. Reasoning
+models — `openai/gpt-oss-*` among them — spend part of `MAX_TOKENS` thinking
+before they write, which is why the budget above is raised; at 700,
+`gpt-oss-20b` truncated mid-answer.
 | `QUANTAVERSE_ALLOWED_ORIGINS` | `*` | Comma-separated CORS origins. Narrow this before you deploy. |
 | `QUANTAVERSE_DEFAULT_BACKEND` | `qiskit` | Used when a request omits `backend`. |
 | `QUANTAVERSE_DEFAULT_SHOTS` | `1024` | Used when a request omits `shots`. |

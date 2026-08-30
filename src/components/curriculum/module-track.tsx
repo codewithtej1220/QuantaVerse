@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 
 import { GATE_BY_ID, MODULES, TRACK_LABEL, type Module, type Track } from "@/lib/data";
+import { Reveal } from "@/components/site/reveal";
 import { cn } from "@/lib/utils";
 
 /**
@@ -244,7 +245,9 @@ export function ModuleTrack() {
         })}
       </div>
 
-      <ul className="divide-y divide-edge">
+      {/* The eight modules arrive in order as the list is reached, which is
+          the order they are meant to be read in. */}
+      <Reveal as="ul" className="divide-y divide-edge" step={85}>
         {shown.map((row, i) => (
           <ModuleRow
             key={row.slug}
@@ -255,7 +258,7 @@ export function ModuleTrack() {
             introduced={introducedBy.get(row.slug) ?? new Set()}
           />
         ))}
-      </ul>
+      </Reveal>
     </section>
   );
 }

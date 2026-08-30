@@ -151,7 +151,7 @@ export function Arena({
   };
 
   return (
-    <section className="well flex min-h-0 flex-col p-4">
+    <section className="well flex min-h-0 flex-col p-5">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge pb-3">
         <p className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">Arena</p>
         <div className="flex flex-wrap gap-1.5">
@@ -181,7 +181,12 @@ export function Arena({
         )}
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-y border-edge py-3.5 sm:grid-cols-4">
+      {/* Two up, not four. `sm:grid-cols-4` was reading the viewport, but this
+          panel lives in a column about four hundred pixels wide whatever the
+          viewport is doing — so at any desktop size it forced four columns of
+          ninety pixels and "Gate depth" and "Coherence headroom" both wrapped
+          onto two lines. */}
+      <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-edge py-4">
         {(
           [
             ["Gate depth", String(mine.depth), "text-paper"],

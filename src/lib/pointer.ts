@@ -130,6 +130,32 @@ export function useGlobalPointer() {
   }, []);
 }
 
+/* ---------------- zone hover ---------------- */
+
+const hovered = new Map<string, number>();
+
+/**
+ * Whether the pointer is over a given 3D zone, as 1 or 0.
+ *
+ * The stage canvas takes no pointer events — every object on it reads the
+ * cursor from this module instead — so an object cannot raycast to discover it
+ * is being pointed at. The zone's own div knows, though, and it is exactly the
+ * box the object is drawn into. So the div reports it here and the object reads
+ * it inside its frame loop, on the same terms as everything else: no React
+ * render between the pointer moving and the picture changing.
+ */
+export function zoneHover(id: string) {
+  return hovered.get(id) ?? 0;
+}
+
+export function setZoneHover(id: string, on: boolean) {
+  hovered.set(id, on ? 1 : 0);
+}
+
+export function clearZoneHover(id: string) {
+  hovered.delete(id);
+}
+
 const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";
 
 /** True when the visitor has asked the OS to keep motion to a minimum. */

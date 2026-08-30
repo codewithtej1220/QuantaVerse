@@ -30,8 +30,20 @@ services:
         value: "1"
       # Optional. Without it the tutor falls back to its deterministic
       # Qiskit read-out, which is fully functional.
+      #
+      # The key is entered in the dashboard; the two values below are not
+      # secret and belong here, because without them the model name would
+      # silently stay at the OpenAI default and a Groq key would fail on every
+      # request — visibly as nothing, since the tutor degrades quietly.
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: QUANTAVERSE_TUTOR_MODEL
+        value: openai/gpt-oss-120b
+      # Reasoning models spend part of the budget thinking before they answer.
+      - key: QUANTAVERSE_TUTOR_MAX_TOKENS
+        value: "1200"
 
 databases:
   - name: quantaverse-db

@@ -2,7 +2,7 @@
 
 import { Suspense, useSyncExternalStore } from "react";
 
-import QuantumField from "./quantum-field";
+import QuantumField, { type FieldIntensity } from "./quantum-field";
 import { Stage } from "./stage";
 
 /**
@@ -38,6 +38,27 @@ export function StageMount() {
     <Suspense fallback={null}>
       <QuantumField />
       <Stage />
+    </Suspense>
+  );
+}
+
+/**
+ * The field on its own, for every page that is not the landing page.
+ *
+ * No `Stage` alongside it: the stage exists to render into `Zone` boxes, and a
+ * page without a zone would be paying for a second WebGL context to draw
+ * nothing. With no film track registered, `trackOnScreen` returns 0 and the
+ * field holds the formless cloud — the cursor still tears through it, but it
+ * never re-forms into a shape that has nothing to say on that page.
+ */
+export function FieldMount({ intensity }: { intensity?: FieldIntensity }) {
+  const ready = useSyncExternalStore(neverChanges, onClient, onServer);
+
+  if (!ready) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <QuantumField intensity={intensity} />
     </Suspense>
   );
 }

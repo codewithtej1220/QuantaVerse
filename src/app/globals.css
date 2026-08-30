@@ -99,6 +99,15 @@
      Two animations, both of which carry information. Anything that
      only pulsed or scanned for atmosphere has been deleted. */
   --animate-rise: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* A gate arriving on the circuit deck, which is a raised board: it comes in
+     from in front of its resting depth and settles onto the wire. Transform
+     only — an opacity fade would flatten the block out of its 3D context and
+     the thing would land as a paper cut-out. */
+  --animate-land: land 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* A section arriving as it is scrolled to. Longer and further than `rise`,
+     which is a mount-time nudge for something that was already on screen —
+     this one has to read as an arrival from across the fold. */
+  --animate-arrive: arrive 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-wire: wire-run 4.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   --animate-breathe: breathe 2.4s ease-in-out infinite;
 
@@ -109,6 +118,24 @@
     }
     to {
       opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes arrive {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 38px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes land {
+    from {
+      transform: translateZ(70px) rotateX(-22deg);
+    }
+    to {
       transform: none;
     }
   }
@@ -400,7 +427,32 @@
   text-shadow: none;
 }
 
+/**
+ * Scroll reveal.
+ *
+ * The container is marked the first time it is scrolled to, and its children
+ * rise off that one attribute — a list of eight rows costs one observer and no
+ * per-item state. The index each child is staggered by is written onto it in
+ * JS on mount, because the alternative is a rule per position.
+ *
+ * The delay is declared after the shorthand on purpose: `animation` resets
+ * `animation-delay` to zero, so the order here is the whole stagger.
+ */
+[data-reveal] > * {
+  opacity: 0;
+}
+
+[data-reveal="shown"] > * {
+  animation: var(--animate-arrive, arrive 0.72s cubic-bezier(0.16, 1, 0.3, 1) both);
+  animation-delay: calc(var(--reveal-step, 90ms) * var(--i, 0));
+}
+
 @media (prefers-reduced-motion: reduce) {
+  /* Nothing rises, and nothing waits to be scrolled to before it is readable. */
+  [data-reveal] > * {
+    opacity: 1;
+  }
+
   *,
   *::before,
   *::after {

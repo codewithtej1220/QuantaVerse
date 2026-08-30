@@ -4,11 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { View } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 
-import { useGlobalPointer, useReducedMotion } from "@/lib/pointer";
+import {
+  clearZoneHover,
+  setZoneHover,
+  useGlobalPointer,
+  useReducedMotion,
+} from "@/lib/pointer";
 import { useTrackScrollDepth } from "@/lib/scroll";
 import { BlochPoleLabels, BlochSphere } from "./bloch-sphere";
 import { EntangledPair } from "./entangled-pair";
 import { GateBlock } from "./gate-block";
+import { ProcessorChip } from "./processor-chip";
 import { Studio } from "./studio";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +35,7 @@ import { cn } from "@/lib/utils";
  * component.
  */
 
-type Focus = "qubit" | "gate" | "pair";
+type Focus = "qubit" | "gate" | "pair" | "chip";
 
 /** The fixed canvas. Mount exactly one, on any page that uses a Zone. */
 export function Stage() {
@@ -81,14 +87,25 @@ export function Zone({
   useGlobalPointer();
   useTrackScrollDepth(id, box);
 
+  useEffect(() => () => clearZoneHover(id), [id]);
+
   return (
-    <div className={cn("relative", className)}>
+    /* The canvas cannot be pointed at — it takes no events — so the zone's own
+       box reports the hover on its behalf. Written to a module record rather
+       than to state: the object reads it in its frame loop, and a header that
+       re-rendered React on every pointer crossing would be paying for it. */
+    <div
+      className={cn("relative", className)}
+      onPointerEnter={() => setZoneHover(id, true)}
+      onPointerLeave={() => setZoneHover(id, false)}
+    >
       <View ref={box} className="absolute inset-0">
         <Studio />
         <group scale={scale}>
           {focus === "qubit" && <BlochSphere depthId={id} reducedMotion={reduced} />}
           {focus === "gate" && <GateBlock depthId={id} reducedMotion={reduced} />}
           {focus === "pair" && <EntangledPair depthId={id} reducedMotion={reduced} />}
+          {focus === "chip" && <ProcessorChip depthId={id} reducedMotion={reduced} />}
         </group>
       </View>
       {focus === "qubit" && <BlochPoleLabels inset="12%" />}

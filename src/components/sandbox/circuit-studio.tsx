@@ -29,6 +29,7 @@ import {
 } from "@/lib/quantum";
 import { cn } from "@/lib/utils";
 
+import { Bench } from "./bench";
 import { ChallengeCard } from "./challenge-card";
 import { CircuitGrid } from "./circuit-grid";
 import { CodePane, type BuildNote } from "./code-pane";
@@ -72,6 +73,9 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     toQiskit(opening ? presetPlacements(opening) : [], challenge?.qubits ?? 3),
   );
   const [armed, setArmed] = useState<string | null>(null);
+  /* The board taken full screen. It is the only place a ten-step circuit
+     fits without scrolling sideways, so it is where the dragging is done. */
+  const [bench, setBench] = useState(false);
   const [edited, setEdited] = useState(false);
   const [preset, setPreset] = useState<Preset | null>(opening);
   const [shots, setShots] = useState<number[] | null>(null);
@@ -465,9 +469,11 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       {/* Two panes: build on the left, code on the right. */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="panel flex min-w-0 flex-col gap-5 rounded-2xl p-4 lg:p-5">
-          <GatePalette armed={armed} onArm={setArmed} />
+          <Bench expanded={bench} onExit={() => setBench(false)}>
+            <GatePalette armed={armed} onArm={setArmed} />
 
-          <div className="rounded-xl border border-edge bg-void p-3 pt-2">
+            {/* The grid frames itself: it is a lit stage with a board standing
+                in it, not a diagram that needs a box drawn round it. */}
             <CircuitGrid
               qubits={qubits}
               columns={COLUMNS}
@@ -475,8 +481,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               armed={armed}
               onPlace={onPlace}
               onRemove={onRemove}
+              expanded={bench}
+              onToggleExpand={() => setBench((open) => !open)}
             />
-          </div>
+          </Bench>
 
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-edge pt-4 sm:grid-cols-4">
             {(

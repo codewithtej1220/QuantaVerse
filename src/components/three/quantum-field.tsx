@@ -40,7 +40,91 @@ import { dwell, FILM_STOPS, FILM_TRACK, trackOnScreen, trackProgress } from "@/l
  * a React component.
  */
 
-const COUNT = 16_000;
+const COUNT = 23_000;
+
+/** How loudly the field plays on the page it is mounted on. */
+export type FieldIntensity = "full" | "ambient" | "quiet";
+
+/**
+ * The field is the same field everywhere; only its presence changes.
+ *
+ * The landing page is the field's own page and it runs at full strength, bursts
+ * included: there the flashes punctuate a scroll-driven film, and the type they
+ * sit behind is display-sized.
+ *
+ * Reading pages get the cloud and the cursor wake but none of the events. A
+ * burst is a light going off behind body copy, and it does not matter how good
+ * it looks if it lands on the paragraph someone is halfway through. The texture
+ * is what stops the page being plain; the flashing is not.
+ *
+ * The two working pages get less again. The circuit deck on them already
+ * answers the cursor, and a wake tearing open behind a board that is
+ * simultaneously tilting is one mouse driving two things at once — it reads as
+ * noise rather than as depth, and it costs the deck the parallax that was the
+ * whole point of building it. Dropping the count also leaves the GPU to the
+ * simulator, which is what a student is actually there for.
+ */
+const PRESENCE: Record<
+  FieldIntensity,
+  {
+    count: number;
+    /** Ceiling on the opacity ramp. */
+    gain: number;
+    /** How dim it settles to once the reading starts. */
+    floor: number;
+    /** Whether clicks throw a shockwave and bursts fire on their own. */
+    bursts: boolean;
+    /** How hard the cursor bites. */
+    bite: number;
+    /**
+     * Whether the document itself re-forms the field.
+     *
+     * The landing page has a pinned track to scrub against. A reading page has
+     * no such thing, so its own scroll is the scrubber: the same five
+     * formations, spread across the whole page instead of across four screens
+     * of a film.
+     */
+    scrub: boolean;
+    dpr: [number, number];
+  }
+> = {
+  full: { count: COUNT, gain: 1, floor: 0.34, bursts: true, bite: 1, scrub: false, dpr: [1, 1.6] },
+  ambient: {
+    count: 16_000,
+    gain: 0.82,
+    /* High enough that the formations are legible shapes rather than a hint of
+       one. The field is cyan points on black and the copy over it is near
+       white, so the two never come close to competing — the thing that had to
+       be restrained was the bursts, not the brightness. */
+    floor: 0.46,
+    bursts: false,
+    bite: 0.85,
+    scrub: true,
+    dpr: [1, 1.5],
+  },
+  quiet: {
+    count: 14_000,
+    gain: 0.78,
+    floor: 0.36,
+    bursts: false,
+    bite: 0.8,
+    /* The working pages hold the cloud, and that — not the brightness — is the
+       whole of what makes them quiet. The first cut of this dimmed them almost
+       to nothing on the theory that the field would compete with the circuit
+       deck, which was wrong twice over: the deck sits on an opaque panel the
+       field cannot reach through, and these pages are mostly *not* deck. The
+       header, the margins and the space around the arena are ordinary page,
+       and dimming those just made the lab look switched off.
+
+       What genuinely cannot happen here is a shape assembling itself behind a
+       circuit a student is building, or a burst going off mid-measurement. So
+       the cloud stays a cloud and the events stay away. */
+    scrub: false,
+    dpr: [1, 1.4],
+  },
+};
+
+type Presence = (typeof PRESENCE)[FieldIntensity];
 
 /**
  * Drop a burst image here and it takes over the look.
@@ -354,14 +438,21 @@ const vertexShader = /* glsl */ `
        itself straight to white. */
     vec2  toMouse = uMouse.xy - p.xy;
     float dist    = length(toMouse);
-    float reach   = 3.6 + uSpeed * 2.4;
+    float reach   = 3.4 + uSpeed * 1.3;
     float force   = uPull * (0.28 + uSpeed * 0.72);
     float bite    = force * exp(-(dist * dist) / (reach * reach));
     vec2  dir     = normalize(toMouse + vec2(1e-5));
     vec2  tangent = vec2(-dir.y, dir.x);
 
-    p.xy -= dir * bite * 1.7;
-    p.xy += tangent * bite * (1.9 + uSpeed * 2.8);
+    /* Swirl belongs to slow movement, not fast.
+       The tangential term used to grow with speed while the radial one stayed
+       fixed, so a quick flick ended up spinning points nearly three times
+       harder than it pushed them — a tornado. Inverted: a fast swipe shoulders
+       the field aside, and the curl is what you get when you move gently
+       through it. The wake still widens with speed, via reach and bite above. */
+    float curl = 1.0 - uSpeed * 0.55;
+    p.xy -= dir * bite * (1.7 + uSpeed * 1.0);
+    p.xy += tangent * bite * 2.1 * curl;
     p.z  += bite * 1.3;
 
     // Click: a burst, thrown from where the click actually landed.
@@ -388,7 +479,7 @@ const vertexShader = /* glsl */ `
        unrelated corners of the field flaring together. That is the one thing
        about entanglement worth showing rather than writing down. */
     float pairClock = fract(aPair * 61.0 + uTime * 0.055);
-    float twin = exp(-pow(pairClock - 0.5, 2.0) * 3000.0) * (1.0 - uReduced);
+    float twin = exp(-pow(pairClock - 0.5, 2.0) * 2500.0) * (1.0 - uReduced);
 
     /* With artwork loaded the points still get shoved — the field has to
        react, or the sprite reads as a sticker laid over a photograph — but the
@@ -396,7 +487,17 @@ const vertexShader = /* glsl */ `
     float burstLight = (clickRim * 0.95 + clickFil * 0.55 + echoRim * 0.62 + echoFil * 0.36)
                      * mix(1.0, 0.22, uArt);
     vBurst = clamp(burstLight * 1.3, 0.0, 1.0);
-    vGlow  = clamp(bite * 0.9 + burstLight + twin * 0.55, 0.0, 1.0);
+    /* Brightness is decoupled from displacement, and shrinks as you speed up.
+
+       The wake is a hole being opened in the field, not a lamp being switched
+       on. Both were previously driven by the same bite value, which also grows
+       with pointer speed — so a fast sweep lit several thousand points at once
+       across a six-unit radius and additive blending turned the lot into a
+       single blue-white mass over the headline. Displacement below is
+       untouched; only the light it throws is rationed, hardest exactly when
+       the cursor is moving fastest. */
+    float lit = bite * (0.42 - uSpeed * 0.22);
+    vGlow  = clamp(lit + burstLight + twin * 0.55, 0.0, 1.0);
     vHeat  = clamp(clickHeat + echoHeat * 0.8, 0.0, 1.0);
 
     /* How tightly the field is currently packed. The cloud is spread over a
@@ -458,7 +559,13 @@ const fragmentShader = /* glsl */ `
 /* The points                                                          */
 /* ------------------------------------------------------------------ */
 
-function Particles({ reducedMotion }: { reducedMotion: boolean }) {
+function Particles({
+  reducedMotion,
+  presence,
+}: {
+  reducedMotion: boolean;
+  presence: Presence;
+}) {
   const material = useRef<THREE.ShaderMaterial>(null);
   const points = useRef<THREE.Points>(null);
   const viewport = useThree((state) => state.viewport);
@@ -468,28 +575,31 @@ function Particles({ reducedMotion }: { reducedMotion: boolean }) {
   const lastClick = useRef(-999);
   const echo = useRef(new THREE.Vector3(0, 0, 0));
   const echoAge = useRef(0);
-  const echoGap = useRef(2.5);
+  const echoGap = useRef(1.6);
   const echoSpan = useRef(3.0);
   const pull = useRef(0);
   const phase = useRef(0);
   const opacity = useRef(0);
+  const pageSpan = useRef(1);
+  const spanTick = useRef(0);
 
+  const count = presence.count;
   const formations = useMemo(
     () => ({
-      cloud: cloud(COUNT),
-      sphere: sphere(COUNT, 4.6),
-      split: split(COUNT, 2.9, 3.1),
-      circuit: circuit(COUNT),
-      hist: histogram(COUNT),
-      seeds: Float32Array.from({ length: COUNT }, (_, i) => i / COUNT),
-      pairs: Float32Array.from({ length: COUNT }, (_, i) => Math.floor(i / 2) / (COUNT / 2)),
+      cloud: cloud(count),
+      sphere: sphere(count, 4.6),
+      split: split(count, 2.9, 3.1),
+      circuit: circuit(count),
+      hist: histogram(count),
+      seeds: Float32Array.from({ length: count }, (_, i) => i / count),
+      pairs: Float32Array.from({ length: count }, (_, i) => Math.floor(i / 2) / (count / 2)),
       scales: (() => {
         const rand = rng(97);
         // Cubed, so most points are small and a few are properly large.
-        return Float32Array.from({ length: COUNT }, () => 0.45 + Math.pow(rand(), 3) * 2.4);
+        return Float32Array.from({ length: count }, () => 0.45 + Math.pow(rand(), 3) * 2.4);
       })(),
     }),
-    [],
+    [count],
   );
 
   const uniforms = useMemo(
@@ -530,7 +640,7 @@ function Particles({ reducedMotion }: { reducedMotion: boolean }) {
     mouse.current.x += (targetX - mouse.current.x) * chase;
     mouse.current.y += (targetY - mouse.current.y) * chase;
 
-    const wantPull = pointerState.active ? (reducedMotion ? 0.35 : 1) : 0;
+    const wantPull = pointerState.active ? (reducedMotion ? 0.35 : presence.bite) : 0;
     pull.current += (wantPull - pull.current) * Math.min(1, step * 4);
 
     /* The film scrubs the formation. Everywhere else the field relaxes back
@@ -538,7 +648,27 @@ function Particles({ reducedMotion }: { reducedMotion: boolean }) {
        shape with nothing to say there, and the return reads as the state
        going back into superposition once nobody is measuring it. */
     const onFilm = trackOnScreen(FILM_TRACK);
-    const wantPhase = onFilm ? dwell(trackProgress(FILM_TRACK), FILM_STOPS) : 0;
+    let wantPhase = 0;
+    if (onFilm) {
+      wantPhase = dwell(trackProgress(FILM_TRACK), FILM_STOPS);
+    } else if (presence.scrub) {
+      /* The page is the scrubber. `dwell` is doing the same job it does on the
+         film — holding each formation for most of its segment and moving
+         quickly between them — so a reader gets a still shape to look at rather
+         than a permanent smear halfway between two of them.
+
+         scrollHeight forces a layout, so it is sampled a few times a second
+         instead of sixty. scrollY does not, and is read every frame. */
+      spanTick.current -= 1;
+      if (spanTick.current <= 0) {
+        spanTick.current = 20;
+        pageSpan.current = Math.max(
+          1,
+          document.documentElement.scrollHeight - window.innerHeight,
+        );
+      }
+      wantPhase = dwell(Math.min(1, window.scrollY / pageSpan.current), FILM_STOPS);
+    }
     /* Catch-up scales with how far behind the field is. Scrolling normally
        keeps the gap tiny and gets the slow, smooth follow that stops the
        shapes juddering; throwing the scrollbar, hitting an anchor or landing
@@ -552,7 +682,7 @@ function Particles({ reducedMotion }: { reducedMotion: boolean }) {
        under body copy is a field competing with the words. */
     const scrolled = window.scrollY;
     const fold = Math.max(0, 1 - scrolled / (window.innerHeight * 1.1));
-    const wantOpacity = Math.max(0.34, Math.max(fold, onFilm));
+    const wantOpacity = Math.max(presence.floor, Math.max(fold, onFilm) * presence.gain);
     // Snap on the first frame. Ramping up from nothing means the field is
     // invisible for the half second a visitor spends forming their first
     // impression of the page, which is the half second it exists for.
@@ -564,20 +694,32 @@ function Particles({ reducedMotion }: { reducedMotion: boolean }) {
     /* A cued burst wins over the spontaneous schedule: the two moments that
        ask for one are the page arriving and the circuit being measured, and
        neither should have to wait its turn behind a random event. */
-    echoAge.current += step;
+    /* Real elapsed time, not the physics step. `step` is clamped to 1/30 so a
+       long frame cannot fling the displacement maths across the screen — but
+       spending that clamped value on a timer means the burst interval stretches
+       on any machine below 30fps, and a slow laptop would see them arrive three
+       times further apart than intended. The wider clamp here only guards
+       against a tab coming back from the background. */
+    echoAge.current += Math.min(delta, 0.25);
     const cue = takeBurst();
-    if (cue) {
+    if (presence.bursts && cue) {
       echoAge.current = 0;
-      echoGap.current = 5 + Math.random() * 5;
+      echoGap.current = 3.2 + Math.random() * 2.6;
       echoSpan.current = 5.0 * cue.size;
       echo.current.set(
         cue.x * viewport.width * 0.5,
         cue.y * viewport.height * 0.5,
         0,
       );
-    } else if (!reducedMotion && echoAge.current > echoGap.current) {
+    } else if (presence.bursts && !reducedMotion && echoAge.current > echoGap.current) {
       echoAge.current = 0;
-      echoGap.current = 5 + Math.random() * 5;
+      /* Paced against how present the field is rather than on one fixed
+         interval. A burst decays to nothing in about four seconds, so a flat
+         five-to-ten second gap left the hero empty for most of it — but the
+         same rate over the reading sections would be a light flashing behind
+         body copy. Lively where the field is the subject, calm where it is
+         the background. */
+      echoGap.current = (2.4 + Math.random() * 2.6) / Math.max(0.5, opacity.current);
       echoSpan.current = 3.0;
       echo.current.set(
         (Math.random() * 2 - 1) * viewport.width * 0.45,
@@ -604,25 +746,38 @@ function Particles({ reducedMotion }: { reducedMotion: boolean }) {
     shader.uniforms.uClick.value.copy(click.current);
     shader.uniforms.uEchoSpan.value = echoSpan.current;
     shader.uniforms.uEcho.value.copy(echo.current);
-    shader.uniforms.uEchoAge.value = echoAge.current;
+    /* Quiet pages get no ripples at all: a light flashing behind a circuit a
+       student is reading is the one thing an ambient layer must never do. */
+    shader.uniforms.uEchoAge.value = presence.bursts ? echoAge.current : 99;
     shader.uniforms.uMouse.value.copy(mouse.current);
     shader.uniforms.uPull.value = pull.current;
-    shader.uniforms.uSpeed.value = pointerSpeed();
+    const speed = pointerSpeed();
+    shader.uniforms.uSpeed.value = speed;
     shader.uniforms.uTime.value = state.clock.elapsedTime;
-    shader.uniforms.uWave.value = secondsSinceClick();
+    shader.uniforms.uWave.value = presence.bursts ? secondsSinceClick() : 99;
     shader.uniforms.uPhase.value = phase.current;
     shader.uniforms.uOpacity.value = opacity.current;
 
-    /* The whole field leans toward the cursor, over a slow idle drift.
-       The lean is what turns a flat sheet of points into something with a
-       near side and a far side; the drift is what stops a formed shape
-       looking like a photograph of itself while the reader holds still. */
+    /* Parallax lean — weak, slow, and it lets go while you are moving.
+
+       This was the tornado, and the local swirl was never the cause. The whole
+       cloud was being yawed by cursor *position* at ±0.32 rad and chased with
+       a ~0.45s time constant, so a fast traverse whipped sixteen thousand
+       points through thirty-seven degrees of rotation. At the edges of a field
+       nineteen units wide that is an enormous arc, and with the depth spread
+       behind it the parallax reads as a rotating column.
+
+       Three changes, all pulling the same way: a third of the travel, a third
+       of the chase rate, and the chase releases as pointer speed rises — so a
+       quick flick leaves the field where it is and it drifts back once your
+       hand settles. The near-side/far-side cue survives; the spin does not. */
     const node = points.current;
     if (node && !reducedMotion) {
-      const lean = Math.min(1, step * 2.2);
-      const drift = Math.sin(state.clock.elapsedTime * 0.22) * 0.16;
-      node.rotation.y += (pointerState.x * 0.32 + drift - node.rotation.y) * lean;
-      node.rotation.x += (-pointerState.y * 0.18 - node.rotation.x) * lean;
+      const settle = 1 - speed * 0.8;
+      const lean = Math.min(1, step * 0.8) * settle;
+      const drift = Math.sin(state.clock.elapsedTime * 0.22) * 0.1;
+      node.rotation.y += (pointerState.x * 0.1 + drift - node.rotation.y) * lean;
+      node.rotation.x += (-pointerState.y * 0.06 - node.rotation.x) * lean;
     }
   });
 
@@ -774,10 +929,15 @@ function BurstArt({ reducedMotion }: { reducedMotion: boolean }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function QuantumField() {
+export default function QuantumField({
+  intensity = "full",
+}: {
+  intensity?: FieldIntensity;
+}) {
   useGlobalPointer();
   const reduced = useReducedMotion();
   const [active, setActive] = useState(true);
+  const presence = PRESENCE[intensity];
 
   useEffect(() => {
     const onVisibility = () => setActive(!document.hidden);
@@ -788,15 +948,15 @@ export default function QuantumField() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-20" aria-hidden>
       <Canvas
-        dpr={[1, 1.6]}
+        dpr={presence.dpr}
         frameloop={active ? "always" : "never"}
         camera={{ position: [0, 0, 20], fov: 46 }}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         style={{ pointerEvents: "none" }}
         fallback={null}
       >
-        <Particles reducedMotion={reduced} />
-        <BurstArt reducedMotion={reduced} />
+        <Particles reducedMotion={reduced} presence={presence} />
+        {presence.bursts && <BurstArt reducedMotion={reduced} />}
       </Canvas>
     </div>
   );

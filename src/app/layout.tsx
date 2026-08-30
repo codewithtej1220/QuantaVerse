@@ -5,6 +5,7 @@ import { TutorSidebar } from "@/components/ai/tutor-sidebar";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
+import { RouteField } from "@/components/three/route-field";
 import "./globals.css";
 
 /**
@@ -80,6 +81,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <AuthProvider>
+          {/* The field behind every route but the landing page, which brings
+              its own along with the stage its zones render into. */}
+          <RouteField />
           <SiteNav />
           <main id="main" className="flex-1">
             {children}

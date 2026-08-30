@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any, AsyncIterator
 
 from fastapi import APIRouter
@@ -16,6 +17,8 @@ from app.services.tutor import (
     offline_answer,
     tutor_meta,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/tutor", tags=["tutor"])
 
@@ -66,6 +69,13 @@ async def _stream_openai(request: TutorRequest) -> AsyncIterator[str]:
             stream=True,
         )
     except Exception as error:
+        logger.warning(
+            "tutor model call failed, falling back to the read-out "
+            "(model=%s, base_url=%s): %s",
+            settings.openai_model,
+            settings.openai_base_url or "default (OpenAI)",
+            error,
+        )
         async for chunk in _stream_offline(
             offline_answer(request.prompt, request.circuit, request.lesson_id),
             reason=f"model unavailable: {error}",
@@ -143,5 +153,12 @@ async def status() -> dict[str, Any]:
     return {
         "live": settings.tutor_live,
         "model": settings.openai_model if settings.tutor_live else None,
+        # What is configured, reported whether or not it is usable. `model` above
+        # keeps its old shape for the site, which reads it to label the panel;
+        # these two exist so a misconfiguration can be diagnosed over HTTP
+        # instead of by reading the server log.
+        "configured_model": settings.openai_model,
+        "configured_base_url": settings.openai_base_url or "default (OpenAI)",
+        "has_key": bool(settings.openai_api_key),
         "fallback": "deterministic circuit read-out computed with Qiskit",
     }
