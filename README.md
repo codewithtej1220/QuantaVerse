@@ -55,6 +55,34 @@ backend/.venv/Scripts/python -m uvicorn app.main:app --app-dir backend --reload
 Then open http://localhost:3000. Check http://localhost:8000/api/health to
 confirm the API is up and see which quantum frameworks it found.
 
+## After a fresh clone
+
+Everything above works with no configuration at all: circuits simulate in your
+browser, and the API creates its own SQLite database on first run.
+
+One thing is missing, because it cannot be committed — the tutor's model key.
+Without it the tutor still answers, but from a Qiskit read-out rather than in
+conversation. Two minutes gets you the full version:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+On Windows: `copy backend\.env.example backend\.env`.
+
+Then open that file and paste a key into `OPENAI_API_KEY`. A free one from
+console.groq.com takes about thirty seconds and needs no card — API Keys →
+Create API Key. The provider URL and model name are already filled in for you,
+so the key is the only thing to add.
+
+Restart the API afterwards. Settings are read once at startup, so `--reload`
+will not pick up a change to this file.
+
+To confirm it worked, `http://localhost:8000/api/tutor/status` should report
+`"live": true`. If it says `false`, the key did not load; if it says `true` but
+answers stay terse, check `configured_model` in that same response against the
+model list at your provider.
+
 ## Configuration
 
 Both services read optional env files that are not in the repository, because
