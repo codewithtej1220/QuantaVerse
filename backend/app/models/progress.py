@@ -105,6 +105,18 @@ class ProgressStats(BaseModel):
     last_activity_at: datetime | None
 
 
+class SkillGap(BaseModel):
+    """One axis the learner is behind on, and what would move it."""
+
+    key: str
+    label: str
+    # Where the learner is on this axis, 0-100.
+    value: int
+    # How much of this axis the recommended module carries, 0-100. A module
+    # that barely touches the axis is a weak recommendation and says so.
+    coverage: int
+
+
 class UpNext(BaseModel):
     module_slug: str
     ket: str
@@ -114,6 +126,11 @@ class UpNext(BaseModel):
     lesson_index: int | None
     challenge_slug: str | None
     weakest_skill: str | None
+    # Why this module and not the next one in order. Null when the pick was
+    # simply "start at the beginning" — a learner with no history has no gap.
+    gap: SkillGap | None = None
+    # The other axes worth working on, weakest first, for the dashboard.
+    weakest_axes: list[SkillGap] = Field(default_factory=list)
 
 
 class ProgressResponse(BaseModel):

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 import { publishReadout } from "./bloch-store";
-import { pointerIdle, pointerState, prefersReducedMotion } from "./pointer";
+import { pointerIdle, pointerState, prefersReducedMotion, zoneHover } from "./pointer";
 
 /**
  * The hero qubit's state, integrated outside the renderer.
@@ -24,7 +24,19 @@ export interface QubitState {
   phi: number;
 }
 
+/**
+ * The zone the cursor has to be inside to be preparing this qubit.
+ *
+ * Matches the `id` on the hero's `<Zone focus="qubit">`. Before this, the
+ * driver read the pointer wherever it was on the page, so the state — and the
+ * "live state" panel's numbers with it — changed while you scrolled past the
+ * paragraph, reached for the nav, or moved the mouse to close the tab. Numbers
+ * that move for no reason are worse than numbers that do not move.
+ */
+const STAGE = "hero-qubit";
+
 const state: QubitState = { theta: Math.PI * 0.32, phi: 0.6 };
+
 let precession = 0;
 let frame = 0;
 let last = 0;
@@ -44,10 +56,27 @@ function tick(now: number) {
 
   const reduced = prefersReducedMotion();
 
-  /* Cursor prepares the state; after a second of stillness it hands over to
-     Larmor precession, where theta holds and phi advances so the vector walks
-     a cone. Accumulated rather than derived from the clock, so handing control
-     back and forth never makes the arrow jump. */
+  /* Preparation happens on the sphere and nowhere else.
+     Off it, nothing is driven at all — not theta, not phi, not the precession.
+     The state simply holds the last thing the cursor made of it, which is what
+     "the live state should change only when I put the cursor on it" means: a
+     phase that keeps turning while you are reading a paragraph is still the
+     panel changing on its own. */
+  const preparing = zoneHover(STAGE) > 0.5;
+
+  if (!preparing) {
+    if (seconds - lastEmit > 0.08) {
+      lastEmit = seconds;
+      const half = Math.cos(state.theta / 2);
+      publishReadout({ theta: state.theta, phi: state.phi, p0: half * half });
+    }
+    return;
+  }
+
+  /* On the sphere, the cursor prepares the state; after a second of stillness
+     it hands over to Larmor precession, where theta holds and phi advances so
+     the vector walks a cone. Accumulated rather than derived from the clock, so
+     handing control back and forth never makes the arrow jump. */
   const idleness = reduced ? 0 : Math.min(1, Math.max(0, (pointerIdle() - 1) / 2.5));
   precession += step * idleness * 0.8;
 

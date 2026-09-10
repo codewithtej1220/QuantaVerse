@@ -9,9 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from app.api.routes import auth, execute, progress, tutor
+from app.api.routes import auth, execute, network, progress, tutor
 from app.core.config import get_settings
-from app.db.session import database_status, init_db
+from app.db.seed import seed_demo_mentors
+from app.db.session import database_status, init_db, session_scope
 from app.models.api import HealthResponse
 from app.models.circuit_ir import MAX_QUBITS, SUPPORTED_GATES
 from app.services.adapters.base import AdapterError
@@ -20,9 +21,17 @@ from app.services.adapters.factory import available_backends, probe_backends
 settings = get_settings()
 
 
+def _boot() -> None:
+    init_db()
+    # A research hub that opens on an empty list looks broken rather than new,
+    # so a fresh install gets four clearly-labelled example mentors to browse.
+    with session_scope() as session:
+        seed_demo_mentors(session)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    await run_in_threadpool(init_db)
+    await run_in_threadpool(_boot)
     yield
 
 
@@ -54,6 +63,7 @@ app.include_router(execute.router)
 app.include_router(tutor.router)
 app.include_router(auth.router)
 app.include_router(progress.router)
+app.include_router(network.router)
 
 
 @app.exception_handler(AdapterError)

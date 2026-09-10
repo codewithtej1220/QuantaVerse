@@ -11,7 +11,11 @@ import {
   useReducedMotion,
 } from "@/lib/pointer";
 import { useTrackScrollDepth } from "@/lib/scroll";
-import { BlochPoleLabels, BlochSphere } from "./bloch-sphere";
+/* The pole labels still come from the machined sphere's module — the
+   sandbox and the lab still use that object, and the two share their
+   |0>/|1> markers because both put the poles in the same place. */
+import { BlochPoleLabels } from "./bloch-sphere";
+import { BlochLattice } from "./bloch-lattice";
 import { EntangledPair } from "./entangled-pair";
 import { GateBlock } from "./gate-block";
 import { ProcessorChip } from "./processor-chip";
@@ -102,13 +106,13 @@ export function Zone({
       <View ref={box} className="absolute inset-0">
         <Studio />
         <group scale={scale}>
-          {focus === "qubit" && <BlochSphere depthId={id} reducedMotion={reduced} />}
+          {focus === "qubit" && <BlochLattice depthId={id} reducedMotion={reduced} />}
           {focus === "gate" && <GateBlock depthId={id} reducedMotion={reduced} />}
           {focus === "pair" && <EntangledPair depthId={id} reducedMotion={reduced} />}
           {focus === "chip" && <ProcessorChip depthId={id} reducedMotion={reduced} />}
         </group>
       </View>
-      {focus === "qubit" && <BlochPoleLabels inset="12%" />}
+      {focus === "qubit" && <BlochPoleLabels inset="2%" />}
     </div>
   );
 }

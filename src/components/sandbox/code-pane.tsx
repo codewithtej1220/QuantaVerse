@@ -128,7 +128,7 @@ export function CodePane({
         </div>
       </div>
 
-      <div className="min-h-[360px] flex-1 bg-[#000000]">
+      <div className="min-h-[360px] flex-1 bg-sheet">
         <MonacoInner value={code} onChange={onChange} />
       </div>
 

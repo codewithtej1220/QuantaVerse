@@ -20,6 +20,18 @@ const BlochCanvas = dynamic(() => import("@/components/three/bloch-canvas"), {
  * an entangled qubit genuinely has no Bloch vector of its own.
  */
 
+/**
+ * A component of the Bloch vector, printed.
+ *
+ * Values that are zero to three decimal places are snapped to a positive zero.
+ * Floating point produces −1e−17 readily — H then T leaves it on ⟨σz⟩ — and
+ * `toFixed(3)` renders that as "-0.000", which reads to a learner as a real
+ * negative quantity too small to see rather than as the exact zero it is.
+ */
+function axisValue(value: number) {
+  return (Math.abs(value) < 5e-4 ? 0 : value).toFixed(3);
+}
+
 function purityNote(length: number) {
   if (length > 0.999) return { text: "pure state", tone: "text-photon" };
   if (length < 0.02) return { text: "maximally mixed · fully entangled", tone: "text-collapse" };
@@ -49,11 +61,20 @@ export function StatePanel({
   qubits,
   shots,
   shotCount,
+  stepLabel = null,
 }: {
   result: SimulationResult;
   qubits: number;
   shots: number[] | null;
   shotCount: number;
+  /**
+   * Set while the transport is parked part-way through the circuit.
+   *
+   * Every number in this panel then describes that moment rather than the
+   * finished circuit, and a read-out that does not say so is a read-out that
+   * will be screenshotted as the answer.
+   */
+  stepLabel?: string | null;
 }) {
   const [selected, setSelected] = useState(0);
   const wire = Math.min(selected, qubits - 1);
@@ -67,7 +88,10 @@ export function StatePanel({
       {/* Bloch sphere for one qubit at a time. */}
       <section className="panel flex flex-col overflow-hidden rounded-2xl">
         <header className="flex items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
-          <p className="eyebrow">Bloch sphere</p>
+          <p className="eyebrow">
+            Bloch sphere
+            {stepLabel && <span className="ml-2 text-photon">· {stepLabel}</span>}
+          </p>
           <div className="flex gap-1" role="group" aria-label="Choose a qubit">
             {Array.from({ length: qubits }, (_, q) => (
               <button
@@ -103,7 +127,7 @@ export function StatePanel({
                 ⟨σ{axis}⟩
               </dt>
               <dd className="mt-1 font-mono text-[13px] text-paper tabular-nums">
-                {value.toFixed(3)}
+                {axisValue(value)}
               </dd>
             </div>
           ))}
@@ -121,7 +145,10 @@ export function StatePanel({
       {/* Measurement probabilities. */}
       <section className="panel flex flex-col overflow-hidden rounded-2xl">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
-          <p className="eyebrow">Measurement probability</p>
+          <p className="eyebrow">
+            Measurement probability
+            {stepLabel && <span className="ml-2 text-photon">· {stepLabel}</span>}
+          </p>
           <p className="flex items-center gap-3 font-mono text-[11px] tracking-[0.12em] uppercase">
             <span className="flex items-center gap-1.5 text-frost">
               <span className="h-2 w-3 amplitude-fill" />

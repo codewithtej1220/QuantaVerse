@@ -34,8 +34,8 @@ export const MATERIAL = {
   steelDark: "#4a4a47",
   /** Fired ceramic, polished. */
   ceramic: "#f2f2ef",
-  /** The chassis everything is mounted to. */
-  chassis: "#0b0b0b",
+  /** The chassis everything is mounted to. Tracks --color-nebula. */
+  chassis: "#0d1a19",
 } as const;
 
 /** Overhead key, two rim strips, black surround. */

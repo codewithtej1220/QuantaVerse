@@ -25,20 +25,61 @@
    component keeps compiling; only what they point at has moved.
    ============================================================ */
 @theme inline {
-  /* --- chassis --- */
-  --color-void: #000000; /* the page */
-  --color-nebula: #0b0b0b; /* a panel raised off the page */
-  --color-strata: #151515; /* a well sunk into a panel */
-  --color-edge: #262626; /* hairline */
-  --color-edge-hi: #3d3d3d; /* hairline, hovered or focused */
+  /* --- chassis ---
+     Four surfaces that have to be told apart at a glance, so they are spaced
+     by perceptual lightness rather than by eye. The previous set ran L* 0, 3,
+     7 for page, panel and well — a seven-point range for the whole interface,
+     which is below what the eye resolves on a normal screen in a lit room. The
+     result was one flat black sheet with hairlines drawn on it, and no amount
+     of accent colour fixes that because the problem is value, not hue.
+     These step about five points each, which reads as depth.
 
-  /* --- ink --- */
-  --color-paper: #f2f2ef; /* body text */
-  --color-frost: #a8a8a3; /* secondary text — 8.8:1 on black */
-  --color-dim: #7a7a75; /* tertiary text — 4.9:1, still AA */
+     The cast is a deep black-teal rather than neutral grey: it gives the cyan
+     somewhere to sit instead of halating against pure black, and it stops the
+     page reading as an absence.
+
+     Code does not live on this ladder at all. See `sheet` below. */
+  --color-void: #050c0c; /* the page       — L* 2.9 */
+  --color-nebula: #0d1a19; /* a panel raised off it  — L* 8.1 */
+  --color-strata: #142523; /* a well sunk into a panel — L* 13.2 */
+  --color-edge: #22322f; /* hairline */
+  --color-edge-hi: #364844; /* hairline, hovered or focused */
+
+  /* --- ink ---
+     Warm, against the cool ground. This is a page people read for an hour at
+     a time, and a warm ivory on a cool dark surface is easier to sit with than
+     the neutral off-white it replaces. */
+  --color-paper: #f4efe6; /* body text — 16.9:1 on the page */
+  --color-frost: #c9c2b4; /* secondary text — 10.9:1 */
+  --color-dim: #8e887c; /* tertiary text — 5.5:1, still AA */
 
   /* --- meaning --- */
   --color-photon: #2fe4ff; /* laser cyan — 13.7:1 on black */
+
+  /* The warm voice. Cyan is the machine — every wire, gate, amplitude and
+     read-out on this site is cyan, and that consistency is what makes the
+     colour mean something. So the tutor cannot also be cyan: it is the one
+     thing on screen that is talking to you rather than reporting state, and
+     it needs to be legible as such at a glance.
+
+     This is a warm accent in the interface, which was previously ruled out —
+     a copper UI read as period rather than technical. The difference is that
+     copper was decorative and everywhere; this is semantic and only ever on
+     the tutor. Incandescent rather than burnt, so it sits beside the laser
+     cyan as the other kind of light rather than as an antique.
+
+     The value is not a new one: it is the amber the mascot has always been
+     drawn with. The tutor's chrome is the tutor's own colour. */
+  --color-filament: #ff8c2b; /* 7.7:1 on a panel, 8.5:1 on the page */
+
+  /* Code sits on paper.
+     Not a chassis surface — the opposite of one. The page's ink value becomes
+     the code pane's ground, so the editor reads as a sheet laid on the desk
+     rather than another hole cut in it. It is also the only way this palette
+     gets a genuine light surface, which the page needs somewhere: a screen
+     that is dark from edge to edge has nothing to measure its darkness
+     against. Ink on the sheet is `void`, never `paper`. */
+  --color-sheet: #f4efe6;
   --color-photon-hi: #8af2ff; /* cyan, hovered */
   --color-photon-deep: #0b6b82; /* cyan, sunk */
   --color-phase: #ffffff;
@@ -170,40 +211,44 @@
   }
 }
 
-/* shadcn variables repointed at the instrument palette ---------- */
+/* shadcn variables repointed at the instrument palette ----------
+   Pointed at the tokens rather than copied from them. This block held its own
+   hardcoded blacks, so every Radix surface on the site went on painting the
+   old palette after the tokens above had moved — a whole second theme quietly
+   outvoting the first. */
 :root {
   --radius: 2px;
-  --background: #000000;
-  --foreground: #f2f2ef;
-  --card: #0b0b0b;
-  --card-foreground: #f2f2ef;
-  --popover: #0b0b0b;
-  --popover-foreground: #f2f2ef;
-  --primary: #2fe4ff;
-  --primary-foreground: #000000;
-  --secondary: #151515;
-  --secondary-foreground: #f2f2ef;
-  --muted: #151515;
-  --muted-foreground: #a8a8a3;
-  --accent: #151515;
-  --accent-foreground: #f2f2ef;
-  --destructive: #2fe4ff;
-  --border: #262626;
-  --input: #2f2f2f;
-  --ring: #2fe4ff;
-  --chart-1: #2fe4ff;
-  --chart-2: #f2f2ef;
-  --chart-3: #8e8e89;
-  --chart-4: #0b6b82;
-  --chart-5: #5a5a56;
-  --sidebar: #0b0b0b;
-  --sidebar-foreground: #f2f2ef;
-  --sidebar-primary: #2fe4ff;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #151515;
-  --sidebar-accent-foreground: #f2f2ef;
-  --sidebar-border: #262626;
-  --sidebar-ring: #2fe4ff;
+  --background: var(--color-void);
+  --foreground: var(--color-paper);
+  --card: var(--color-nebula);
+  --card-foreground: var(--color-paper);
+  --popover: var(--color-nebula);
+  --popover-foreground: var(--color-paper);
+  --primary: var(--color-photon);
+  --primary-foreground: var(--color-void);
+  --secondary: var(--color-strata);
+  --secondary-foreground: var(--color-paper);
+  --muted: var(--color-strata);
+  --muted-foreground: var(--color-frost);
+  --accent: var(--color-strata);
+  --accent-foreground: var(--color-paper);
+  --destructive: var(--color-photon);
+  --border: var(--color-edge);
+  --input: var(--color-edge-hi);
+  --ring: var(--color-photon);
+  --chart-1: var(--color-photon);
+  --chart-2: var(--color-paper);
+  --chart-3: var(--color-collapse);
+  --chart-4: var(--color-photon-deep);
+  --chart-5: var(--color-dim);
+  --sidebar: var(--color-nebula);
+  --sidebar-foreground: var(--color-paper);
+  --sidebar-primary: var(--color-photon);
+  --sidebar-primary-foreground: var(--color-void);
+  --sidebar-accent: var(--color-strata);
+  --sidebar-accent-foreground: var(--color-paper);
+  --sidebar-border: var(--color-edge);
+  --sidebar-ring: var(--color-photon);
 }
 
 .dark {
@@ -227,8 +272,9 @@
     @apply bg-void text-paper antialiased;
     font-size: 1rem;
     line-height: 1.6;
-    /* Flat. The background is a colour, not an effect. */
-    background-color: #000000;
+    /* Flat. The background is a colour, not an effect — and it is the token,
+       not a hardcoded black that silently outranks it. */
+    background-color: var(--color-void);
   }
 
   /* ---- typographic hierarchy -----------------------------------

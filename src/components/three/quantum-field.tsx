@@ -40,7 +40,7 @@ import { dwell, FILM_STOPS, FILM_TRACK, trackOnScreen, trackProgress } from "@/l
  * a React component.
  */
 
-const COUNT = 23_000;
+const COUNT = 40_000;
 
 /** How loudly the field plays on the page it is mounted on. */
 export type FieldIntensity = "full" | "ambient" | "quiet";
@@ -88,9 +88,14 @@ const PRESENCE: Record<
     dpr: [number, number];
   }
 > = {
-  full: { count: COUNT, gain: 1, floor: 0.34, bursts: true, bite: 1, scrub: false, dpr: [1, 1.6] },
+  /* The landing tier is now the *film* tier.
+     The ambient background everywhere, this page included, is the lattice; the
+     field survives here only because it owns the scroll sequence — the four
+     formations the film is made of. So it holds at nothing until the film
+     track is on screen, instead of lighting the hero it no longer dresses. */
+  full: { count: COUNT, gain: 1, floor: 0, bursts: true, bite: 1, scrub: false, dpr: [1, 1.6] },
   ambient: {
-    count: 16_000,
+    count: 27_000,
     gain: 0.82,
     /* High enough that the formations are legible shapes rather than a hint of
        one. The field is cyan points on black and the copy over it is near
@@ -103,7 +108,7 @@ const PRESENCE: Record<
     dpr: [1, 1.5],
   },
   quiet: {
-    count: 14_000,
+    count: 23_000,
     gain: 0.78,
     floor: 0.36,
     bursts: false,
@@ -345,6 +350,7 @@ const vertexShader = /* glsl */ `
   varying float vPacked;
   varying float vHeat;
   varying float vBurst;
+  varying float vSpark;  // where this point sits in the size distribution
 
   /**
    * A burst.
@@ -438,8 +444,14 @@ const vertexShader = /* glsl */ `
        itself straight to white. */
     vec2  toMouse = uMouse.xy - p.xy;
     float dist    = length(toMouse);
-    float reach   = 3.4 + uSpeed * 1.3;
-    float force   = uPull * (0.28 + uSpeed * 0.72);
+    /* Both of these used to grow much harder with speed — reach to 4.7 and
+       force to a full 1.0 — and a quick flick across the hero then evacuated a
+       sphere-sized hole out of the field. Impressive as a physics demo and
+       wrong as a background: the page stopped looking like it had texture
+       behind it and started looking like something had gone through it.
+       Speed still widens and deepens the wake, by about half as much. */
+    float reach   = 2.7 + uSpeed * 0.5;
+    float force   = uPull * (0.16 + uSpeed * 0.26);
     float bite    = force * exp(-(dist * dist) / (reach * reach));
     vec2  dir     = normalize(toMouse + vec2(1e-5));
     vec2  tangent = vec2(-dir.y, dir.x);
@@ -450,10 +462,14 @@ const vertexShader = /* glsl */ `
        harder than it pushed them — a tornado. Inverted: a fast swipe shoulders
        the field aside, and the curl is what you get when you move gently
        through it. The wake still widens with speed, via reach and bite above. */
+    /* Roughly half again on every term. The wake is meant to read as the field
+       parting around the pointer, not as the pointer shoving it — and the
+       lighter it is, the more the density above survives being moved through
+       instead of being swept into a rim. */
     float curl = 1.0 - uSpeed * 0.55;
-    p.xy -= dir * bite * (1.7 + uSpeed * 1.0);
-    p.xy += tangent * bite * 2.1 * curl;
-    p.z  += bite * 1.3;
+    p.xy -= dir * bite * (0.85 + uSpeed * 0.28);
+    p.xy += tangent * bite * 1.05 * curl;
+    p.z  += bite * 0.75;
 
     // Click: a burst, thrown from where the click actually landed.
     float clickRim, clickFil, clickHeat;
@@ -508,14 +524,30 @@ const vertexShader = /* glsl */ `
        one exposure. */
     vPacked = clamp(uPhase, 0.0, 1.0);
 
+    /* How big this speck is, 0..1 across the distribution.
+       The fragment stage brightens and warms with it, so the few large points
+       read as stars and the many small ones as dust. Without this every point
+       had the same brightness whatever its size, which is what made a dense
+       field look like grain instead of a sky. */
+    vSpark = clamp((aScale - 0.45) / 2.4, 0.0, 1.0);
+
     vec4 view = modelViewMatrix * vec4(p, 1.0);
     vFade = clamp((view.z + 26.0) / 20.0, 0.0, 1.0);
 
     gl_Position = projectionMatrix * view;
-    // Displacement is allowed to be violent; brightness is not. The wake is
-    // read as a hole and a swirl, not as a floodlight, because there is a
-    // headline behind this and it has to stay a headline.
-    gl_PointSize = (1.3 + vGlow * 2.6 + vHeat * 3.2) * aScale * mix(1.0, 0.78, vPacked) * (330.0 / max(0.001, -view.z));
+    /* Displacement is allowed to be violent; brightness is not. The wake is
+       read as a hole and a swirl, not as a floodlight, because there is a
+       headline behind this and it has to stay a headline.
+
+       These figures are also what pays for the density. Going from twenty-three
+       to forty thousand points at the old sizes is 1.7x the sprites at 1.7x the
+       coverage, and the cost of this field is fill rate rather than vertices —
+       every point is a soft additive sprite tens of pixels across, so the
+       overdraw is what a slow machine actually feels. Scaling the sizes by the
+       square root of the count rise holds total coverage roughly where it was.
+       It is also the better look: denser stardust means more specks, not
+       fatter ones. */
+    gl_PointSize = (1.18 + vGlow * 2.04 + vHeat * 2.5) * aScale * mix(1.0, 0.78, vPacked) * (330.0 / max(0.001, -view.z));
   }
 `;
 
@@ -532,13 +564,28 @@ const fragmentShader = /* glsl */ `
   varying float vPacked;
   varying float vHeat;
   varying float vBurst;
+  varying float vSpark;
 
   void main() {
-    // A round sprite with a soft edge, drawn rather than sampled — a texture
-    // for this would be twenty thousand lookups a frame for one circle.
+    /* A star, not a smudge.
+       This used to be one soft disc — a long linear ramp from the middle to
+       the edge — and at forty thousand small sprites that reads as grain, the
+       way a noisy JPEG does, rather than as a field of points. Real points of
+       light have a tight core and a wide faint halo, so it is drawn as two
+       terms: a hard little centre, and a glow that falls off quadratically
+       around it. Squaring the halo is what keeps the surround from turning
+       into the flat grey wash the single ramp produced.
+
+       Drawn rather than sampled — a texture for this would be forty thousand
+       lookups a frame for one circle. */
     vec2 offset = gl_PointCoord - 0.5;
-    float falloff = 1.0 - smoothstep(0.08, 0.5, length(offset));
-    if (falloff <= 0.001) discard;
+    float d = length(offset) * 2.0;
+    if (d > 1.0) discard;
+
+    float core = 1.0 - smoothstep(0.0, 0.30, d);
+    float halo = 1.0 - smoothstep(0.10, 1.0, d);
+    float falloff = core + halo * halo * 0.45;
+    if (falloff <= 0.002) discard;
 
     /* Ambient field first, then the burst's own blue over it, then the core.
        The burst is coloured separately from the field on purpose: the field is
@@ -549,7 +596,17 @@ const fragmentShader = /* glsl */ `
     // Orange around a white centre, the way the reference core reads.
     vec3 hot = mix(uCore, vec3(1.0, 0.97, 0.92), smoothstep(0.5, 0.95, vHeat));
     tint = mix(tint, hot, smoothstep(0.0, 0.45, vHeat));
-    float alpha = falloff * (0.21 + vGlow * 0.24 + vHeat * 0.45)
+    /* The big specks are stars and read close to white; the small ones stay
+       cyan dust. One flat colour across forty thousand points is most of why
+       the field looked like noise — a sky has a range. */
+    tint = mix(tint, vec3(0.88, 0.96, 1.0), vSpark * vSpark * 0.42);
+
+    /* Brightness follows size too, so the distribution reads as depth rather
+       than as forty thousand identical dots at forty thousand sizes. Centred
+       near one, so the aggregate exposure lands about where it was. */
+    float spark = 0.62 + vSpark * 0.85;
+
+    float alpha = falloff * spark * (0.19 + vGlow * 0.225 + vHeat * 0.42)
                 * (0.3 + vFade * 0.7) * mix(1.0, 0.46, vPacked) * uOpacity;
     gl_FragColor = vec4(tint, alpha);
   }
@@ -681,8 +738,16 @@ function Particles({
        quiet haze behind the reading sections — a field at full brightness
        under body copy is a field competing with the words. */
     const scrolled = window.scrollY;
-    const fold = Math.max(0, 1 - scrolled / (window.innerHeight * 1.1));
-    const wantOpacity = Math.max(presence.floor, Math.max(fold, onFilm) * presence.gain);
+    const fold = presence.floor > 0 ? Math.max(0, 1 - scrolled / (window.innerHeight * 1.1)) : 0;
+
+    /* On the landing page the hero belongs to the lattice, and this field is
+       here only for the film below it. Gating on `onFilm` alone was not enough:
+       ScrollTrigger reports its pinned track as on screen from the very top, so
+       the field lit the hero anyway. Requiring the page to have actually been
+       scrolled is the check that cannot be argued with. */
+    const past =
+      presence.floor > 0 ? 1 : Math.min(1, scrolled / (window.innerHeight * 0.85));
+    const wantOpacity = Math.max(presence.floor, Math.max(fold, onFilm * past) * presence.gain);
     // Snap on the first frame. Ramping up from nothing means the field is
     // invisible for the half second a visitor spends forming their first
     // impression of the page, which is the half second it exists for.

@@ -33,6 +33,7 @@ from app.models.progress import (
     Mastery,
     ModuleProgress,
     ProgressStats,
+    SkillGap,
     SkillPoint,
     UpNext,
 )
@@ -284,27 +285,91 @@ def _badge_states(earned: dict[str, datetime]) -> list[BadgeState]:
     ]
 
 
+def _coverage(module: Module, axis_key: str) -> float:
+    """How much of one skill axis a module carries, as a share of its weight."""
+    total = sum(weight for _key, weight in module.skills) or 1.0
+    carried = sum(weight for key, weight in module.skills if key == axis_key)
+    return carried / total
+
+
 def _up_next(rows: list[ModuleProgress], skills: list[SkillPoint]) -> UpNext | None:
+    """
+    The module to open next, chosen by where the learner is weakest.
+
+    This used to take `candidates[0]` — whichever unfinished module came first
+    in curriculum order — and attach the weakest skill's name as a decoration.
+    That is not a recommendation, it is a table of contents with a label on it:
+    someone who has finished the algorithms track and never touched measurement
+    was still pointed at whatever module happened to be next.
+
+    Now the weakest axis picks the module: among the ones open to them, the one
+    that carries the most of that axis wins, and the reason says so. Order is
+    the tie-breaker, not the rule.
+
+    A learner with no history has no gap — every axis reads zero — so they are
+    sent to the start, which is the right answer and an honest one.
+    """
     candidates = [row for row in rows if row.state == "active"] or [
         row for row in rows if row.state == "available"
     ]
     if not candidates:
         return None
 
-    row = candidates[0]
+    ranked = sorted(skills, key=lambda point: point.value)
+
+    # Only the axes an open module can actually move. The weakest axis
+    # overall is usually one that nothing available touches yet — it sits
+    # behind a module still locked — and recommending against it produces a
+    # diagnosis with no prescription: "Qiskit code is your weakest at 0%"
+    # attached to a module carrying none of it.
+    movable = [
+        point
+        for point in ranked
+        if any(_coverage(MODULE_BY_SLUG[row.slug], point.key) > 0 for row in candidates)
+    ]
+    weakest = movable[0] if movable else (ranked[0] if ranked else None)
+
+    # No signal yet: every axis at zero means nothing has been done, and the
+    # sensible next step is the first module rather than an arbitrary one.
+    has_signal = bool(ranked) and any(point.value > 0 for point in ranked)
+
+    gap: SkillGap | None = None
+
+    if weakest is not None and has_signal:
+        def rank(candidate: ModuleProgress) -> tuple[float, int]:
+            module = MODULE_BY_SLUG[candidate.slug]
+            # Negative so more coverage sorts first; index keeps order as the
+            # tie-break, so two equally relevant modules still read in sequence.
+            return (-_coverage(module, weakest.key), module.index)
+
+        row = min(candidates, key=rank)
+        share = _coverage(MODULE_BY_SLUG[row.slug], weakest.key)
+        gap = SkillGap(
+            key=weakest.key,
+            label=weakest.label,
+            value=weakest.value,
+            coverage=round(share * 100),
+        )
+    else:
+        row = candidates[0]
+
     module = MODULE_BY_SLUG[row.slug]
     missing = [
         index for index in range(module.lessons) if index not in set(row.completed_lessons)
     ]
     challenge_left = bool(row.challenge and not row.challenge.passed)
-    weakest = min(skills, key=lambda point: point.value) if skills else None
 
     if missing:
-        reason = f"lesson {missing[0] + 1} of {module.lessons} is next"
+        step = f"lesson {missing[0] + 1} of {module.lessons} is next"
     elif challenge_left:
-        reason = "every lesson is done — the circuit lab is all that is left"
+        step = "every lesson is done, so the circuit lab is all that is left"
     else:
-        reason = "nothing left in this module"
+        step = "nothing left in this module"
+
+    if gap is not None and gap.coverage > 0:
+        reason = f"{gap.label.lower()} is your weakest axis at {gap.value}% — {step}"
+    else:
+        reason = step
 
     return UpNext(
         module_slug=row.slug,
@@ -315,6 +380,18 @@ def _up_next(rows: list[ModuleProgress], skills: list[SkillPoint]) -> UpNext | N
         lesson_index=missing[0] if missing else None,
         challenge_slug=row.challenge.slug if challenge_left and row.challenge else None,
         weakest_skill=weakest.label if weakest else None,
+        gap=gap,
+        # The other axes worth working on. Drawn from the movable set for the
+        # same reason: a list of things you cannot act on is not advice.
+        weakest_axes=[
+            SkillGap(
+                key=point.key,
+                label=point.label,
+                value=point.value,
+                coverage=round(_coverage(MODULE_BY_SLUG[row.slug], point.key) * 100),
+            )
+            for point in (movable or ranked)[:3]
+        ],
     )
 
 

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-import { FieldMount } from "./stage-mount";
+import { LatticeMount } from "./stage-mount";
 
 /**
  * The ambient field, everywhere except the page that owns it.
@@ -22,9 +22,9 @@ export function RouteField() {
 
   if (path === "/") return null;
 
-  // The two pages with a circuit deck on them get the quiet field: the deck is
-  // already answering the cursor, and it should stay the thing that does.
-  const working = path.startsWith("/sandbox") || path.startsWith("/lab");
-
-  return <FieldMount intensity={working ? "quiet" : "ambient"} />;
+  /* Every route gets the same lattice. The old field's three intensity tiers
+     existed to stop its bursts and its re-forming shapes going off behind body
+     copy and behind a circuit a student is building; the lattice has neither,
+     so there is nothing left to tier. It ducks behind the fold on its own. */
+  return <LatticeMount />;
 }

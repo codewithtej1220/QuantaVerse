@@ -23,10 +23,11 @@ import { PRESETS, presetPlacements, type Preset } from "@/lib/presets";
 import {
   fromQiskit,
   sampleShots,
-  simulate,
+  simulateSteps,
   toQiskit,
   type Placement,
 } from "@/lib/quantum";
+import { celebrate, hush, say, setPose } from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 
 import { Bench } from "./bench";
@@ -36,6 +37,7 @@ import { CodePane, type BuildNote } from "./code-pane";
 import { EnginePicker, type Engine } from "./engine-picker";
 import { GatePalette } from "./gate-palette";
 import { StatePanel } from "./state-panel";
+import { StepThrough } from "./step-through";
 
 /**
  * The sandbox, wired end to end.
@@ -81,7 +83,27 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const [shots, setShots] = useState<number[] | null>(null);
   const [running, setRunning] = useState(false);
 
+  /**
+   * Where the transport is parked, as an index into `steps`.
+   *
+   * `Infinity` means "the end", which is deliberate: it survives the circuit
+   * growing. Parking on a numeric last index would leave the reader stranded
+   * mid-circuit the moment they placed another gate, and the common case is
+   * that you are looking at the finished state and want to keep looking at it.
+   */
+  const [stepAt, setStepAt] = useState(Number.POSITIVE_INFINITY);
+  const [playing, setPlaying] = useState(false);
+
   const [engine, setEngine] = useState<Engine>("browser");
+  /**
+   * How long the last run took on each engine, in milliseconds.
+   *
+   * Kept so the engine panel can show measurements from this session rather
+   * than four names with nothing to choose between them. Only ever sampling
+   * cost — the frameworks report their own, and the browser is timed around the
+   * same work — so the numbers sit in one column honestly.
+   */
+  const [timings, setTimings] = useState<Partial<Record<Engine, number>>>({});
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [probing, setProbing] = useState(true);
   const [runNote, setRunNote] = useState<string | null>(null);
@@ -117,7 +139,18 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     return () => controller.abort();
   }, []);
 
-  const result = useMemo(() => simulate(placements, qubits), [placements, qubits]);
+  const steps = useMemo(() => simulateSteps(placements, qubits), [placements, qubits]);
+  const stepIndex = Math.min(stepAt, steps.length - 1);
+  const scrubbing = stepIndex < steps.length - 1;
+
+  /* What the read-outs draw. Stepping rewinds the sphere, the histogram and
+     the state expression together — they are three views of one state, so a
+     transport that moved only one of them would be worse than none. */
+  const result = steps[stepIndex].result;
+  /* The finished circuit, regardless of where the transport is parked. The
+     tutor, the grader and the server engines all want the whole circuit: a
+     half-run circuit is not what the learner built. */
+  const finalResult = steps[steps.length - 1].result;
 
   /**
    * The circuit as the server sees it.
@@ -132,14 +165,17 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     const ir = toCircuitIR(placements, qubits, { withMeasurements: true });
     publishCircuit({
       ir,
-      summary: describeCircuit(ir, result.depth, result.gateCount),
+      summary: describeCircuit(ir, finalResult.depth, finalResult.gateCount),
       lessonId: challenge?.slug ?? preset?.id ?? null,
     });
-  }, [placements, qubits, result.depth, result.gateCount, preset, challenge]);
+  }, [placements, qubits, finalResult.depth, finalResult.gateCount, preset, challenge]);
 
   /** Circuit is the source: regenerate the code and invalidate the last run. */
   const applyCircuit = (next: Placement[], from: Preset | null = null) => {
     setPlacements(next);
+    // A new circuit is a new take: park the transport at the end and stop.
+    setStepAt(Number.POSITIVE_INFINITY);
+    setPlaying(false);
     setCode(toQiskit(next, qubits));
     setEdited(false);
     setPreset(from);
@@ -201,9 +237,17 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
   /** Sample in this tab: deterministic per run, so the noise is reproducible. */
   const runLocally = useCallback(() => {
-    setShots(sampleShots(result.probabilities, SHOTS, runCount.current * 7919 + 13));
+    const started = performance.now();
+    const sampled = sampleShots(finalResult.probabilities, SHOTS, runCount.current * 7919 + 13);
+    /* Timed around the sampling itself, not around the readability delay below
+       it: this number is shown beside the frameworks' own, so it has to be the
+       same measurement — work done, not time waited. */
+    const took = performance.now() - started;
+    setShots(sampled);
+    setTimings((last) => ({ ...last, browser: took }));
     setRunning(false);
-  }, [result.probabilities]);
+    setPose("idle");
+  }, [finalResult.probabilities]);
 
   const run = () => {
     runCount.current += 1;
@@ -211,6 +255,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setShots(null);
     setRunNote(null);
     if (timer.current) clearTimeout(timer.current);
+    // The cat takes the strain for as long as the sampling does.
+    setPose("working");
 
     if (engine === "browser") {
       // A short delay: 1,024 shots finish instantly, and instant is unreadable.
@@ -225,11 +271,13 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     })
       .then((response: SimulationResponse) => {
         setShots(histogramToCounts(response.histogram, qubits));
+        setTimings((last) => ({ ...last, [engine]: response.duration_ms }));
         setRunning(false);
         setRunNote(
           response.note ??
             `${response.framework_version} · ${response.shots.toLocaleString("en-IN")} shots in ${response.duration_ms.toFixed(0)} ms`,
         );
+        setPose("idle");
       })
       .catch((error: unknown) => {
         const reason = error instanceof ApiError ? error.message : "the API call failed";
@@ -313,7 +361,25 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       undefined,
       user ? readSession()?.access_token : null,
     )
-      .then((result) => setVerdict({ key, result }))
+      .then((result) => {
+        setVerdict({ key, result });
+        if (result.passed) {
+          /* Badges out of the box, and the cat says what was won. This is the
+             only place the mascot interrupts unprompted, because passing is
+             the only thing that has earned an interruption. */
+          celebrate();
+          say(
+            result.earned_badges.length
+              ? `Passed. You earned ${result.earned_badges.join(" and ")}.`
+              : "Passed — the amplitudes match the target.",
+            { eyebrow: "assessment" },
+          );
+          window.setTimeout(() => {
+            setPose("idle");
+            hush();
+          }, 6500);
+        }
+      })
       .catch((error: unknown) => {
         setGradeError(error instanceof ApiError ? error.message : "the check could not run");
       })
@@ -395,6 +461,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             health={health}
             probing={probing}
             disabled={running}
+            timings={timings}
           />
 
           <div
@@ -489,8 +556,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-edge pt-4 sm:grid-cols-4">
             {(
               [
-                ["Depth", String(result.depth)],
-                ["Gates", String(result.gateCount)],
+                ["Depth", String(finalResult.depth)],
+                ["Gates", String(finalResult.gateCount)],
                 ["Register", `${qubits} · ${1 << qubits} states`],
                 ["Readout", measured ? "measured" : "statevector"],
               ] as const
@@ -503,6 +570,15 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               </div>
             ))}
           </dl>
+
+          <StepThrough
+            steps={steps}
+            at={stepIndex}
+            onSeek={setStepAt}
+            playing={playing}
+            onPlaying={setPlaying}
+            qubits={qubits}
+          />
 
           <p className="text-[12.5px] leading-relaxed text-frost">
             {preset ? (
@@ -534,7 +610,15 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         />
       </div>
 
-      <StatePanel result={result} qubits={qubits} shots={shots} shotCount={SHOTS} />
+      <StatePanel
+        result={result}
+        qubits={qubits}
+        shots={shots}
+        shotCount={SHOTS}
+        /* Named so the read-out cannot be mistaken for the finished circuit
+           while the transport is parked mid-way through it. */
+        stepLabel={scrubbing ? `step ${stepIndex} of ${steps.length - 1}` : null}
+      />
     </div>
   );
 }

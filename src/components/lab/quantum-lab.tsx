@@ -11,7 +11,7 @@ import { CircuitGrid } from "@/components/sandbox/circuit-grid";
 import { GatePalette } from "@/components/sandbox/gate-palette";
 import { EntangledRig, concurrenceOf } from "@/components/three/entangled-rig";
 import { fireBurst } from "@/lib/burst";
-import { simulate, type Placement } from "@/lib/quantum";
+import { collapse, simulate, type Placement } from "@/lib/quantum";
 import { pushStudentFrame, useGhostTarget, useLinkTeardown, vectorOf } from "@/lib/telemetry";
 import { cn } from "@/lib/utils";
 
@@ -38,14 +38,35 @@ export function QuantumLab() {
   const [bench, setBench] = useState(false);
   const [qubits, setQubits] = useState(2);
   const [impulse, setImpulse] = useState(0);
-  const [measured, setMeasured] = useState<{ at: number; outcome: 0 | 1 } | null>(null);
+  /**
+   * The measurement standing on the state, if one has been taken.
+   *
+   * It carries the wire as well as the outcome because a measurement is about
+   * a specific qubit: measuring q0 of a Bell pair determines q1 too, and the
+   * page has to be able to show that rather than just recolour a label.
+   */
+  const [measured, setMeasured] = useState<{ at: number; wire: number; outcome: 0 | 1 } | null>(
+    null,
+  );
   const [focus, setFocus] = useState(0);
   const [disrupted, setDisrupted] = useState(0);
 
   const ghost = useGhostTarget();
   useLinkTeardown();
 
-  const result = useMemo(() => simulate(placements, qubits), [placements, qubits]);
+  const raw = useMemo(() => simulate(placements, qubits), [placements, qubits]);
+  /* The state as it stands: the circuit's, projected onto whatever has been
+     measured. The gyroscopes, the tether and the instructor's feed all read
+     this, so a collapse is felt across the page rather than being a caption
+     under one corner of it.
+     The Arena deliberately does not: it grades the circuit, and the task is to
+     build one that reaches a state. Failing someone for measuring the Bell
+     pair they were just asked to build would punish them for using the other
+     control on the page. */
+  const result = useMemo(
+    () => (measured ? collapse(raw, qubits, measured.wire, measured.outcome) : raw),
+    [raw, measured, qubits],
+  );
   // Memoised because the effect below depends on it: the fallback literal is a
   // fresh object every render, which would re-run the publish check each time.
   const vector = useMemo(() => result.bloch[focus] ?? { x: 0, y: 0, z: 1 }, [result, focus]);
@@ -94,8 +115,11 @@ export function QuantumLab() {
   };
 
   const measure = () => {
+    /* Sampled from the state as it is now, which is why measuring an already
+       collapsed qubit returns the same answer every time — p0 is 0 or 1 by
+       then. That repeatability is the whole point of the control. */
     const outcome: 0 | 1 = Math.random() < p0 ? 0 : 1;
-    setMeasured({ at: performance.now() / 1000, outcome });
+    setMeasured({ at: performance.now() / 1000, wire: focus, outcome });
     setImpulse((n) => n + 1);
   };
 
@@ -180,7 +204,9 @@ export function QuantumLab() {
             </button>
             {measured && (
               <p className="font-mono text-[11.5px] text-frost">
-                collapsed to <span className="ket text-photon">|{measured.outcome}⟩</span>
+                q{measured.wire} collapsed to{" "}
+                <span className="ket text-photon">|{measured.outcome}⟩</span>
+                {qubits > 1 && <span className="ml-2 text-dim">· the register moved with it</span>}
               </p>
             )}
             <span className="ml-auto flex items-center gap-1.5">

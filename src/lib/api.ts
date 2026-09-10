@@ -106,6 +106,39 @@ function deadline(ms: number, external?: AbortSignal) {
   };
 }
 
+/**
+ * The reason an error carries, out of whatever shape the server wrote it in.
+ *
+ * FastAPI puts a plain string in `detail` for the errors the routes raise by
+ * hand, and a list of per-field objects in it for the ones its own validation
+ * raises. Reading only the string meant every validation failure arrived as
+ * "422 Unprocessable Content" — which is exactly the class of error where the
+ * server has already said which field is wrong and why, so it was the one
+ * message worth reading that never got shown.
+ */
+function reasonFrom(payload: unknown, response: Response) {
+  const detail = (payload as { detail?: unknown } | null)?.detail;
+  if (typeof detail === "string") return detail;
+
+  if (Array.isArray(detail)) {
+    const lines = detail
+      .map((item: unknown) => {
+        const entry = item as { msg?: unknown; loc?: unknown };
+        if (typeof entry.msg !== "string") return null;
+        // Pydantic prefixes its own validators; the learner wants the sentence.
+        const message = entry.msg.replace(/^Value error,\s*/, "");
+        const field = Array.isArray(entry.loc)
+          ? entry.loc.filter((part) => part !== "body").join(".")
+          : "";
+        return field ? `${field}: ${message}` : message;
+      })
+      .filter((line): line is string => Boolean(line));
+    if (lines.length) return lines.join("; ");
+  }
+
+  return `${response.status} ${response.statusText}`;
+}
+
 async function request<T>(
   path: string,
   body?: unknown,
@@ -127,13 +160,8 @@ async function request<T>(
     });
 
     if (!response.ok) {
-      // FastAPI puts the reason in `detail`; keep it, it is written for a human.
       const payload = await response.json().catch(() => null);
-      const detail =
-        payload && typeof payload.detail === "string"
-          ? payload.detail
-          : `${response.status} ${response.statusText}`;
-      throw new ApiError(detail, response.status);
+      throw new ApiError(reasonFrom(payload, response), response.status);
     }
 
     return (await response.json()) as T;
@@ -150,8 +178,38 @@ async function request<T>(
   }
 }
 
-export function fetchHealth(signal?: AbortSignal) {
-  return request<HealthResponse>("/api/health", undefined, signal, 6_000);
+/**
+ * What the API can run, with a cold start allowed for.
+ *
+ * This is probed once when a page mounts, and the answer decides whether the
+ * server engines and "build from code" are offered at all. A container host
+ * that sleeps its free tier — Render does — takes twenty to forty seconds to
+ * answer its first request of the day, so a single short deadline does not
+ * report "the API is slow", it reports "there is no API": every server engine
+ * greys out and stays greyed out for the whole visit, on a service that was
+ * only asleep.
+ *
+ * Three attempts on a widening deadline cover the wake-up. The first still
+ * gives up in five seconds, which is what a local run with no uvicorn wants —
+ * the picker should not sit there spinning when nothing is listening.
+ */
+export async function fetchHealth(signal?: AbortSignal) {
+  const deadlines = [5_000, 15_000, 30_000];
+  let last: unknown = new ApiError("the API did not answer in time");
+
+  for (const ms of deadlines) {
+    if (signal?.aborted) throw new ApiError("the request was cancelled");
+    try {
+      return await request<HealthResponse>("/api/health", undefined, signal, ms);
+    } catch (error) {
+      last = error;
+      /* A status means something answered — it is awake and it is broken, and
+         asking again will not change its mind. Only silence is worth a retry. */
+      if (error instanceof ApiError && error.status > 0) throw error;
+    }
+  }
+
+  throw last;
 }
 
 export function runSimulation(

@@ -7,6 +7,7 @@ import { MasteryRing } from "@/components/dashboard/mastery-ring";
 import { SkillGraph } from "@/components/dashboard/skill-graph";
 import { AmplitudeBar } from "@/components/site/amplitude-bar";
 import { Reveal } from "@/components/site/reveal";
+import { StreakWatcher } from "@/components/mascot/streak-watcher";
 import type { BadgeItem, Skill } from "@/lib/data";
 import type { ReactNode } from "react";
 
@@ -49,6 +50,9 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
 
         {/* Name gets the room; mastery sits beside it as a read-out rather than
             in a panel of its own. */}
+        {/* The cat notices a broken streak before the numbers do. */}
+        <StreakWatcher days={model.streakDays} />
+
         <header className="grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div>
             <p className="eyebrow">Dashboard · /dashboard</p>

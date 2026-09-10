@@ -5,6 +5,8 @@ import { TutorSidebar } from "@/components/ai/tutor-sidebar";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
+import { MascotDirector } from "@/components/mascot/mascot-director";
+import { MascotStage } from "@/components/mascot/mascot-stage";
 import { RouteField } from "@/components/three/route-field";
 import "./globals.css";
 
@@ -90,6 +92,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </main>
           <SiteFooter />
           <TutorSidebar />
+          {/* Mounted here, not in a page: the layout survives navigation, so the
+              canvas is never torn down and the cat flies between routes. */}
+          <MascotStage />
+          <MascotDirector />
         </AuthProvider>
       </body>
     </html>

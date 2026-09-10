@@ -13,6 +13,11 @@ import type { GateTone } from "@/lib/data";
  *
  * `glow` is now the armed state: a solid fill, not a halo. The name is kept so
  * the three call sites keep working.
+ *
+ * The block materials below were lifted when the chassis was: against a panel
+ * at L* 8 the old near-black walls read as holes cut in the board rather than
+ * as parts standing on it, and the phase and collapse gates in particular were
+ * indistinguishable black rectangles.
  */
 export const TONE: Record<
   GateTone,
@@ -54,7 +59,7 @@ export const GATE_MIME = "application/x-quantaverse-gate";
  * transforms and painted in the same style object.
  */
 export const MATERIAL: Record<GateTone, { wall: string; crown: string; base: string }> = {
-  photon: { wall: "#08262f", crown: "#18606f", base: "#03141a" },
-  phase: { wall: "#1c1c1c", crown: "#46463f", base: "#0a0a0a" },
-  collapse: { wall: "#161616", crown: "#383833", base: "#080808" },
+  photon: { wall: "#0d3540", crown: "#237a8c", base: "#061e26" },
+  phase: { wall: "#2b2c2a", crown: "#5c5c52", base: "#131413" },
+  collapse: { wall: "#232725", crown: "#4a4f4a", base: "#101211" },
 };

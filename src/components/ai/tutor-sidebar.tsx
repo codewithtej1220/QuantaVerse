@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUp, Eye, PanelRightClose, ScanLine, Sparkles, Square } from "lucide-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { API_BASE, ApiError, fetchHealth, streamTutor, type HealthResponse } from "@/lib/api";
+import { hush, say, setPose } from "@/lib/mascot";
+import { receiveTutorOpen } from "@/lib/tutor-bus";
+import { canDrawMascot } from "@/lib/mascot";
+
+/** A store with nothing to subscribe to: the answer cannot change. */
+const neverChanges = () => () => {};
 import { subscribeCircuit, type ScreenCircuit } from "@/lib/circuit-store";
 import { TUTOR_SUGGESTIONS, type ChatTurn } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -50,7 +56,7 @@ function ContextStrip({ pathname, circuit }: { pathname: string; circuit: Screen
   return (
     <div className="relative overflow-hidden border-b border-edge bg-nebula px-4 py-2.5">
       <div className="relative flex items-center gap-2">
-        <Eye className="size-3.5 shrink-0 text-photon" />
+        <Eye className="size-3.5 shrink-0 text-filament" />
         <span className="eyebrow shrink-0">Reading</span>
         <span className="truncate font-mono text-[11px] text-paper">
           {routeLabel(pathname)}
@@ -65,7 +71,7 @@ function ContextStrip({ pathname, circuit }: { pathname: string; circuit: Screen
 
 function CodeDiff({ code }: { code: string }) {
   return (
-    <pre className="mt-2.5 overflow-x-auto rounded-lg border border-edge bg-[#000000] p-3 font-mono text-[11px] leading-relaxed">
+    <pre className="mt-2.5 overflow-x-auto rounded-lg border border-edge bg-void p-3 font-mono text-[11px] leading-relaxed">
       <code>
         {code.split("\n").map((line, index) => {
           const added = line.startsWith("+");
@@ -100,7 +106,7 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
       className={cn("flex gap-2.5", isTutor ? "flex-row" : "flex-row-reverse")}
     >
       {isTutor && (
-        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center bg-photon">
+        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center bg-filament">
           <Sparkles className="size-3 text-void" />
         </span>
       )}
@@ -118,7 +124,7 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
           <p className="text-left whitespace-pre-wrap">
             {turn.body}
             {turn.streaming && (
-              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-breathe bg-photon" />
+              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-breathe bg-filament" />
             )}
           </p>
           {turn.code && <CodeDiff code={turn.code} />}
@@ -126,7 +132,7 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
 
         {turn.looking && (
           <span className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] text-frost uppercase">
-            <ScanLine className="size-3 text-photon" />
+            <ScanLine className="size-3 text-filament" />
             {turn.looking}
           </span>
         )}
@@ -138,7 +144,7 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
                 key={chip}
                 type="button"
                 onClick={() => onChip(chip)}
-                className="border border-photon px-2.5 py-1 font-mono text-[11px] text-photon transition-colors hover:bg-photon hover:text-void"
+                className="border border-filament px-2.5 py-1 font-mono text-[11px] text-filament transition-colors hover:bg-filament hover:text-void"
               >
                 {chip}
               </button>
@@ -150,9 +156,29 @@ function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void 
   );
 }
 
+/**
+ * The opening sentence, for the speech bubble.
+ *
+ * Falls back to a character count when the answer has no sentence break yet —
+ * which is most of the time, because this runs on a stream that is still
+ * arriving one token at a time.
+ */
+function lead(body: string) {
+  const stop = body.search(/[.!?](\s|$)/);
+  if (stop > 20) return body.slice(0, stop + 1);
+  return body.length > 130 ? `${body.slice(0, 130).trimEnd()}…` : body;
+}
+
 export function TutorSidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  /* Whether the mascot can exist here.
+     Read through `useSyncExternalStore` with a store that never changes — the
+     same idiom the 3D layer uses to answer "are we on the client yet". The
+     server snapshot is false so the pill renders in the HTML, the client
+     snapshot is the real capability, and there is no effect writing state and
+     no subscription to lose a race with. */
+  const mascotPresent = useSyncExternalStore(neverChanges, canDrawMascot, () => false);
   const [draft, setDraft] = useState("");
   const [circuit, setCircuit] = useState<ScreenCircuit>({
     ir: null,
@@ -194,6 +220,17 @@ export function TutorSidebar() {
 
   useEffect(() => () => abort.current?.abort(), []);
 
+  /* The mascot is the same tutor with a face on, so it needs a way in. It
+     hands over an optional question, which lands in the box ready to send
+     rather than opening an empty panel the reader now has to fill in. */
+  useEffect(() => {
+    receiveTutorOpen((question) => {
+      setOpen(true);
+      if (question) setDraft(question);
+    });
+    return () => receiveTutorOpen(null);
+  }, []);
+
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ block: "end" });
   }, [open, messages]);
@@ -227,6 +264,13 @@ export function TutorSidebar() {
       setDraft("");
       setBusy(true);
 
+      /* The cat is the same conversation, embodied. It rattles while the model
+         reads the circuit and snaps upright when words start arriving. */
+      setPose("thinking");
+      hush();
+      /** The answer so far, for the bubble. Per-ask, so it resets each time. */
+      let spoken = "";
+
       const patch = (change: (message: Message) => Message) =>
         setMessages((current) =>
           current.map((message) => (message.id === replyId ? change(message) : message)),
@@ -251,9 +295,24 @@ export function TutorSidebar() {
                   ? `${meta.looking.qubits} qubits · ${meta.looking.reading}`
                   : `${meta.live && meta.model ? meta.model : "local read-out"} · no circuit open`,
               })),
-            onDelta: (chunk) =>
-              patch((message) => ({ ...message, body: message.body + chunk })),
-            onDone: () => patch((message) => ({ ...message, streaming: false })),
+            onDelta: (chunk) => {
+              /* Accumulated out here, not inside the updater. A `setState`
+                 callback has to be pure — notifying the mascot store from
+                 inside one renders another component in the middle of this
+                 one's update, and React discards it. That is why the bubble
+                 stayed empty while the panel filled in perfectly. */
+              if (!spoken) setPose("resolving");
+              spoken += chunk;
+              /* The panel already carries the whole answer; the bubble carries
+                 its opening sentence. Streaming the same paragraph into two
+                 places at once is not two features, it is one shown twice. */
+              say(lead(spoken), { eyebrow: "reading your circuit", streaming: true });
+              patch((message) => ({ ...message, body: message.body + chunk }));
+            },
+            onDone: () => {
+              say(lead(spoken), { eyebrow: "reading your circuit" });
+              patch((message) => ({ ...message, streaming: false }));
+            },
           },
           controller.signal,
         );
@@ -274,6 +333,9 @@ export function TutorSidebar() {
       } finally {
         abort.current = null;
         setBusy(false);
+        setPose("idle");
+        // Long enough to read the opening line, then the cat stops talking.
+        window.setTimeout(hush, 9000);
       }
     },
     [busy, circuit.ir, circuit.lessonId, messages],
@@ -293,9 +355,15 @@ export function TutorSidebar() {
 
   return (
     <>
-      {/* Collapsed handle. */}
+      {/* Collapsed handle.
+
+          Hidden whenever the mascot is on screen, because the mascot is this
+          same button with a face on and they would otherwise sit on top of one
+          another in the same corner. It survives for the case the 3D layer
+          cannot run — no WebGL, or reduced hardware — where this pill is then
+          the only way in. */}
       <AnimatePresence>
-        {!open && (
+        {!open && !mascotPresent && (
           <motion.button
             type="button"
             initial={{ opacity: 0, x: 24 }}
@@ -304,9 +372,9 @@ export function TutorSidebar() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             onClick={() => setOpen(true)}
             aria-label="Open the AI tutor"
-            className="panel fixed right-4 bottom-6 z-40 flex items-center gap-2.5 py-3 pr-4 pl-3 text-sm text-paper transition-colors hover:border-photon focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon sm:bottom-8"
+            className="panel fixed right-4 bottom-6 z-40 flex items-center gap-2.5 py-3 pr-4 pl-3 text-sm text-paper transition-colors hover:border-filament focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-filament sm:bottom-8"
           >
-            <span className="flex size-7 items-center justify-center bg-photon">
+            <span className="flex size-7 items-center justify-center bg-filament">
               <Sparkles className="size-3.5 text-void" />
             </span>
             <span className="hidden sm:inline">Ask the tutor</span>
@@ -329,7 +397,7 @@ export function TutorSidebar() {
             aria-label="AI tutor"
           >
             <header className="flex items-center gap-2.5 border-b border-edge px-4 py-3">
-              <span className="flex size-7 items-center justify-center bg-photon">
+              <span className="flex size-7 items-center justify-center bg-filament">
                 <Sparkles className="size-3.5 text-void" />
               </span>
               <div className="min-w-0">
@@ -337,7 +405,7 @@ export function TutorSidebar() {
                 <p
                   className={cn(
                     "truncate font-mono text-[11px] tracking-[0.14em] uppercase",
-                    health ? "text-photon" : "text-frost",
+                    health ? "text-filament" : "text-frost",
                   )}
                 >
                   {status}
@@ -380,7 +448,7 @@ export function TutorSidebar() {
                       {[0, 1, 2].map((dot) => (
                         <motion.span
                           key={dot}
-                          className="size-1.5 bg-photon"
+                          className="size-1.5 bg-filament"
                           animate={{ opacity: [0.25, 1, 0.25] }}
                           transition={{
                             duration: 1.3,
@@ -409,7 +477,7 @@ export function TutorSidebar() {
                     type="button"
                     onClick={() => void send(suggestion)}
                     disabled={busy}
-                    className="border border-edge bg-strata px-2.5 py-1 text-left text-[11px] text-frost transition-colors hover:border-photon hover:text-paper disabled:opacity-40"
+                    className="border border-edge bg-strata px-2.5 py-1 text-left text-[11px] text-frost transition-colors hover:border-filament hover:text-paper disabled:opacity-40"
                   >
                     {suggestion}
                   </button>
@@ -420,7 +488,7 @@ export function TutorSidebar() {
                   event.preventDefault();
                   void send(draft);
                 }}
-                className="flex items-end gap-2 rounded-xl border border-edge bg-[#000000]/80 p-2 focus-within:border-photon"
+                className="flex items-end gap-2 rounded-xl border border-edge bg-void/80 p-2 focus-within:border-filament"
               >
                 <textarea
                   value={draft}
@@ -448,7 +516,7 @@ export function TutorSidebar() {
                   <button
                     type="submit"
                     aria-label="Send message"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-photon text-[#000000] transition-colors hover:bg-[#8af2ff] disabled:opacity-35"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-filament text-void transition-colors hover:bg-[#ffa855] disabled:opacity-35"
                     disabled={!draft.trim()}
                   >
                     <ArrowUp className="size-4" />

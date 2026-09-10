@@ -103,6 +103,125 @@ function blochOf(re: Float64Array, im: Float64Array, n: number, q: number): Bloc
   return { x: 2 * offRe, y: -2 * offIm, z: p0 - p1 };
 }
 
+export interface Step {
+  /** The time step this frame is the result of. -1 is the register before anything ran. */
+  column: number;
+  /** Human index: 0 is "before", 1 is "after the first step". */
+  index: number;
+  /** The gates that fired on this step. Empty on the opening frame. */
+  applied: Placement[];
+  result: SimulationResult;
+}
+
+/**
+ * The circuit, one time step at a time.
+ *
+ * A learner watching only the final histogram sees the answer and none of the
+ * reasoning. Stepping is where a circuit stops being a spell: you place a
+ * Hadamard and watch the Bloch vector swing to the equator, then place the CNOT
+ * and watch both vectors collapse to the origin as the pair entangles. The
+ * final state never showed you that the second gate was the one that did it.
+ *
+ * Stepping is by column rather than by individual gate, because a column *is*
+ * one time step — two gates on different wires in the same column genuinely
+ * happen together, and pretending otherwise would teach a sequencing that the
+ * hardware does not have.
+ *
+ * Each frame is a full re-simulation of the prefix. That is more arithmetic
+ * than threading one amplitude array through the loop, and at four qubits and
+ * ten columns it is a few thousand floating-point operations — far cheaper than
+ * the bug where a shared buffer gets mutated by the frame after it.
+ */
+export function simulateSteps(placements: Placement[], qubits: number): Step[] {
+  const columns = [...new Set(placements.map((p) => p.column))].sort((a, b) => a - b);
+
+  const frames: Step[] = [
+    { column: -1, index: 0, applied: [], result: simulate([], qubits) },
+  ];
+
+  columns.forEach((column, index) => {
+    frames.push({
+      column,
+      index: index + 1,
+      applied: placements.filter((p) => p.column === column),
+      result: simulate(
+        placements.filter((p) => p.column <= column),
+        qubits,
+      ),
+    });
+  });
+
+  return frames;
+}
+
+/**
+ * Measure one qubit in the computational basis, and keep the state that leaves.
+ *
+ * Projection, not decoration: the amplitudes where the measured qubit disagrees
+ * with the outcome are set to zero and the rest renormalised. Everything else —
+ * probabilities, both Bloch vectors, the entanglement — is then recomputed from
+ * that state, so measuring one half of a Bell pair really does determine the
+ * other half and really does destroy the entanglement.
+ *
+ * The alternative, which this replaces, was to sample an outcome and print it
+ * while leaving the state alone. That reads as "measurement is a dice roll you
+ * may repeat", which is the exact opposite of the lesson, and it showed: you
+ * could measure the same Bell pair four times and get |1>, |0>, |0>, |0> with
+ * the vector never moving.
+ *
+ * `depth` and `gateCount` are carried through unchanged — a measurement is not
+ * a gate, and the circuit that produced the state is still the circuit it was.
+ */
+export function collapse(
+  result: SimulationResult,
+  qubits: number,
+  wire: number,
+  outcome: 0 | 1,
+): SimulationResult {
+  const dim = 1 << qubits;
+  if (wire < 0 || wire >= qubits || result.amplitudes.length !== dim) return result;
+
+  const re = new Float64Array(dim);
+  const im = new Float64Array(dim);
+
+  let norm = 0;
+  for (let i = 0; i < dim; i += 1) {
+    if (((i >> wire) & 1) !== outcome) continue;
+    const a = result.amplitudes[i];
+    re[i] = a.re;
+    im[i] = a.im;
+    norm += a.re * a.re + a.im * a.im;
+  }
+
+  // An outcome with no amplitude behind it cannot happen, so nothing collapses.
+  if (norm < 1e-12) return result;
+
+  const scale = 1 / Math.sqrt(norm);
+  for (let i = 0; i < dim; i += 1) {
+    re[i] *= scale;
+    im[i] *= scale;
+  }
+
+  const probabilities: number[] = [];
+  const amplitudes: { re: number; im: number }[] = [];
+  for (let i = 0; i < dim; i += 1) {
+    probabilities.push(re[i] * re[i] + im[i] * im[i]);
+    amplitudes.push({ re: re[i], im: im[i] });
+  }
+
+  const bloch: BlochVector[] = [];
+  for (let q = 0; q < qubits; q += 1) bloch.push(blochOf(re, im, qubits, q));
+
+  return {
+    probabilities,
+    labels: result.labels,
+    bloch,
+    amplitudes,
+    depth: result.depth,
+    gateCount: result.gateCount,
+  };
+}
+
 export function simulate(placements: Placement[], qubits: number): SimulationResult {
   const dim = 1 << qubits;
   const re = new Float64Array(dim);

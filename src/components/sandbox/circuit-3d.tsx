@@ -361,7 +361,7 @@ export function TargetRing({
               width: size,
               height: size,
               borderColor: front ? "#2fe4ff" : "#0b6b82",
-              background: front ? "#0b0b0b" : "transparent",
+              background: front ? "var(--color-nebula)" : "transparent",
               transform: `translate(-50%,-50%) translateZ(${-depth / 2 + t * depth}px)`,
             }}
           />

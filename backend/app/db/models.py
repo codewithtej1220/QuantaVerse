@@ -4,12 +4,14 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
     Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -30,6 +32,21 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String(80), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(120), nullable=False)
     institution: Mapped[str | None] = mapped_column(String(160), nullable=True)
+
+    # --- the directory card -------------------------------------------------
+    # What the research hub lists a person under. `role` is deliberately a
+    # plain string rather than an enum: it is displayed, filtered on, and will
+    # grow a third value ("alum", "lab") before it grows any behaviour.
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="student")
+    headline: Mapped[str | None] = mapped_column(String(140), nullable=True)
+    # Free text, comma separated. Searched, and shown as chips.
+    interests: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    open_to_mentoring: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # A seeded example profile, not a person. Marked in the database rather
+    # than inferred from a name prefix so the directory can label it plainly
+    # and nobody mistakes a fixture for a real academic.
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -48,6 +65,18 @@ class User(Base):
     )
     badges: Mapped[list["EarnedBadge"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
+    sent_requests: Mapped[list["Connection"]] = relationship(
+        back_populates="requester",
+        foreign_keys="Connection.requester_id",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    received_requests: Mapped[list["Connection"]] = relationship(
+        back_populates="addressee",
+        foreign_keys="Connection.addressee_id",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 
@@ -131,3 +160,50 @@ class EarnedBadge(Base):
     earned_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
 
     user: Mapped[User] = relationship(back_populates="badges")
+
+
+class Connection(Base):
+    """
+    One person asking to be connected to another.
+
+    Modelled as a single directed row rather than a pair, the way every
+    professional network does it: the direction is what lets the addressee see
+    "so-and-so wants to connect" and the requester see "waiting on them". Once
+    the status is `accepted` the row is read symmetrically — both sides are
+    connected — and the direction survives only as a record of who asked.
+
+    The unique constraint is on the ordered pair, so A→B and B→A can both
+    exist. That is intentional: two people asking each other independently is a
+    real thing that happens, and the service resolves it by accepting both
+    rather than failing one of them on a constraint the user cannot see.
+    """
+
+    __tablename__ = "connections"
+    __table_args__ = (
+        UniqueConstraint("requester_id", "addressee_id", name="uq_connection_pair"),
+        CheckConstraint("requester_id <> addressee_id", name="ck_connection_not_self"),
+        Index("ix_connection_addressee_status", "addressee_id", "status"),
+        Index("ix_connection_requester_status", "requester_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    requester_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    addressee_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    # "pending" | "accepted" | "declined". A declined row is kept rather
+    # than deleted so a second ask can be rate-limited against it, and so
+    # the requester is not told outright that they were turned down.
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    requester: Mapped[User] = relationship(
+        back_populates="sent_requests", foreign_keys=[requester_id]
+    )
+    addressee: Mapped[User] = relationship(
+        back_populates="received_requests", foreign_keys=[addressee_id]
+    )

@@ -71,7 +71,17 @@ export function Bench({
           whatever room is left over and collapses to nothing when there is
           none, where centring a taller-than-screen column would push its top
           out of reach above the scroll. */}
-      <div className="my-auto flex w-full flex-col gap-5 py-6">{children}</div>
+      {/* `overflow-x-clip` because the palette's cards throw contact shadows
+          well past their own boxes — that is what gives them their depth — and
+          those shadows were putting a horizontal scrollbar across the one
+          screen that exists to abolish horizontal scrolling. Clipped here
+          rather than on the dialog: `clip` beside a `visible` axis stays
+          `clip`, so nothing becomes a scroll container, where the same class on
+          the dialog would compute to `hidden` beside its `auto` and leave a
+          silent 34px of sideways scroll for a focus ring to fall into. The
+          board brought its own scroller for the case where it is genuinely
+          wider than the phone, so nothing readable is lost. */}
+      <div className="my-auto flex w-full flex-col gap-5 overflow-x-clip py-6">{children}</div>
     </div>,
     document.body,
   );

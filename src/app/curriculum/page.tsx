@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 import { ModuleTrack } from "@/components/curriculum/module-track";
-import { LEARNER, MODULES, TRACK_LABEL } from "@/lib/data";
+import { QuestBoard } from "@/components/curriculum/quest-board";
+import { MODULES } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Curriculum",
@@ -13,14 +13,8 @@ export const metadata: Metadata = {
 
 const TOTAL_MINUTES = MODULES.reduce((sum, m) => sum + m.minutes, 0);
 const TOTAL_LESSONS = MODULES.reduce((sum, m) => sum + m.lessons, 0);
-const MASTERED = MODULES.filter((m) => m.state === "mastered").length;
-
-/* The one thing this page is for. Everything else on it is reference. */
-const RESUME = MODULES.find((m) => m.state === "active") ?? MODULES.find((m) => m.progress < 100);
 
 export default function CurriculumPage() {
-  const lessonsDone = RESUME ? Math.round((RESUME.lessons * RESUME.progress) / 100) : 0;
-
   return (
     <div className="min-h-screen overflow-x-clip pt-32 pb-24">
       <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
@@ -47,8 +41,8 @@ export default function CurriculumPage() {
             <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4 border-t border-edge pt-5">
               {(
                 [
-                  ["Lessons", `${LEARNER.lessonsDone}/${TOTAL_LESSONS}`],
-                  ["Mastered", `${MASTERED}/${MODULES.length}`],
+                  ["Lessons", String(TOTAL_LESSONS)],
+                  ["Modules", String(MODULES.length)],
                   ["Runtime", `${Math.round(TOTAL_MINUTES / 60)}h`],
                 ] as const
               ).map(([label, value]) => (
@@ -65,42 +59,12 @@ export default function CurriculumPage() {
           </div>
         </header>
 
-        {/* The dominant element. If a visitor reads one thing, it is this. */}
-        {RESUME && (
-          <Link
-            href={`/curriculum/${RESUME.slug}`}
-            className="group mt-16 grid gap-x-8 gap-y-6 border-y-2 border-photon py-8 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-          >
-            <div className="min-w-0">
-              <p className="font-mono text-[12px] tracking-[0.2em] text-photon uppercase">
-                Continue where you stopped
-              </p>
-              <h2 className="display-2 mt-4 text-paper">{RESUME.title}</h2>
-              <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[13px] text-frost tabular-nums">
-                <span className="ket text-photon">{RESUME.ket}</span>
-                <span className="h-3 w-px bg-edge-hi" />
-                <span>
-                  lesson {Math.min(RESUME.lessons, lessonsDone + 1)} of {RESUME.lessons}
-                </span>
-                <span className="h-3 w-px bg-edge-hi" />
-                <span>{TRACK_LABEL[RESUME.track]}</span>
-                <span className="h-3 w-px bg-edge-hi" />
-                <span>finishing it earns {RESUME.badge}</span>
-              </p>
-            </div>
-
-            <span className="flex items-center gap-5 sm:flex-col sm:items-end sm:gap-3">
-              <span className="font-display text-[4rem] leading-[0.8] font-extrabold text-photon tabular-nums sm:text-[5rem]">
-                {RESUME.progress}
-                <span className="text-2xl">%</span>
-              </span>
-              <span className="inline-flex items-center gap-2 bg-photon px-5 py-2.5 font-mono text-[12px] tracking-[0.14em] text-void uppercase">
-                Resume
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </span>
-            </span>
-          </Link>
-        )}
+        {/* The dominant element. Level, XP, streak and the one module to open
+            next — all of it counted from work done, and honest about having
+            nothing to show when nobody is signed in. */}
+        <div className="mt-14">
+          <QuestBoard />
+        </div>
 
         <div className="mt-14">
           <ModuleTrack />

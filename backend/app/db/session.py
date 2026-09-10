@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Engine, create_engine, event
+from sqlalchemy import Engine, create_engine, event, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -55,8 +55,63 @@ def get_session_factory() -> sessionmaker[Session]:
     )
 
 
+def _add_missing_columns(engine: Engine) -> list[str]:
+    """
+    Bring an existing table up to the models it is meant to match.
+
+    `create_all` creates tables it cannot find and then leaves the ones it can
+    entirely alone, so a column added to a model never reaches a database that
+    already has that table. Every developer with a `quantaverse.db` from last
+    week — and the deployed instance — would get `no such column: users.role`
+    on the first request touching the research hub.
+
+    This is not a migration system and does not pretend to be one: it only ever
+    adds a nullable-or-defaulted column, which is the one schema change that is
+    safe to infer and to run twice. Renames, drops and type changes want Alembic
+    and a human. Anything it cannot express is left for that.
+    """
+    inspector = inspect(engine)
+    added: list[str] = []
+
+    for name, table in Base.metadata.tables.items():
+        if not inspector.has_table(name):
+            continue
+        present = {column["name"] for column in inspector.get_columns(name)}
+
+        for column in table.columns:
+            if column.name in present:
+                continue
+            # Only the safe shape: something every existing row can be given.
+            if not column.nullable and column.server_default is None and column.default is None:
+                continue
+
+            kind = column.type.compile(dialect=engine.dialect)
+            clause = f"ALTER TABLE {name} ADD COLUMN {column.name} {kind}"
+
+            default = column.default
+            if default is not None and not default.is_callable and default.arg is not None:
+                literal = default.arg
+                if isinstance(literal, bool):
+                    clause += f" DEFAULT {1 if literal else 0}"
+                elif isinstance(literal, (int, float)):
+                    clause += f" DEFAULT {literal}"
+                elif isinstance(literal, str):
+                    escaped = literal.replace("'", "''")
+                    clause += f" DEFAULT '{escaped}'"
+                if not column.nullable:
+                    clause += " NOT NULL"
+
+            with engine.begin() as connection:
+                connection.execute(text(clause))
+            added.append(f"{name}.{column.name}")
+
+    return added
+
+
 def init_db() -> None:
-    Base.metadata.create_all(bind=get_engine())
+    engine = get_engine()
+    Base.metadata.create_all(bind=engine)
+    _add_missing_columns(engine)
 
 
 def get_session() -> Iterator[Session]:

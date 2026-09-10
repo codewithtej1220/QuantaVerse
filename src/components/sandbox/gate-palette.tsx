@@ -1,11 +1,10 @@
 "use client";
 
-import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, type CSSProperties } from "react";
 
 import { GATES } from "@/lib/data";
-import { useReducedMotion } from "@/lib/pointer";
 import { cn } from "@/lib/utils";
-import { ContactShadow, SlabBody, TRAY_PERSPECTIVE, useDeckTilt } from "./circuit-3d";
+import { ContactShadow, SlabBody, TRAY_PERSPECTIVE } from "./circuit-3d";
 import { GATE_MIME, MATERIAL, TONE } from "./tone";
 
 /**
@@ -16,15 +15,16 @@ import { GATE_MIME, MATERIAL, TONE } from "./tone";
  * slot. The armed state is visible, so the second mode never feels like a
  * hidden mechanic.
  *
- * The cards are cut from the same stock as the gates on the board, and the tray
- * turns on the same pointer. That continuity is the point: you pick a part up
- * out of a tray of parts and set it down on a board, and at no stage does the
- * thing in your hand change what it is made of.
+ * The cards are cut from the same stock as the gates on the board, so a part
+ * does not change what it is made of between the tray and the wire.
  *
- * A card also answers to the pointer on its own — it leans towards wherever on
- * its face the cursor is, rises to meet a hover, and sinks under a press. All
- * of that is CSS reading two custom properties, so none of it re-renders React
- * while the pointer is moving.
+ * Nothing here moves. An earlier version had the tray turning on the pointer
+ * and every card leaning toward the cursor, rising to a hover and sinking under
+ * a press — which was a pleasure to build and a distraction to work next to.
+ * This is a tray of parts you are reaching into while thinking about a circuit,
+ * and a tray that reacts to the cursor crossing it competes with the thought.
+ * The depth stays, because that is what makes the cards read as parts; the
+ * motion is gone. Arming a gate is now said in colour alone.
  */
 
 /** How thick a tray card is. Thinner than a gate: it is a chip, not a block. */
@@ -51,14 +51,6 @@ export function GatePalette({
   armed: string | null;
   onArm: (gateId: string | null) => void;
 }) {
-  const reduced = useReducedMotion();
-  const tray = useDeckTilt(!reduced);
-
-  /* Only one card can be under the pointer at a time, so one cached rectangle
-     serves all eight — and caching it on the way in keeps the move handler,
-     which fires on every pointer event, off the layout entirely. */
-  const face = useRef<DOMRect | null>(null);
-
   /* The thing that follows the cursor during a drag.
 
      A browser makes its own drag image by snapshotting the dragged element,
@@ -68,27 +60,10 @@ export function GatePalette({
      as the gate about to be dropped, and hands it over at dragstart. */
   const ghost = useRef<HTMLDivElement>(null);
 
-  const grip = (event: ReactPointerEvent<HTMLElement>) => {
-    face.current = event.currentTarget.getBoundingClientRect();
-  };
-
-  const lean = (event: ReactPointerEvent<HTMLElement>) => {
-    const box = face.current;
-    if (!box) return;
-    const card = event.currentTarget;
-    card.style.setProperty("--cx", (((event.clientX - box.left) / box.width) * 2 - 1).toFixed(3));
-    card.style.setProperty("--cy", (((event.clientY - box.top) / box.height) * 2 - 1).toFixed(3));
-  };
-
-  const level = (event: ReactPointerEvent<HTMLElement>) => {
-    face.current = null;
-    event.currentTarget.style.setProperty("--cx", "0");
-    event.currentTarget.style.setProperty("--cy", "0");
-  };
-
-  const tilt = reduced
-    ? "rotateX(6deg) rotateY(-3deg)"
-    : "rotateX(calc(6deg + var(--py) * -5deg)) rotateY(calc(var(--px) * 7deg))";
+  /* One fixed angle for the tray, the same for everybody. It is what gives the
+     cards a lit face and a visible edge; it is not something the pointer gets
+     to change. */
+  const TILT = "rotateX(6deg) rotateY(-3deg)";
 
   return (
     /* A container, not the viewport. This palette is used at three widths —
@@ -113,22 +88,11 @@ export function GatePalette({
 
       {/* The tray. No clipping on it: a card near the end is meant to overhang
           its own well, and the reference card has to be able to open past it. */}
-      <div
-        ref={tray}
-        className="relative mt-3 rounded-xl bg-void px-6 py-7"
-        style={{ "--px": "0", "--py": "0" } as CSSProperties}
-      >
-        <div
-          style={{
-            perspective: `${TRAY_PERSPECTIVE}px`,
-            perspectiveOrigin: reduced
-              ? "50% 50%"
-              : "calc(50% + var(--px) * 8%) calc(50% + var(--py) * 8%)",
-          }}
-        >
+      <div className="relative mt-3 rounded-xl bg-void px-6 py-7">
+        <div style={{ perspective: `${TRAY_PERSPECTIVE}px`, perspectiveOrigin: "50% 50%" }}>
           <div
             className="grid grid-cols-4 gap-3 transform-3d @2xl:grid-cols-8"
-            style={{ transform: tilt }}
+            style={{ transform: TILT }}
           >
             {GATES.map((gate) => {
               const tone = TONE[gate.tone];
@@ -136,10 +100,7 @@ export function GatePalette({
               const isArmed = armed === gate.id;
 
               return (
-                <div
-                  key={gate.id}
-                  className="group relative transform-3d hover:[--shade:1.4] focus-within:[--shade:1.4]"
-                >
+                <div key={gate.id} className="group relative transform-3d">
                   <ContactShadow inset="-46% -30%" depth={1} />
 
                   <button
@@ -165,35 +126,18 @@ export function GatePalette({
                     }}
                     onDragEnd={() => onArm(null)}
                     onClick={() => onArm(isArmed ? null : gate.id)}
-                    onPointerEnter={reduced ? undefined : grip}
-                    onPointerMove={reduced ? undefined : lean}
-                    onPointerLeave={reduced ? undefined : level}
                     aria-pressed={isArmed}
                     aria-label={
                       gate.name.toLowerCase().includes("gate") ? gate.name : `${gate.name} gate`
                     }
-                    style={
-                      {
-                        /* At rest the card sits on the tray — its back face is
-                           the tray surface. Armed, it is out of the tray and in
-                           your hand, which is why it stays up there until you
-                           spend it on a slot. */
-                        "--lift": isArmed ? "78px" : `${CARD_D}px`,
-                        transform:
-                          "translateZ(calc(var(--lift) + var(--boost, 0px)))" +
-                          " rotateY(calc(var(--cx, 0) * 11deg))" +
-                          " rotateX(calc(var(--cy, 0) * -11deg))",
-                      } as CSSProperties
-                    }
+                    /* One height, always. The card sits on the tray whether it
+                       is armed or not — being armed is said by the fill, which
+                       is unmissable and does not move anything. */
+                    style={{ transform: `translateZ(${CARD_D}px)` } as CSSProperties}
                     className={cn(
                       "relative flex w-full cursor-grab flex-col items-center gap-1 border py-3",
-                      "transform-3d transition-transform duration-150 ease-out",
+                      "transform-3d transition-colors duration-150 ease-out",
                       "active:cursor-grabbing",
-                      // Rises to a hover, sinks under a press. The press has to
-                      // come after the hover here, or it never gets a chance to
-                      // win — you are always hovering a control you are pressing.
-                      "hover:[--boost:28px] focus-visible:[--boost:28px]",
-                      "active:[--boost:-14px]",
                       "focus-visible:outline-2 focus-visible:outline-offset-4",
                       tone.border,
                       tone.ring,
@@ -201,6 +145,20 @@ export function GatePalette({
                     )}
                   >
                     <SlabBody depth={CARD_D} material={material} />
+
+                    {/* The armed fill, painted over the slab rather than under
+                        it. `bg-photon` on the button itself does nothing here:
+                        SlabBody lays eight opaque layers across `inset-0`, so
+                        the button's own background has never been visible. The
+                        old card got away with it because being armed was said by
+                        a 78px lift out of the tray; with the motion gone, the
+                        colour has to actually reach the face. */}
+                    {isArmed && (
+                      <span
+                        aria-hidden
+                        className={cn("pointer-events-none absolute inset-0", tone.glow)}
+                      />
+                    )}
 
                     <span
                       className={cn(

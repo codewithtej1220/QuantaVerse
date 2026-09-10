@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Award, Lock, Zap } from "lucide-react";
 
 import { GATE_BY_ID, MODULES, TRACK_LABEL, type Module, type Track } from "@/lib/data";
+import type { ModuleProgress } from "@/lib/auth";
+import { bySlug, moduleXp, useLiveProgress } from "@/lib/quest";
 import { Reveal } from "@/components/site/reveal";
 import { cn } from "@/lib/utils";
 
@@ -67,16 +69,26 @@ function ModuleRow({
   isFirst,
   isLast,
   introduced,
+  live,
 }: {
   entry: Module;
   index: number;
   isFirst: boolean;
   isLast: boolean;
   introduced: Set<string>;
+  /** The account's own row for this module, when there is an account. */
+  live?: ModuleProgress;
 }) {
-  const done = entry.state === "mastered";
-  const current = entry.state === "active";
-  const locked = entry.state === "locked";
+  /* The record wins wherever there is one. `data.ts` carries an example
+     learner so the signed-out page has something to show; rendering that
+     example's "mastered" tick to someone who has done none of it is the bug
+     this replaces. */
+  const state = live?.state ?? entry.state;
+  const done = state === "mastered";
+  const current = state === "active";
+  const locked = state === "locked";
+  const xp = live ? moduleXp(live) : null;
+  const percent = live?.percent ?? entry.progress;
 
   return (
     <li className="group relative">
@@ -160,8 +172,29 @@ function ModuleRow({
               })}
             </span>
             <span className="font-mono text-[11.5px] text-dim tabular-nums">
-              {entry.lessons} lessons · {entry.minutes} min
+              {live ? `${live.lessons_completed}/${live.lessons}` : entry.lessons} lessons ·{" "}
+              {entry.minutes} min
             </span>
+            {/* What the module is worth, and what has been banked of it. Shown
+                only to an account, because to anyone else it is a number about
+                somebody who does not exist. */}
+            {xp && (
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 font-mono text-[11.5px] tabular-nums",
+                  xp.earned > 0 ? "text-photon" : "text-dim",
+                )}
+              >
+                <Zap className="size-3" aria-hidden />
+                {xp.earned}/{xp.possible} XP
+              </span>
+            )}
+            {live?.badge_earned && (
+              <span className="flex items-center gap-1.5 font-mono text-[11.5px] text-photon">
+                <Award className="size-3" aria-hidden />
+                {live.badge}
+              </span>
+            )}
           </span>
         </span>
 
@@ -171,10 +204,10 @@ function ModuleRow({
             <span
               className={cn(
                 "font-display text-[2rem] leading-none font-extrabold tabular-nums",
-                done ? "text-photon" : entry.progress > 0 ? "text-paper" : "text-dim",
+                done ? "text-photon" : percent > 0 ? "text-paper" : "text-dim",
               )}
             >
-              {entry.progress}
+              {percent}
             </span>
             <span className="font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
               per cent
@@ -189,7 +222,7 @@ function ModuleRow({
                 : "border-edge text-frost group-hover:border-photon group-hover:text-photon",
             )}
           >
-            {done ? "Revisit" : entry.progress > 0 ? "Continue" : "Start"}
+            {done ? "Revisit" : percent > 0 ? "Continue" : "Start"}
             <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
           </span>
         </span>
@@ -201,6 +234,8 @@ function ModuleRow({
 export function ModuleTrack() {
   const [filter, setFilter] = useState<Filter>("all");
   const introducedBy = useMemo(() => newGatesByModule(), []);
+  const { data } = useLiveProgress();
+  const live = useMemo(() => (data ? bySlug(data.modules) : null), [data]);
 
   const counts = useMemo(() => {
     const map: Record<Filter, number> = {
@@ -256,6 +291,7 @@ export function ModuleTrack() {
             isFirst={i === 0}
             isLast={i === shown.length - 1}
             introduced={introducedBy.get(row.slug) ?? new Set()}
+            live={live?.get(row.slug)}
           />
         ))}
       </Reveal>

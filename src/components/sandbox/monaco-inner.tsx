@@ -23,41 +23,52 @@ export default function MonacoInner({
       theme="quantaverse"
       onChange={(next) => onChange(next ?? "")}
       loading={
-        <pre className="w-full overflow-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed text-frost">
+        <pre className="w-full overflow-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed text-void">
           {value}
         </pre>
       }
       beforeMount={(monaco) => {
         monaco.editor.defineTheme("quantaverse", {
-          base: "vs-dark",
+          base: "vs",
           inherit: true,
-          /* Four values, not seven colours. Copper marks the language's own
-             words, white is what the author named, silver is a literal and
-             steel is anything the interpreter ignores. A learner reading
-             Qiskit for the first time gets structure out of the colour
-             instead of a fruit salad. */
+          /* Four values, not seven colours. Deep teal-black is what the
+             author named, a darkened site cyan marks the language's own
+             words, slate is a literal and a lighter slate is anything the
+             interpreter ignores. A learner reading Qiskit for the first time
+             gets structure out of the colour instead of a fruit salad.
+
+             These are the site's hues taken down to work on paper rather than
+             the dark theme's inks reused. Cyan at #2fe4ff is 1.1:1 on this
+             ground — invisible — so the keyword colour is that same hue driven
+             down to 5.2:1. Nothing here is a Monaco default. */
           rules: [
-            { token: "comment", foreground: "7a7a75", fontStyle: "italic" },
-            { token: "keyword", foreground: "2fe4ff" },
-            { token: "keyword.flow", foreground: "2fe4ff" },
-            { token: "string", foreground: "a8a8a3" },
-            { token: "number", foreground: "a8a8a3" },
-            { token: "identifier", foreground: "f2f2ef" },
-            { token: "type", foreground: "f2f2ef" },
-            { token: "delimiter", foreground: "8e8e89" },
+            { token: "comment", foreground: "596e6a", fontStyle: "italic" },
+            { token: "keyword", foreground: "0e6d80" },
+            { token: "keyword.flow", foreground: "0e6d80" },
+            { token: "string", foreground: "3f5350" },
+            { token: "number", foreground: "3f5350" },
+            { token: "identifier", foreground: "0f1c19" },
+            { token: "type", foreground: "0f1c19" },
+            { token: "delimiter", foreground: "596e6a" },
           ],
           colors: {
-            "editor.background": "#000000",
-            "editor.foreground": "#f2f2ef",
-            "editorLineNumber.foreground": "#262626",
-            "editorLineNumber.activeForeground": "#2fe4ff",
-            "editor.lineHighlightBackground": "#0b0b0b",
-            "editor.selectionBackground": "#262626",
-            "editorCursor.foreground": "#2fe4ff",
-            "editorIndentGuide.background1": "#151515",
-            "editorWidget.background": "#0b0b0b",
-            "scrollbarSlider.background": "#26262688",
-            "scrollbarSlider.hoverBackground": "#3d3d3daa",
+            /* sheet — the page's own ink value, used as a ground. The editor
+               is the one light surface on the site: a sheet of paper laid on a
+               dark desk, which is both what a code pane actually is and the
+               only thing that gives the surrounding dark something to be dark
+               against. */
+            "editor.background": "#f4efe6",
+            "editor.foreground": "#0f1c19",
+            "editorLineNumber.foreground": "#7d918d",
+            "editorLineNumber.activeForeground": "#0e6d80",
+            "editor.lineHighlightBackground": "#ece5d8",
+            "editor.selectionBackground": "#cfe9f0",
+            "editorCursor.foreground": "#0e6d80",
+            "editorIndentGuide.background1": "#ddd6c8",
+            "editorWidget.background": "#fbf8f2",
+            "editorWidget.border": "#ddd6c8",
+            "scrollbarSlider.background": "#0f1c1926",
+            "scrollbarSlider.hoverBackground": "#0f1c1944",
           },
         });
       }}
