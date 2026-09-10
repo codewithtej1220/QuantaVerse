@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-import { LatticeMount } from "./stage-mount";
+import { StardustMount } from "./stage-mount";
 
 /**
  * The ambient field, everywhere except the page that owns it.
@@ -22,9 +22,9 @@ export function RouteField() {
 
   if (path === "/") return null;
 
-  /* Every route gets the same lattice. The old field's three intensity tiers
+  /* Every route gets the same stardust. The old field's three intensity tiers
      existed to stop its bursts and its re-forming shapes going off behind body
-     copy and behind a circuit a student is building; the lattice has neither,
-     so there is nothing left to tier. It ducks behind the fold on its own. */
-  return <LatticeMount />;
+     copy and behind a circuit a student is building; the dust has neither, so
+     there is nothing left to tier. It ducks behind the fold on its own. */
+  return <StardustMount />;
 }

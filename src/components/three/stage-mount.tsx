@@ -2,7 +2,7 @@
 
 import { Suspense, useSyncExternalStore } from "react";
 
-import LatticeField from "./lattice-field";
+import StardustField from "./stardust-field";
 import QuantumField from "./quantum-field";
 import { Stage } from "./stage";
 
@@ -37,9 +37,9 @@ export function StageMount() {
 
   return (
     <Suspense fallback={null}>
-      {/* The lattice is the background. The field is here only for the film —
+      {/* The stardust is the background. The field is here only for the film —
           it holds at nothing until that track is on screen. */}
-      <LatticeField />
+      <StardustField />
       <QuantumField />
       <Stage />
     </Suspense>
@@ -47,21 +47,21 @@ export function StageMount() {
 }
 
 /**
- * The lattice on its own, for every page that is not the landing page.
+ * The stardust on its own, for every page that is not the landing page.
  *
  * No `Stage` alongside it: the stage exists to render into `Zone` boxes, and a
  * page without a zone would be paying for a second WebGL context to draw
  * nothing. No `QuantumField` either — its formations are the landing page's
  * film, and it has nothing to say on a page with no film track.
  */
-export function LatticeMount() {
+export function StardustMount() {
   const ready = useSyncExternalStore(neverChanges, onClient, onServer);
 
   if (!ready) return null;
 
   return (
     <Suspense fallback={null}>
-      <LatticeField />
+      <StardustField />
     </Suspense>
   );
 }
