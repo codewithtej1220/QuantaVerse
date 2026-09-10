@@ -17,9 +17,19 @@ import { PLATFORM_STATS } from "@/lib/data";
  * site. All of that said true things, and all of it was read by nobody: a
  * visitor who has already clicked through to a quantum-computing site does not
  * need to be sold on one, and a wall of prose above the fold is the thing that
- * makes a page look generated rather than made. What is left is the mark,
- * broken across two lines at the same point the wordmark breaks its colour, so
- * the headline is the logo at size rather than a slogan wearing its font.
+ * makes a page look generated rather than made. What is left is the mark, set
+ * once and whole, so the headline is the logo at size rather than a slogan
+ * wearing its font.
+ *
+ * It stays on one line at every width without a nowrap, because `display-1` is
+ * measured in `cqw` — a share of its own column rather than of the window — so
+ * the ratio between the word's width and the space it has never changes. The
+ * size is turned down from the utility's own, though: 13cqw was set for a stack
+ * of short words, and eleven letters at that rate fill 98% of the column at
+ * every width. Nothing overflowed, but `QuantaVerse` has no space in it to
+ * break at, so a 2% margin is the whole safety budget — one substituted glyph
+ * while the display face loads and it runs off the side. 11.4cqw sits it at
+ * about 86%, which reads as deliberate rather than as barely fitting.
  *
  * The work of holding the fold now belongs to the two live objects either side
  * of it — the lattice rippling under the cursor behind, and the qubit to the
@@ -32,18 +42,22 @@ import { PLATFORM_STATS } from "@/lib/data";
 export function Hero() {
   return (
     <section className="relative">
-      <div className="mx-auto max-w-[1440px] px-5 pt-32 pb-16 lg:px-10 lg:pt-40 lg:pb-20">
+      <div className="mx-auto max-w-[1440px] px-5 pt-20 pb-16 lg:px-10 lg:pt-24 lg:pb-20">
         <div className="grid items-center gap-x-16 gap-y-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)]">
           <div className="@container animate-rise">
             <p className="eyebrow">Open educational resource</p>
 
-            {/* The wordmark, enlarged. The break between the two halves is
-                where the mark already changes colour, so setting them on
-                separate lines reads as the logo rather than as two words. */}
-            <h1 className="display-1 mt-6 text-paper">
-              Quanta
-              <br />
-              <span className="text-photon">Verse</span>
+            {/* The wordmark, enlarged — one word, coloured where the mark
+                colours it. */}
+            <h1
+              className="display-1 mt-6 text-paper"
+              /* Inline, because this competes with `display-1`'s own font-size
+                 and two utilities setting the same property are decided by the
+                 order Tailwind emits them, not by the order they are written
+                 here. A style attribute is not a coin toss. */
+              style={{ fontSize: "clamp(2.25rem, 11.4cqw, 5.7rem)" }}
+            >
+              Quanta<span className="text-photon">Verse</span>
             </h1>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">

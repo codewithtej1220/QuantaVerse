@@ -46,6 +46,8 @@ const DAMPING = 0.86;
 
 /** A link is drawn while its two ends are at most this far apart. */
 const LINK_MAX = SPACING * 1.55;
+/** Share of neighbour pairs that are ever wired at all. See `buildGrid`. */
+const LINK_CHANCE = 0.2;
 
 const DOT_NEAR = new THREE.Color("#7fd4ff");
 const DOT_FAR = new THREE.Color("#2b6fa8");
@@ -153,15 +155,27 @@ function buildGrid(width: number, height: number): Grid {
     }
   }
 
-  /* Links: right and down from each point. Both directions from every point
-     would draw each edge twice, and at a few thousand edges that is a doubled
-     upload for an identical picture. */
+  /* Links: right and down from each point, and then most of them thrown away.
+     Only one edge in five is ever built.
+
+     Wiring every neighbour is what made this read as cracked glass rather than
+     as a field of dots. A complete grid has two edges per point, so even with
+     only a third of them lit at a time the survivors still close into polygons
+     everywhere you look, and the eye reads the polygons, not the points. The
+     brief was dots that *occasionally* find each other. Discarding four edges
+     in five at build time is what makes a lit edge a thread between two
+     neighbours instead of one more cell in a mesh — and it is done here rather
+     than by dimming, because an edge that does not exist costs no upload and no
+     draw either.
+
+     Both directions from every point would draw each edge twice, which at these
+     counts is a doubled upload for an identical picture. */
   const pairs: number[] = [];
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
       const i = row * cols + col;
-      if (col + 1 < cols) pairs.push(i, i + 1);
-      if (row + 1 < rows) pairs.push(i, i + cols);
+      if (col + 1 < cols && rand() < LINK_CHANCE) pairs.push(i, i + 1);
+      if (row + 1 < rows && rand() < LINK_CHANCE) pairs.push(i, i + cols);
     }
   }
 
@@ -353,9 +367,9 @@ function Lattice({ reducedMotion }: { reducedMotion: boolean }) {
       const wave = reducedMotion
         ? 0.55
         : 0.5 + 0.5 * Math.sin(time * 0.45 + linkPhase[l] * 6.2831 + ax * 0.006 + ay * 0.004);
-      const gate = Math.max(0, (wave - 0.62) / 0.38);
+      const gate = Math.max(0, (wave - 0.82) / 0.18);
 
-      const lit = near * near * gate * opacity.current * 0.85;
+      const lit = near * near * gate * opacity.current * 0.6;
 
       linkColors[o] = LINK.r * lit;
       linkColors[o + 1] = LINK.g * lit;
