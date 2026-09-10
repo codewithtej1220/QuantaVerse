@@ -80,17 +80,24 @@ export function CircuitGrid({
   const measuredColumns = placements.filter((p) => p.gate === "m").map((p) => p.column);
   const steps = Array.from({ length: columns }, (_, i) => i);
 
-  /* One angle, held. The board leans back so it reads as an object on a bench
-     rather than a picture of one, and that is all the lean it does.
+  /* One angle, held, and only on one axis.
 
-     It used to swing eleven degrees either side of this as the pointer crossed
-     it, with the perspective origin and the pool of light on the plate sliding
-     to match. That is a fine thing to look at and a poor thing to work on: the
-     board moves under the hand that is reaching for it, and every gate you are
-     trying to aim at is somewhere slightly different by the time you get there.
-     The depth is what makes this read as a machine standing in front of the
-     page, and depth survives being still. */
-  const DECK = "rotateX(8deg) rotateY(-5deg)";
+     It used to swing eleven degrees either side of a resting pose as the
+     pointer crossed it. That is a fine thing to look at and a poor thing to
+     work on — the board moves under the hand reaching for it — so it was
+     fixed. But the resting pose it was fixed at still carried a five degree
+     turn about Y, and that is the one rotation this particular object cannot
+     afford. Rotating about Y puts one end of every wire nearer the camera than
+     the other, and perspective then draws those wires as sloping lines. A
+     circuit diagram *is* its horizontals: wires are the space axis and columns
+     are the time axis, and a board whose wires run downhill reads as crooked
+     rather than as deep.
+
+     Rotating about X costs nothing in the same way, because a horizontal line
+     stays horizontal however far you lean it away from you. So the lean stays
+     and the turn goes: the plate recedes, the blocks still show a face and
+     stand on their shadows, and every wire is level. */
+  const DECK = "rotateX(6deg)";
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-void">
