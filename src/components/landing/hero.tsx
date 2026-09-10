@@ -10,14 +10,24 @@ import { PLATFORM_STATS } from "@/lib/data";
 /**
  * The hero.
  *
- * Three words, stacked, at the largest size the viewport will carry. The third
- * is the only copper on the screen above the fold, which is what makes it land.
+ * The name, at the largest size the viewport will carry, and two ways in.
+ * Nothing else.
  *
- * The object to the right is not an illustration of a qubit — it is one. The
- * cursor's vertical position is θ and its horizontal position is φ, so a
- * visitor who has never seen a Bloch sphere before has already prepared a state
- * on it by the time they finish reading the headline, and the read-out
- * underneath writes down what they just did in the notation module one teaches.
+ * It used to carry a headline, a row of claims and a paragraph explaining the
+ * site. All of that said true things, and all of it was read by nobody: a
+ * visitor who has already clicked through to a quantum-computing site does not
+ * need to be sold on one, and a wall of prose above the fold is the thing that
+ * makes a page look generated rather than made. What is left is the mark,
+ * broken across two lines at the same point the wordmark breaks its colour, so
+ * the headline is the logo at size rather than a slogan wearing its font.
+ *
+ * The work of holding the fold now belongs to the two live objects either side
+ * of it — the lattice rippling under the cursor behind, and the qubit to the
+ * right. That one is not an illustration of a qubit, it is one: the cursor's
+ * vertical position is θ and its horizontal position is φ, so a visitor who has
+ * never seen a Bloch sphere has already prepared a state on it before they
+ * reach the buttons, and the read-out underneath writes down what they just did
+ * in the notation module one teaches.
  */
 export function Hero() {
   return (
@@ -27,30 +37,14 @@ export function Hero() {
           <div className="@container animate-rise">
             <p className="eyebrow">Open educational resource</p>
 
+            {/* The wordmark, enlarged. The break between the two halves is
+                where the mark already changes colour, so setting them on
+                separate lines reads as the logo rather than as two words. */}
             <h1 className="display-1 mt-6 text-paper">
-              Master
+              Quanta
               <br />
-              Quantum
-              <br />
-              <span className="text-photon">Algorithms</span>
+              <span className="text-photon">Verse</span>
             </h1>
-
-            {/* The claim, in the smallest type on the page, because it does not
-                need to shout to be the reason someone stays. */}
-            <p className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[12px] tracking-[0.16em] text-frost uppercase">
-              <span>Free forever</span>
-              <span className="h-3 w-px bg-edge-hi" />
-              <span>MIT licensed</span>
-              <span className="h-3 w-px bg-edge-hi" />
-              <span>No account required</span>
-            </p>
-
-            <p className="lede mt-8 max-w-xl">
-              Eight modules take you from a single qubit to Shor&apos;s factoring algorithm. Build
-              circuits by dragging gates, watch the state vector move in real time, and read the
-              Qiskit your circuit compiles to. Every simulation runs in your browser — nothing is
-              uploaded, and there is nothing to sign up for.
-            </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <ActionLink href="/curriculum" size="lg">
