@@ -44,9 +44,9 @@ import { markBooted } from "@/lib/boot";
  */
 
 /** One mote per this many square pixels. */
-const AREA_PER_MOTE = 660;
-const MIN_MOTES = 500;
-const MAX_MOTES = 6000;
+const AREA_PER_MOTE = 380;
+const MIN_MOTES = 900;
+const MAX_MOTES = 9500;
 
 /** How far the cursor reaches, in pixels. */
 const REACH = 230;
@@ -87,11 +87,15 @@ const dotVertex = /* glsl */ `
        cursor on the CPU side. */
     vTint = mix(uFar, uNear, aDepth);
 
+    /* The floor matters more than the swing. A mote that fades to nearly
+       nothing is a mote that is missing for half its cycle, and a sky where
+       half the stars are missing at any moment reads as empty rather than as
+       twinkling. */
     float twinkle = uReduced > 0.5
       ? 1.0
-      : 0.55 + 0.45 * sin(uTime * 0.8 + aTwinkle * 6.2831);
+      : 0.70 + 0.30 * sin(uTime * 0.8 + aTwinkle * 6.2831);
 
-    vAlpha = (0.38 + aDepth * 0.62) * twinkle;
+    vAlpha = (0.52 + aDepth * 0.48) * twinkle;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = aSize;
@@ -153,10 +157,17 @@ function buildDust(width: number, height: number): Dust {
     /* Squared, so most motes sit far and faint and only a handful come near
        and bright. A uniform spread of depths gives a field of medium-grey dots
        with no sense of distance in it at all; cubing it goes too far the other
-       way and leaves almost nothing legible between the few bright ones. */
+       way and leaves almost nothing legible between the few bright ones.
+
+       The floor on the size is the thing that decides whether the field looks
+       populated. gl_PointSize is in *device* pixels, so on a 2x display a mote
+       of 0.8 is under half a CSS pixel — the rasteriser gives it a sliver of
+       coverage, the blend gives that sliver a fraction of its alpha, and the
+       result is a mote that exists in the buffer and not on the screen. Most
+       of the sky sits near this floor, so the floor is most of the sky. */
     const d = rand();
     depth[i] = d * d;
-    size[i] = 0.8 + depth[i] * 2.0;
+    size[i] = 1.4 + depth[i] * 1.9;
     twinkle[i] = rand();
   }
 
