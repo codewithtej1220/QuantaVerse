@@ -49,9 +49,14 @@ backend/__pycache__/
 **/__pycache__/
 *.pyc
 
-backend/*.db
-backend/*.db-shm
-backend/*.db-wal
+# The account database, wherever it lands. It is normally written next to the
+# backend, but uvicorn started from the repo root puts it here instead — and it
+# holds real rows: e-mail addresses, password hashes, session tokens. Matching
+# on the extension rather than the directory means starting the server from the
+# wrong folder cannot turn into a commit that leaks them.
+*.db
+*.db-shm
+*.db-wal
 # ai
 
 # A stray nested clone. It was committed as a gitlink with no .gitmodules, so a

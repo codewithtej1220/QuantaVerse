@@ -20,7 +20,6 @@ from app.models.circuit_ir import SUPPORTED_GATES
 from app.services.adapters.base import AdapterError
 from app.services.adapters.factory import (
     UnknownBackendError,
-    available_backends,
     get_adapter,
     probe_backends,
 )
@@ -59,10 +58,24 @@ def _record_grade(
 
 @router.get("/backends")
 async def backends() -> dict[str, Any]:
+    detail = await run_in_threadpool(probe_backends)
     return {
         "default": get_settings().default_backend,
-        "available": available_backends(),
-        "detail": await run_in_threadpool(probe_backends),
+        # Engines a client should actually choose from: the framework imported,
+        # and the adapter simulates for real.
+        #
+        # This used to be the registry — every adapter this build knows how to
+        # construct — which put qBraid in a list called "available" even though
+        # it has no credentials and answers with mock data. The mock data is
+        # labelled (`status: "stub"`, plus a note saying so), so nothing was
+        # being hidden, but "available" was still the one key in this service
+        # that said something it did not mean, and a client is entitled to read
+        # it literally. Anything present-but-unconfigured stays in `detail`, so
+        # a client can still list it as known and say why it is not on offer.
+        "available": sorted(
+            key for key, item in detail.items() if item["installed"] and item["real"]
+        ),
+        "detail": detail,
         "gates": list(SUPPORTED_GATES),
     }
 
