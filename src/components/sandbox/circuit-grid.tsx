@@ -4,7 +4,6 @@ import { useState, type CSSProperties } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 
 import { GATE_BY_ID } from "@/lib/data";
-import { useReducedMotion } from "@/lib/pointer";
 import type { Placement } from "@/lib/quantum";
 import { cn } from "@/lib/utils";
 import {
@@ -17,7 +16,6 @@ import {
   PERSPECTIVE,
   ROW_H,
   TargetRing,
-  useDeckTilt,
   Z,
 } from "./circuit-3d";
 import { GATE_MIME, MATERIAL, TONE } from "./tone";
@@ -66,10 +64,6 @@ export function CircuitGrid({
   onToggleExpand?: () => void;
 }) {
   const [hover, setHover] = useState<string | null>(null);
-  // Someone who asked for less motion gets the board held at a fixed angle: the
-  // depth is the point and it survives being still, the cursor tracking is not.
-  const reduced = useReducedMotion();
-  const stage = useDeckTilt(!reduced);
 
   const grid: Cell[][] = Array.from({ length: qubits }, () => Array<Cell>(columns).fill(null));
   for (const p of placements) {
@@ -86,20 +80,20 @@ export function CircuitGrid({
   const measuredColumns = placements.filter((p) => p.gate === "m").map((p) => p.column);
   const steps = Array.from({ length: columns }, (_, i) => i);
 
-  /* The board leans back a little even at rest, so it reads as an object on a
-     bench from the first frame, and swings eleven degrees either side of that as
-     the pointer crosses it. Eleven is the ceiling: past it the near column of
-     blocks is magnified enough to climb over the wire labels beside it. */
-  const deck = reduced
-    ? "rotateX(8deg) rotateY(-5deg)"
-    : "rotateX(calc(8deg + var(--py) * -8deg)) rotateY(calc(var(--px) * 11deg))";
+  /* One angle, held. The board leans back so it reads as an object on a bench
+     rather than a picture of one, and that is all the lean it does.
+
+     It used to swing eleven degrees either side of this as the pointer crossed
+     it, with the perspective origin and the pool of light on the plate sliding
+     to match. That is a fine thing to look at and a poor thing to work on: the
+     board moves under the hand that is reaching for it, and every gate you are
+     trying to aim at is somewhere slightly different by the time you get there.
+     The depth is what makes this read as a machine standing in front of the
+     page, and depth survives being still. */
+  const DECK = "rotateX(8deg) rotateY(-5deg)";
 
   return (
-    <div
-      ref={stage}
-      className="relative overflow-hidden rounded-xl bg-void"
-      style={{ "--px": "0", "--py": "0" } as CSSProperties}
-    >
+    <div className="relative overflow-hidden rounded-xl bg-void">
       {/* The takeover control, over the board rather than in a toolbar: it
           belongs to the circuit, and the circuit is used on two pages that frame
           it differently. Sitting on the stage, it travels with the thing it
@@ -133,19 +127,19 @@ export function CircuitGrid({
             perspective: `${PERSPECTIVE}px`,
             // Moving the vanishing point with the pointer is the cue that sells
             // it: the board is not spinning in place, you are moving your head.
-            perspectiveOrigin: reduced
-              ? "50% 50%"
-              : "calc(50% + var(--px) * 10%) calc(50% + var(--py) * 8%)",
+            perspectiveOrigin: "50% 50%",
           }}
         >
-          <div className="relative transform-3d" style={{ transform: deck }}>
+          <div className="relative transform-3d" style={{ transform: DECK }}>
             {/* The plate: the board the wires are cut into and the step numbers
                 are printed on, ending above the classical rail because the rail
                 is not part of the quantum register.
 
-                It carries a pool of light that follows the pointer, which is the
-                only thing on the deck saying where the lamp is — and therefore
-                the thing that makes the blocks look lit rather than pasted on. */}
+                It carries a pool of light, which is the only thing on the deck
+                saying where the lamp is — and therefore the thing that makes the
+                blocks look lit rather than pasted on. The lamp is fixed above
+                the middle of the board now rather than following the cursor,
+                for the same reason the board itself no longer turns. */}
             <span
               aria-hidden
               className="pointer-events-none absolute rounded-sm border border-edge"
@@ -156,7 +150,7 @@ export function CircuitGrid({
                 bottom: 44,
                 transform: `translateZ(${Z.plate}px)`,
                 background:
-                  "radial-gradient(55% 75% at calc(50% + var(--px) * 26%) calc(50% + var(--py) * 26%), rgba(47,228,255,0.14), rgba(47,228,255,0) 68%), linear-gradient(180deg, #181818, #060606)",
+                  "radial-gradient(55% 75% at 50% 50%, rgba(47,228,255,0.14), rgba(47,228,255,0) 68%), linear-gradient(180deg, #181818, #060606)",
               }}
             />
 
@@ -208,11 +202,6 @@ export function CircuitGrid({
                         key={c}
                         className={cn(
                           "relative flex h-full flex-1 items-center justify-center transform-3d",
-                          // Approaching a gate lifts it further out of the board
-                          // and spreads its shadow, which is the whole grammar of
-                          // "this is in front of the page" in two properties.
-                          "hover:[--boost:34px] hover:[--shade:1.35]",
-                          "focus-within:[--boost:34px] focus-within:[--shade:1.35]",
                         )}
                         style={{ "--lift": `${Z.gate}px` } as CSSProperties}
                       >
@@ -292,7 +281,7 @@ export function CircuitGrid({
                             }}
                             className={cn(
                               "relative border duration-300 ease-out",
-                              "transition-[transform,background-color,border-color]",
+                              "transition-[background-color,border-color]",
                               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                               hovered
                                 ? "border-photon bg-photon/15"
@@ -313,10 +302,10 @@ export function CircuitGrid({
                               style={{
                                 width: GATE_W,
                                 height: GATE_W,
-                                transform: "translateZ(calc(var(--lift) + var(--boost, 0px)))",
+                                transform: "translateZ(var(--lift))",
                               }}
                               className={cn(
-                                "relative transform-3d transition-transform duration-300 ease-out",
+                                "relative transform-3d",
                                 // Offset far enough to clear the front face,
                                 // which stands eleven pixels nearer than the
                                 // plane the ring is drawn on.
@@ -356,9 +345,9 @@ export function CircuitGrid({
                               style={{
                                 width: GATE_W,
                                 height: GATE_W,
-                                transform: "translateZ(calc(var(--lift) + var(--boost, 0px)))",
+                                transform: "translateZ(var(--lift))",
                               }}
-                              className="relative transform-3d transition-transform duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photon"
+                              className="relative transform-3d focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photon"
                             >
                               <span className="absolute inset-0 transform-3d animate-land">
                                 <ControlDome />
@@ -377,9 +366,9 @@ export function CircuitGrid({
                               style={{
                                 width: GATE_W,
                                 height: GATE_W,
-                                transform: "translateZ(calc(var(--lift) + var(--boost, 0px)))",
+                                transform: "translateZ(var(--lift))",
                               }}
-                              className="relative transform-3d transition-transform duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photon"
+                              className="relative transform-3d focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photon"
                             >
                               <span className="absolute inset-0 transform-3d animate-land">
                                 <TargetRing>
