@@ -71,7 +71,13 @@ export function GatePalette({
        viewport breakpoints got all three wrong at once: they put four cards
        across a thousand pixels in the takeover while packing eight into a
        narrow column. */
-    <div className="@container w-full">
+    /* `relative z-20` is what lets a reference card leave the palette.
+       translateZ only sorts a card against the other cards in the tray, because
+       depth is meaningless once you are outside the tray's own 3D context —
+       and the card opens downward into the panel that holds the circuit, which
+       is a later sibling and therefore painted over the whole palette. Lifting
+       the palette is the only thing that puts a card in front of it. */
+    <div className="@container relative z-20 w-full">
       <div className="flex items-baseline justify-between gap-3">
         <p className="eyebrow">Gate palette</p>
         <p className="font-mono text-[11px] text-frost">
@@ -183,7 +189,7 @@ export function GatePalette({
                       raised neighbour cannot stand in front of the reading. */}
                   <div
                     className={cn(
-                      "panel pointer-events-none absolute top-full left-1/2 mt-3 w-56 p-4",
+                      "panel pointer-events-none absolute top-full left-1/2 z-50 mt-3 w-56 p-4",
                       "opacity-0 transition-opacity duration-150",
                       "group-hover:opacity-100 group-focus-within:opacity-100",
                     )}
