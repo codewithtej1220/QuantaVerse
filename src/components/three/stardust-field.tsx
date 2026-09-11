@@ -64,8 +64,109 @@ const DRIFT = 45;
 /** Per-frame velocity retention at 60fps. High, so motion carries. */
 const DAMPING = 0.94;
 
-const DOT_NEAR = new THREE.Color("#9fdcff");
-const DOT_FAR = new THREE.Color("#2b6fa8");
+/* The near motes run almost white, as they do in a real long exposure — the
+   blue in a night sky picture lives in the gas, not in the stars. */
+const DOT_NEAR = new THREE.Color("#e4f2ff");
+const DOT_FAR = new THREE.Color("#2a5ba8");
+
+/* The cloud: deep navy where it is thin, vivid blue through the body of it,
+   and a cyan core where it piles up. Three stops rather than two because a
+   two-stop nebula reads as a coloured fog, and what makes a real one look deep
+   is that the brightest parts go a different hue, not just a lighter one. */
+const NEB_DEEP = new THREE.Color("#0a1440");
+const NEB_MID = new THREE.Color("#1552c8");
+const NEB_HOT = new THREE.Color("#4fe0ff");
+
+/* Value noise, and the octave sum built on it. Written once here as a GLSL
+   string and once below in TypeScript, because the cloud is drawn on the GPU
+   and the stars are clustered into it on the CPU — the two have to agree on
+   where the bright regions are, or the sky ends up with its gas in one place
+   and its stars in another. */
+const NOISE = /* glsl */ `
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 5; i++) { v += a * vnoise(p); p *= 2.02; a *= 0.5; }
+    return v;
+  }
+`;
+
+const nebulaVertex = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const nebulaFragment = /* glsl */ `
+  varying vec2 vUv;
+  uniform float uTime;
+  uniform float uOpacity;
+  uniform float uReduced;
+  uniform vec2 uAspect;
+  uniform vec3 uDeep;
+  uniform vec3 uMid;
+  uniform vec3 uHot;
+` + NOISE + /* glsl */ `
+  void main() {
+    /* Low frequency on purpose. At 2.3 the cloud came out as one bright
+       clump with black either side of it; the reference has gas across the
+       whole frame and only varies how much. */
+    vec2 p = vUv * uAspect * 1.65;
+
+    /* base is the shape of the cloud and nothing else touches it — the CPU
+       samples the same function to decide where to put stars, so warping or
+       drifting it here would pull the gas off the stars sitting in it. */
+    float base = fbm(p);
+
+    /* The filaments are where the motion lives. A domain warp that turns very
+       slowly, mixed in at a quarter weight, so the cloud keeps its shape while
+       its edges keep moving. */
+    float t = uReduced > 0.5 ? 0.0 : uTime * 0.014;
+    vec2 q = vec2(fbm(p + 3.1 + t), fbm(p + 7.7 - t));
+    float detail = fbm(p + q * 0.6);
+    float n = base * 0.75 + detail * 0.25;
+
+    /* Piled toward one corner, the way the reference brightens into the
+       bottom left rather than sitting evenly across the frame. */
+    /* Weighted down the frame rather than into the corner, and with a real
+       floor under it. The floor is what stops the top of the page going flat
+       black: a night sky photograph has gas in it everywhere, and the part of
+       the frame with the least of it is still not paper-black. */
+    float corner = smoothstep(1.3, -0.2, vUv.y * 1.25 + vUv.x * 0.55);
+    /* The ramp has to sit on the range the noise actually occupies. Five
+       octaves at half gain can reach 0.97 in principle and essentially never
+       do — the sum piles up around 0.5 and rarely clears 0.7 — so a ramp up to
+       1.0 spends almost its whole length on values that never arrive, and
+       everything real lands in the dim bottom of it. Mapping 0.28..0.70
+       instead is the difference between a cloud you can see and a cloud that
+       is technically being drawn. Clamped, because the corner weight can push
+       past one and the cores are bright enough already. */
+    float d = min(1.0, smoothstep(0.28, 0.70, n) * (0.42 + corner * 0.72));
+
+    /* Deep navy is the body of it and cyan is only the cores. The first pass
+       ran the cyan far too early and the whole cloud read as teal, which is
+       the one colour the reference does not have in it. */
+    vec3 col = mix(uDeep, uMid, smoothstep(0.0, 0.55, d));
+    col = mix(col, uHot, smoothstep(0.82, 1.12, d));
+
+    /* Additive on a near-black page, and deliberately dim: this sits under
+       body copy on every route, so it has to read as depth rather than as a
+       picture competing with the type. */
+    gl_FragColor = vec4(col * d * uOpacity * 0.85, 1.0);
+  }
+`;
 
 const dotVertex = /* glsl */ `
   attribute float aTwinkle;
@@ -128,6 +229,46 @@ interface Dust {
   depth: Float32Array;
 }
 
+/* The TypeScript half of NOISE above. Same constants, same lacunarity and
+   gain, one octave shallower — the stars are clustered on the low frequencies
+   and the fifth octave would not move a single one of them.
+
+   It will not match the GPU bit for bit, because `sin` at these magnitudes is
+   precision-sensitive and a shader is free to evaluate it at lower precision.
+   It does not need to: the agreement that matters is which half of the screen
+   the cloud is piled in, and that is carried by the first two octaves, where
+   both agree closely. */
+function hash2(x: number, y: number) {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function vnoise(x: number, y: number) {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy);
+  const b = hash2(ix + 1, iy);
+  const c = hash2(ix, iy + 1);
+  const d = hash2(ix + 1, iy + 1);
+  return (a + (b - a) * ux) + ((c + (d - c) * ux) - (a + (b - a) * ux)) * uy;
+}
+
+function fbm(x: number, y: number) {
+  let v = 0;
+  let amp = 0.5;
+  for (let i = 0; i < 4; i += 1) {
+    v += amp * vnoise(x, y);
+    x *= 2.02;
+    y *= 2.02;
+    amp *= 0.5;
+  }
+  return v;
+}
+
 function buildDust(width: number, height: number): Dust {
   const count = Math.min(
     MAX_MOTES,
@@ -149,9 +290,33 @@ function buildDust(width: number, height: number): Dust {
     return seed / 0x100000000;
   };
 
+  /* Same mapping the cloud shader uses, so a sample here lands on the part of
+     the cloud that will be drawn there. */
+  const aspect = Math.max(1, width / height);
+  const density = (x: number, y: number) => {
+    const u = x / width + 0.5;
+    const v = y / height + 0.5;
+    return fbm(u * aspect * 2.3, v * 2.3);
+  };
+
   for (let i = 0; i < count; i += 1) {
-    position[i * 3] = (rand() - 0.5) * width;
-    position[i * 3 + 1] = (rand() - 0.5) * height;
+    /* Rejection sampling against the cloud. A uniform scatter is the thing
+       that makes a generated starfield look generated: real ones clump, and
+       they clump *where the gas is*. Eight tries, then take what we have —
+       capping it keeps a mote in a thin region instead of looping, which is
+       what leaves the dark areas with a scatter of their own rather than
+       scrubbing them empty. */
+    let x = 0;
+    let y = 0;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      x = (rand() - 0.5) * width;
+      y = (rand() - 0.5) * height;
+      const d = density(x, y);
+      if (rand() < 0.18 + d * d * 1.5) break;
+    }
+
+    position[i * 3] = x;
+    position[i * 3 + 1] = y;
     position[i * 3 + 2] = 0;
 
     /* Squared, so most motes sit far and faint and only a handful come near
@@ -198,6 +363,7 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
   const { viewport, size } = useThree();
   const dots = useRef<THREE.Points>(null);
   const material = useRef<THREE.ShaderMaterial>(null);
+  const nebula = useRef<THREE.ShaderMaterial>(null);
   const sim = useRef<Sim | null>(null);
   const opacity = useRef(0);
 
@@ -214,6 +380,19 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
       uNear: { value: DOT_NEAR },
       uFar: { value: DOT_FAR },
       uReduced: { value: reducedMotion ? 1 : 0 },
+    }),
+    [reducedMotion],
+  );
+
+  const nebulaUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uOpacity: { value: 0 },
+      uReduced: { value: reducedMotion ? 1 : 0 },
+      uAspect: { value: new THREE.Vector2(1, 1) },
+      uDeep: { value: NEB_DEEP },
+      uMid: { value: NEB_MID },
+      uHot: { value: NEB_HOT },
     }),
     [reducedMotion],
   );
@@ -237,6 +416,16 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
     opacity.current =
       opacity.current === 0 ? want : opacity.current + (want - opacity.current) * Math.min(1, step * 3);
     shader.uniforms.uOpacity.value = opacity.current;
+
+    const cloud = nebula.current;
+    if (cloud) {
+      cloud.uniforms.uTime.value = time;
+      cloud.uniforms.uOpacity.value = opacity.current;
+      /* Fed the viewport's aspect so the noise is sampled on square cells:
+         without it the cloud stretches with the window and the filaments read
+         as horizontal streaks on a wide monitor. */
+      cloud.uniforms.uAspect.value.set(Math.max(1, viewport.width / viewport.height), 1);
+    }
 
     const positions = (geometry.getAttribute("position") as THREE.BufferAttribute)
       .array as Float32Array;
@@ -346,7 +535,29 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
   });
 
   return (
-    <points ref={dots} frustumCulled={false}>
+    <>
+      {/* The cloud, behind everything. renderOrder rather than depth: both
+          layers write no depth and blend additively, so the only thing that
+          decides which lands first is the order they are drawn in. */}
+      <mesh
+        renderOrder={-1}
+        frustumCulled={false}
+        position={[0, 0, -1]}
+        scale={[viewport.width, viewport.height, 1]}
+      >
+        <planeGeometry args={[1, 1]} />
+        <shaderMaterial
+          ref={nebula}
+          uniforms={nebulaUniforms}
+          vertexShader={nebulaVertex}
+          fragmentShader={nebulaFragment}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      <points ref={dots} renderOrder={0} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[dust.position, 3]} />
         <bufferAttribute attach="attributes-aTwinkle" args={[dust.twinkle, 1]} />
@@ -362,7 +573,8 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />
-    </points>
+      </points>
+    </>
   );
 }
 
