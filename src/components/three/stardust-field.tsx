@@ -44,9 +44,13 @@ import { markBooted } from "@/lib/boot";
  */
 
 /** One mote per this many square pixels. */
-const AREA_PER_MOTE = 380;
+/* One mote per this many square pixels. The reference is not a handful of
+   bright stars on black — what makes it read as a sky is the sheer count of
+   faint ones filling the space between the bright ones, so this number is low
+   and the faint majority is carried by the alpha floor rather than by size. */
+const AREA_PER_MOTE = 170;
 const MIN_MOTES = 900;
-const MAX_MOTES = 9500;
+const MAX_MOTES = 14000;
 
 /** How far the cursor reaches, in pixels. */
 const REACH = 230;
@@ -64,10 +68,12 @@ const DRIFT = 45;
 /** Per-frame velocity retention at 60fps. High, so motion carries. */
 const DAMPING = 0.94;
 
-/* The near motes run almost white, as they do in a real long exposure — the
-   blue in a night sky picture lives in the gas, not in the stars. */
-const DOT_NEAR = new THREE.Color("#e4f2ff");
-const DOT_FAR = new THREE.Color("#2a5ba8");
+/* Both ends run pale, because in the reference the blue lives in the gas and
+   the stars on top of it are white — the faint ones are dimmer, not bluer.
+   Tinting the far end properly blue, which is what this used to do, turns the
+   faint majority into blue specks and the sky into confetti. */
+const DOT_NEAR = new THREE.Color("#f2f8ff");
+const DOT_FAR = new THREE.Color("#93b9e6");
 
 /* The cloud: deep navy where it is thin, vivid blue through the body of it,
    and a cyan core where it piles up. Three stops rather than two because a
@@ -196,7 +202,7 @@ const dotVertex = /* glsl */ `
       ? 1.0
       : 0.70 + 0.30 * sin(uTime * 0.8 + aTwinkle * 6.2831);
 
-    vAlpha = (0.52 + aDepth * 0.48) * twinkle;
+    vAlpha = (0.48 + aDepth * 0.52) * twinkle;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = aSize;
@@ -209,11 +215,34 @@ const dotFragment = /* glsl */ `
   uniform float uOpacity;
 
   void main() {
-    /* No round-sprite maths. Under about three pixels a falloff has nowhere to
-       land and only turns every mote into a grey smear, so the square the
-       rasteriser gives us is the mote, and the shape is carried by size and
-       brightness instead. */
-    gl_FragColor = vec4(vTint, vAlpha * uOpacity);
+    /* A star, not a dot.
+
+       This used to hand back the square the rasteriser gives us, on the
+       argument that under three pixels a falloff has nowhere to land. That was
+       true and it was the wrong conclusion: the answer is not to drop the
+       falloff, it is to give the sprite enough pixels to spend on one. A hard
+       square reads as a tile at any size, and a field of them reads as noise
+       on a screen rather than as a sky.
+
+       Two gaussians. The wide one is the halo that makes a bright star look
+       bright rather than merely large; the tight one is the core that keeps it
+       a point instead of a smudge. Real starlight through a lens does exactly
+       this, which is why one gaussian alone never looks right — too wide and
+       every star is a blur, too tight and the sprite is a square again. */
+    vec2 c = gl_PointCoord - 0.5;
+    float r = dot(c, c) * 4.0;
+
+    float halo = exp(-r * 3.2);
+    float core = exp(-r * 16.0);
+    /* The halo comes down as the count goes up. Each one is cheap on its own
+       and they add, so a sky dense enough to read as a real one turns into a
+       single grey wash at the halo weight a sparse sky can carry. */
+    float star = halo * 0.24 + core * 0.82;
+
+    // The corners of the quad are empty sky; do not pay to blend them.
+    if (star < 0.004) discard;
+
+    gl_FragColor = vec4(vTint, vAlpha * uOpacity * star);
   }
 `;
 
@@ -329,10 +358,16 @@ function buildDust(width: number, height: number): Dust {
        of 0.8 is under half a CSS pixel — the rasteriser gives it a sliver of
        coverage, the blend gives that sliver a fraction of its alpha, and the
        result is a mote that exists in the buffer and not on the screen. Most
-       of the sky sits near this floor, so the floor is most of the sky. */
+       of the sky sits near this floor, so the floor is most of the sky.
+
+       These are larger than the visible star, not equal to it. The sprite is
+       two gaussians and spends its outer half on a halo that fades to nothing,
+       so a mote drawn at eight pixels reads as a point of two or three with a
+       glow around it. Sized to the dot you want, the falloff has no room and
+       you are back to squares. */
     const d = rand();
     depth[i] = d * d;
-    size[i] = 1.4 + depth[i] * 1.9;
+    size[i] = 2.4 + depth[i] * 6.2;
     twinkle[i] = rand();
   }
 
