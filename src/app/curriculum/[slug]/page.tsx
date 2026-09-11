@@ -6,10 +6,11 @@ import { ArrowLeft, ArrowRight, GitFork } from "lucide-react";
 import { ActionLink } from "@/components/site/action";
 import { CHALLENGE_BY_SLUG } from "@/lib/challenges";
 import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
-import { lessonsFor } from "@/lib/lessons";
+import { lessonsFor, testFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
 import { LessonBodies } from "@/components/curriculum/lesson-body";
-import { LessonChecklist } from "@/components/curriculum/lesson-checklist";
+import { ModuleOutline } from "@/components/curriculum/module-outline";
+import { ModuleTest } from "@/components/curriculum/module-test";
 import { ModuleRail } from "@/components/curriculum/module-rail";
 
 /**
@@ -52,12 +53,6 @@ const EXTRA_GATE_NAMES: Record<string, string> = {
  * period-finding does not fit in the sandbox's four wires. Saying which is more
  * useful than an "open" link that leads to a task nobody can pass.
  */
-const LAB_PENDING: Record<string, string> = {
-  "measurement-and-probability":
-    "a read-out is not a unitary, so this module is marked by the histogram in the sandbox",
-  "shors-factoring": "period-finding needs more than the sandbox's four wires",
-};
-
 export default async function ModulePage({
   params,
 }: PageProps<"/curriculum/[slug]">) {
@@ -69,10 +64,8 @@ export default async function ModulePage({
   const previous = MODULES[index - 1];
   const next = MODULES[index + 1];
 
-  // Sections completed so far, so the outline agrees with the progress bar.
-  const done = Math.round((entry.concepts.length * entry.progress) / 100);
-
   const written = lessonsFor(slug);
+  const test = testFor(slug);
   const lab = CHALLENGE_BY_SLUG[slug]
     ? { href: `/sandbox/${slug}`, title: CHALLENGE_BY_SLUG[slug].title }
     : null;
@@ -106,20 +99,15 @@ export default async function ModulePage({
               </p>
             </header>
 
-            <LessonChecklist
-              slug={entry.slug}
-              lessons={entry.lessons}
-              concepts={
-                written.length
-                  ? written.map((lesson) => lesson.title)
-                  : entry.concepts
-              }
-              fallbackDone={done}
-              lab={lab}
-              labPending={LAB_PENDING[slug] ?? "coming with the lesson bodies"}
-            />
+            <LessonBodies slug={entry.slug} lessons={written} lab={lab} />
 
-            <LessonBodies lessons={written} lab={lab} />
+            <div id="module-test" className="scroll-mt-28">
+              <ModuleTest
+                slug={entry.slug}
+                questions={test}
+                labHref={lab?.href ?? null}
+              />
+            </div>
 
             {/* The honest bit, while a module still has no bodies to show. */}
             {written.length === 0 && (
@@ -148,6 +136,14 @@ export default async function ModulePage({
 
           {/* Side rail. */}
           <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <ModuleOutline
+              slug={entry.slug}
+              lessons={written}
+              fallbackTitles={entry.concepts}
+              hasLab={Boolean(lab)}
+              hasTest={test.length > 0}
+            />
+
             <ModuleRail
               slug={entry.slug}
               fallbackProgress={entry.progress}
