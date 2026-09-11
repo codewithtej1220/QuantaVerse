@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { StartingPointDialog } from "@/components/auth/starting-point";
 import { ModuleTrack } from "@/components/curriculum/module-track";
 import { PathHeader } from "@/components/curriculum/path-header";
 import { QuestBoard } from "@/components/curriculum/quest-board";
@@ -15,6 +16,8 @@ export default function CurriculumPage() {
   return (
     <div className="min-h-screen overflow-x-clip pt-32 pb-24">
       <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
+        <StartingPointDialog />
+
         <PathHeader />
 
         {/* The dominant element. Level, XP, streak and the one module to open

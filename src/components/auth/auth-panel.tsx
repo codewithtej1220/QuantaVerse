@@ -47,10 +47,12 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
       } else {
         await signIn(email, password);
       }
-      /* A new account goes to the two questions first; they are what decide
-         how much of the track is open on the first day, and asking after the
-         learner has already landed on a dashboard is asking too late. */
-      router.push(registering ? "/welcome" : "/dashboard");
+      /* A new account lands on the track, where the two starting-point
+         questions are waiting in a box over it. Asking there rather than on a
+         route of their own means the thing the answers are about is on screen
+         while they are being given — and means an account that predates the
+         questions gets asked too, which a post-registration redirect cannot. */
+      router.push(registering ? "/curriculum" : "/dashboard");
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : "something went wrong — try again",
