@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Award, Lock, Zap } from "lucide-react";
+import { ArrowRight, Award, FlaskConical, Lock, Zap } from "lucide-react";
 
 import { GATE_BY_ID, MODULES, TRACK_LABEL, type Module, type Track } from "@/lib/data";
 import type { ModuleProgress } from "@/lib/auth";
@@ -187,6 +187,32 @@ function ModuleRow({
               >
                 <Zap className="size-3" aria-hidden />
                 {xp.earned}/{xp.possible} XP
+              </span>
+            )}
+            {/* The graded lab. A module's reading is self-reported — you tick a
+                lesson when you say you have read it — and this is the one line
+                on the row that is not: the score is a fidelity the simulator
+                measured against the target state, so it is the only number here
+                the learner cannot simply assert. */}
+            {live?.challenge && (
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 font-mono text-[11.5px] tabular-nums",
+                  live.challenge.passed
+                    ? "text-photon"
+                    : live.challenge.attempts > 0
+                      ? "text-frost"
+                      : "text-dim",
+                )}
+              >
+                <FlaskConical className="size-3" aria-hidden />
+                {live.challenge.passed
+                  ? `lab passed · ${Math.round(live.challenge.best_score * 100)}%`
+                  : live.challenge.attempts > 0
+                    ? `lab · ${live.challenge.attempts} ${
+                        live.challenge.attempts === 1 ? "try" : "tries"
+                      } · best ${Math.round(live.challenge.best_score * 100)}%`
+                    : "lab not attempted"}
               </span>
             )}
             {live?.badge_earned && (
