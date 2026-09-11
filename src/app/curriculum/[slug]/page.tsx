@@ -6,16 +6,24 @@ import { ArrowLeft, ArrowRight, GitFork } from "lucide-react";
 import { ActionLink } from "@/components/site/action";
 import { CHALLENGE_BY_SLUG } from "@/lib/challenges";
 import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
+import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
+import { LessonBodies } from "@/components/curriculum/lesson-body";
 import { LessonChecklist } from "@/components/curriculum/lesson-checklist";
 import { ModuleRail } from "@/components/curriculum/module-rail";
 
 /**
- * A module shell.
+ * A module.
  *
- * The outline is generated from the module's concept list, which is the honest
- * thing to publish while the lesson bodies are still being written — the page
- * says so plainly rather than filling the space with placeholder prose.
+ * The outline at the top is the tracker — where a lesson gets ticked — and the
+ * bodies follow it in reading order, with the graded lab at the end framed as
+ * the assessment it is. A module that sent the learner from a list of concept
+ * names straight to a circuit they had been told nothing about was not a course
+ * with a test at the end; it was only the test.
+ *
+ * Modules whose bodies are not written yet fall back to the outline and say so,
+ * which stays the honest thing to publish. `lessonsFor` coming back empty is
+ * what switches the page between the two.
  */
 
 export function generateStaticParams() {
@@ -50,7 +58,9 @@ const LAB_PENDING: Record<string, string> = {
   "shors-factoring": "period-finding needs more than the sandbox's four wires",
 };
 
-export default async function ModulePage({ params }: PageProps<"/curriculum/[slug]">) {
+export default async function ModulePage({
+  params,
+}: PageProps<"/curriculum/[slug]">) {
   const { slug } = await params;
   const index = MODULES.findIndex((m) => m.slug === slug);
   if (index === -1) notFound();
@@ -61,6 +71,11 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
 
   // Sections completed so far, so the outline agrees with the progress bar.
   const done = Math.round((entry.concepts.length * entry.progress) / 100);
+
+  const written = lessonsFor(slug);
+  const lab = CHALLENGE_BY_SLUG[slug]
+    ? { href: `/sandbox/${slug}`, title: CHALLENGE_BY_SLUG[slug].title }
+    : null;
 
   return (
     <div className="min-h-screen overflow-x-clip pt-32 pb-24">
@@ -81,12 +96,11 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
                   {entry.ket}
                 </span>
                 <span className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
-                  {TRACK_LABEL[entry.track]} · {entry.lessons} lessons · {entry.minutes} min
+                  {TRACK_LABEL[entry.track]} · {entry.lessons} lessons ·{" "}
+                  {entry.minutes} min
                 </span>
               </div>
-              <h1 className="mt-4 display-2">
-                {entry.title}
-              </h1>
+              <h1 className="mt-4 display-2">{entry.title}</h1>
               <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-frost">
                 {entry.summary}
               </p>
@@ -95,35 +109,41 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
             <LessonChecklist
               slug={entry.slug}
               lessons={entry.lessons}
-              concepts={entry.concepts}
-              fallbackDone={done}
-              lab={
-                CHALLENGE_BY_SLUG[slug]
-                  ? { href: `/sandbox/${slug}`, title: CHALLENGE_BY_SLUG[slug].title }
-                  : null
+              concepts={
+                written.length
+                  ? written.map((lesson) => lesson.title)
+                  : entry.concepts
               }
+              fallbackDone={done}
+              lab={lab}
               labPending={LAB_PENDING[slug] ?? "coming with the lesson bodies"}
             />
 
-            {/* The honest bit. */}
-            <section className="panel mt-8 rounded-2xl p-5">
-              <p className="eyebrow">Status</p>
-              <p className="mt-2.5 text-[14px] leading-relaxed text-frost">
-                The lesson bodies for this module are being written in the open. The outline, the
-                gate set and — where the module has one — the graded circuit lab are final; the
-                prose is not, so this page shows the shape of the module rather than filled-in
-                placeholder text. Pull requests are the fastest way to change that.
-              </p>
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex items-center gap-2 border border-edge px-3.5 py-2 text-[13px] text-frost transition-colors hover:border-photon hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
-              >
-                <GitFork className="size-3.5" />
-                Write a lesson with us
-              </a>
-            </section>
+            <LessonBodies lessons={written} lab={lab} />
+
+            {/* The honest bit, while a module still has no bodies to show. */}
+            {written.length === 0 && (
+              <section className="panel mt-8 rounded-2xl p-5">
+                <p className="eyebrow">Status</p>
+                <p className="mt-2.5 text-[14px] leading-relaxed text-frost">
+                  The lesson bodies for this module are being written in the
+                  open. The outline, the gate set and — where the module has one
+                  — the graded circuit lab are final; the prose is not, so this
+                  page shows the shape of the module rather than filled-in
+                  placeholder text. Pull requests are the fastest way to change
+                  that.
+                </p>
+                <a
+                  href={REPO_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex items-center gap-2 border border-edge px-3.5 py-2 text-[13px] text-frost transition-colors hover:border-photon hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                >
+                  <GitFork className="size-3.5" />
+                  Write a lesson with us
+                </a>
+              </section>
+            )}
           </div>
 
           {/* Side rail. */}
@@ -157,7 +177,9 @@ export default async function ModulePage({ params }: PageProps<"/curriculum/[slu
                 variant="outline"
                 className="mt-4 w-full"
               >
-                {CHALLENGE_BY_SLUG[slug] ? "Open the circuit lab" : "Try them in the sandbox"}
+                {CHALLENGE_BY_SLUG[slug]
+                  ? "Open the circuit lab"
+                  : "Try them in the sandbox"}
               </ActionLink>
             </div>
 
