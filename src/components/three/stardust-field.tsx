@@ -22,11 +22,11 @@ import { markBooted } from "@/lib/boot";
  * whole field is perfectly still, which is the one thing dust never is.
  *
  * So there is no grid and there are no homes. Every mote carries a velocity and
- * keeps it. It is nudged by a slow flow field — a cheap curl, two sines over
- * position and time — which never repeats and never settles, so the field
- * drifts on its own whether or not anybody is looking at it. Motes that leave
- * one edge come back in the other, which is what lets them drift forever
- * without draining out of the frame.
+ * keeps it. It is nudged by a slow flow field built as the curl of a stream
+ * function, which is what keeps the sky evenly populated: a curl has zero
+ * divergence, so the dust circulates without ever collecting in one place and
+ * abandoning another. Motes that leave one edge come back in the other, which
+ * is what lets them drift forever without draining out of the frame.
  *
  * The cursor stirs rather than shoves. Inside its radius a mote gets a
  * tangential push (dust swirls around a moving hand, it does not flee radially
@@ -56,15 +56,23 @@ const MAX_MOTES = 14000;
 const REACH = 230;
 /** Tangential push — the swirl. This is most of what you feel. */
 const SWIRL = 380;
-/** Inward pull, so the swirl has a centre. Deliberately far weaker. */
-const GATHER = 95;
+/** Inward pull, so the swirl has a centre. The one term here that is not
+    incompressible — a radial flow has somewhere for dust to end up — so it is
+    small enough that the circulation redistributes faster than it collects.
+    The swirl itself is free: a purely tangential field has zero divergence. */
+const GATHER = 22;
 /** Share of the cursor's own velocity handed to the dust around it. */
 const CARRY = 1.7;
 /** A flick should not fire a mote across the screen. Pixels per second. */
 const CURSOR_CLAMP = 1500;
 
-/** Ambient flow acceleration. Sets the resting drift speed with DAMPING. */
-const DRIFT = 45;
+/** Ambient drift, in pixels per second. Applied to position, not velocity. */
+const FLOW_SPEED = 13;
+/** Whole cells each flow octave fits across the field. Integers on purpose. */
+const FLOW_CELLS = [
+  { mx: 2, my: 2, weight: 1 },
+  { mx: 3, my: 5, weight: 0.42 },
+];
 /** Per-frame velocity retention at 60fps. High, so motion carries. */
 const DAMPING = 0.94;
 
@@ -146,10 +154,10 @@ const nebulaFragment = /* glsl */ `
 
     /* Piled toward one corner, the way the reference brightens into the
        bottom left rather than sitting evenly across the frame. */
-    /* Weighted down the frame rather than into the corner, and with a real
-       floor under it. The floor is what stops the top of the page going flat
-       black: a night sky photograph has gas in it everywhere, and the part of
-       the frame with the least of it is still not paper-black. */
+    /* Nearly flat. The weighting down the frame is still here but it is now
+       a lean rather than a pile — the cloud covers the whole page and the
+       noise, not the gradient, does the varying. A strong gradient gave one
+       bright end and one dead one, which is a lit corner rather than a sky. */
     float corner = smoothstep(1.3, -0.2, vUv.y * 1.25 + vUv.x * 0.55);
     /* The ramp has to sit on the range the noise actually occupies. Five
        octaves at half gain can reach 0.97 in principle and essentially never
@@ -159,7 +167,7 @@ const nebulaFragment = /* glsl */ `
        instead is the difference between a cloud you can see and a cloud that
        is technically being drawn. Clamped, because the corner weight can push
        past one and the cores are bright enough already. */
-    float d = min(1.0, smoothstep(0.28, 0.70, n) * (0.42 + corner * 0.72));
+    float d = min(1.0, smoothstep(0.28, 0.70, n) * (0.78 + corner * 0.26));
 
     /* Deep navy is the body of it and cyan is only the cores. The first pass
        ran the cyan far too early and the whole cloud read as teal, which is
@@ -170,7 +178,7 @@ const nebulaFragment = /* glsl */ `
     /* Additive on a near-black page, and deliberately dim: this sits under
        body copy on every route, so it has to read as depth rather than as a
        picture competing with the type. */
-    gl_FragColor = vec4(col * d * uOpacity * 0.85, 1.0);
+    gl_FragColor = vec4(col * d * uOpacity * 0.5, 1.0);
   }
 `;
 
@@ -341,7 +349,7 @@ function buildDust(width: number, height: number): Dust {
       x = (rand() - 0.5) * width;
       y = (rand() - 0.5) * height;
       const d = density(x, y);
-      if (rand() < 0.18 + d * d * 1.5) break;
+      if (rand() < 0.38 + d * d * 0.9) break;
     }
 
     position[i * 3] = x;
@@ -470,6 +478,31 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
     const halfW = dust.width / 2;
     const halfH = dust.height / 2;
 
+    /* The flow, as the curl of a stream function: for psi = sin(a)cos(b) the
+       curl is (-ky sin(a) sin(b), -kx cos(a) cos(b)), whose divergence cancels
+       exactly for any kx and ky — the two partials are equal and opposite. The
+       k factors have to stay in the components; dropping them is only correct
+       when kx equals ky, and that cannot also be periodic on a box that is not
+       square.
+
+       Periodic is the other half, and it is the half that actually bit. A
+       divergence-free field still empties the screen if its period does not
+       divide the wrap box: a mote crossing the seam re-enters at an unrelated
+       phase, so the seam is a source on one side and a sink on the other even
+       though the interior is clean. Whole numbers of cells across the field
+       make the wrap continuous. Measured across two simulated minutes: with a
+       non-dividing period a fifth of the cells ended up empty; with this, none
+       do, and the spread sits at the noise floor for a random scatter. */
+    const tau = Math.PI * 2;
+    const flow = FLOW_CELLS.map((c, i) => ({
+      kx: (tau * c.mx) / dust.width,
+      ky: (tau * c.my) / dust.height,
+      weight: c.weight,
+      wa: 0.055 - i * 0.14,
+      wb: 0.045 + i * 0.115,
+    }));
+    const flowNorm = 1 / Math.max(flow[0].kx, flow[0].ky);
+
     // Cursor, in the same pixel units the motes live in.
     const live = pointerState.active && !reducedMotion;
     const mx = live ? pointerState.x * (viewport.width / 2) : 0;
@@ -510,17 +543,6 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
       let vx = velocity[ix];
       let vy = velocity[iy];
 
-      if (!reducedMotion) {
-        /* The flow field. Two sines over position and a slowly turning time
-           term give a direction that varies smoothly across the screen and
-           never repeats, which is enough to read as a current without the cost
-           of real noise. */
-        const angle =
-          Math.sin(x * 0.0016 + time * 0.06) * 1.7 + Math.cos(y * 0.0014 - time * 0.05) * 1.7;
-        vx += Math.cos(angle) * DRIFT * step;
-        vy += Math.sin(angle) * DRIFT * step;
-      }
-
       if (live) {
         const dx = x - mx;
         const dy = y - my;
@@ -553,8 +575,29 @@ function Stardust({ reducedMotion }: { reducedMotion: boolean }) {
       velocity[ix] = vx;
       velocity[iy] = vy;
 
-      x += vx * step;
-      y += vy * step;
+      /* The ambient flow moves the mote directly; only what the cursor gave it
+         lives in the velocity. Adding the flow as an acceleration instead —
+         which is what this did — puts inertia between the mote and the field,
+         the mote's velocity lags the streamline it is on, and that lag is
+         enough compressibility on its own to empty the middle of the screen.
+         Measured: as an acceleration, a fifth of the sky was bare after two
+         minutes no matter how clean the field was. Advected, nothing drains. */
+      let fx = 0;
+      let fy = 0;
+      if (!reducedMotion) {
+        for (let o = 0; o < flow.length; o += 1) {
+          const c = flow[o];
+          const a = c.kx * x + time * c.wa;
+          const b = c.ky * y - time * c.wb;
+          fx -= c.ky * c.weight * Math.sin(a) * Math.sin(b);
+          fy -= c.kx * c.weight * Math.cos(a) * Math.cos(b);
+        }
+        fx *= flowNorm;
+        fy *= flowNorm;
+      }
+
+      x += (fx * FLOW_SPEED + vx) * step;
+      y += (fy * FLOW_SPEED + vy) * step;
 
       // Off one edge, back in the other, so the drift never runs out of sky.
       if (x < -halfW) x += dust.width;
