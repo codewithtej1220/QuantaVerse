@@ -47,7 +47,10 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
       } else {
         await signIn(email, password);
       }
-      router.push("/dashboard");
+      /* A new account goes to the two questions first; they are what decide
+         how much of the track is open on the first day, and asking after the
+         learner has already landed on a dashboard is asking too late. */
+      router.push(registering ? "/welcome" : "/dashboard");
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : "something went wrong — try again",

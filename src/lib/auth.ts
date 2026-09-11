@@ -20,6 +20,11 @@ export interface StudentProfile {
   cohort: string;
   created_at: string;
   last_login_at: string | null;
+  /* Null until the two sign-up questions are answered. Null and zero are not
+     the same thing here: null means nobody has asked, zero means they were
+     asked and said they are starting from nothing. */
+  math_level: number | null;
+  code_level: number | null;
 }
 
 export interface AuthResponse {
@@ -249,6 +254,20 @@ async function refreshSession(): Promise<TokenPair> {
       });
   }
   return refreshing;
+}
+
+/**
+ * Answer the two sign-up questions.
+ *
+ * The server treats these as a starting point rather than a score — how many
+ * modules stand open, and which axis the first suggestion aims at — so they
+ * can be sent again later without anything having to be undone.
+ */
+export async function saveStartingPoint(mathLevel: number, codeLevel: number) {
+  return authed<StudentProfile>("/api/auth/onboarding", "POST", {
+    math_level: mathLevel,
+    code_level: codeLevel,
+  });
 }
 
 export async function authed<T>(

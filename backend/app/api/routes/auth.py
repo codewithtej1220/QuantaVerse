@@ -10,6 +10,7 @@ from app.models.auth import (
     LoginRequest,
     LogoutRequest,
     MessageResponse,
+    OnboardingRequest,
     PasswordChangeRequest,
     ProfileUpdate,
     RefreshRequest,
@@ -114,6 +115,27 @@ def logout(
     return MessageResponse(
         detail="that session was already closed — the access token expires on its own"
     )
+
+
+@router.post("/onboarding", response_model=StudentProfile)
+def onboarding(
+    payload: OnboardingRequest, session: DatabaseSession, user: CurrentUser
+) -> StudentProfile:
+    """
+    The two questions asked once, after sign-up.
+
+    Answers are a starting point, not a score: they decide how many modules
+    stand open on the first day and which axis the first suggestion aims at
+    while nothing has been measured yet. They are writable more than once on
+    purpose — somebody who undersold themselves on the way in should be able to
+    say so — but they never overwrite evidence, because the moment a lab is
+    marked the recommendation runs on results instead.
+    """
+    user.math_level = payload.math_level
+    user.code_level = payload.code_level
+    session.commit()
+    session.refresh(user)
+    return profile_of(user)
 
 
 @router.get("/me", response_model=StudentProfile)

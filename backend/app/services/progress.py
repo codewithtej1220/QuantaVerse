@@ -17,6 +17,8 @@ from app.core.curriculum import (
     MODULE_BY_SLUG,
     MODULES,
     SKILL_AXES,
+    head_start,
+    starting_priors,
     TOTAL_CHALLENGES,
     TOTAL_LESSONS,
     TRACK_LABEL,
@@ -72,6 +74,8 @@ def profile_of(user: User) -> StudentProfile:
         cohort=COHORT_LABEL,
         created_at=as_utc(user.created_at),
         last_login_at=as_utc(user.last_login_at),
+        math_level=user.math_level,
+        code_level=user.code_level,
     )
 
 
@@ -141,6 +145,7 @@ def _module_rows(
     lessons: list[LessonCompletion],
     attempts: list[ExerciseAttempt],
     earned: dict[str, datetime],
+    open_from_the_start: int = 1,
 ) -> list[ModuleProgress]:
     by_module: dict[str, list[LessonCompletion]] = defaultdict(list)
     for lesson in lessons:
@@ -149,7 +154,7 @@ def _module_rows(
     rows: list[ModuleProgress] = []
     unlocked = True
 
-    for module in MODULES:
+    for index, module in enumerate(MODULES):
         mine = [
             lesson
             for lesson in by_module.get(module.slug, [])
@@ -166,9 +171,13 @@ def _module_rows(
         if challenge and challenge.last_attempt_at:
             stamps.append(challenge.last_attempt_at.replace(tzinfo=None))
 
+        # Open either because the module before it is finished, or because
+        # the learner said at sign-up that they have the background for it.
+        open_now = unlocked or index < open_from_the_start
+
         if percent >= 100:
             state = "mastered"
-        elif not unlocked:
+        elif not open_now:
             state = "locked"
         elif done:
             state = "active"
@@ -292,7 +301,11 @@ def _coverage(module: Module, axis_key: str) -> float:
     return carried / total
 
 
-def _up_next(rows: list[ModuleProgress], skills: list[SkillPoint]) -> UpNext | None:
+def _up_next(
+    rows: list[ModuleProgress],
+    skills: list[SkillPoint],
+    priors: dict[str, float] | None = None,
+) -> UpNext | None:
     """
     The module to open next, chosen by where the learner is weakest.
 
@@ -332,6 +345,16 @@ def _up_next(rows: list[ModuleProgress], skills: list[SkillPoint]) -> UpNext | N
     # No signal yet: every axis at zero means nothing has been done, and the
     # sensible next step is the first module rather than an arbitrary one.
     has_signal = bool(ranked) and any(point.value > 0 for point in ranked)
+
+    # Day one, and nothing measured yet. Without the sign-up answers there is
+    # genuinely nothing to go on and the first module is the honest suggestion.
+    # With them there is: the axes the learner did not claim are the ones worth
+    # aiming at, so the ranking runs on what they said instead of on what they
+    # have done. Their claim never overrides evidence — the moment a lab is
+    # marked, `has_signal` is true and this is not consulted again.
+    if not has_signal and priors and movable:
+        weakest = min(movable, key=lambda point: (priors.get(point.key, 0.0), point.key))
+        has_signal = True
 
     gap: SkillGap | None = None
 
@@ -476,12 +499,13 @@ def build_snapshot(session: Session, user: User, *, award: bool = False) -> Snap
     attempts = _attempts_of(session, user)
     earned = _earned_of(session, user)
 
-    rows = _module_rows(lessons, attempts, earned)
+    opening = head_start(user.math_level, user.code_level)
+    rows = _module_rows(lessons, attempts, earned, opening)
     fresh: list[str] = []
     if award:
         fresh = award_badges(session, user, rows, earned)
         if fresh:
-            rows = _module_rows(lessons, attempts, earned)
+            rows = _module_rows(lessons, attempts, earned, opening)
 
     skills = _skill_points(rows)
     return Snapshot(
@@ -490,7 +514,7 @@ def build_snapshot(session: Session, user: User, *, award: bool = False) -> Snap
         mastery=_mastery(rows),
         skills=skills,
         badges=_badge_states(earned),
-        up_next=_up_next(rows, skills),
+        up_next=_up_next(rows, skills, starting_priors(user.math_level, user.code_level)),
         fresh_badges=badge_states_for(fresh, earned),
     )
 

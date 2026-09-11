@@ -47,6 +47,15 @@ class User(Base):
     # and nobody mistakes a fixture for a real academic.
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # --- the starting point -------------------------------------------------
+    # Two questions asked once, at sign-up: how familiar the learner is with the
+    # maths and physics, and how much programming they have done. Nullable
+    # because an account made before this existed has not answered, and "has not
+    # answered" has to stay distinct from "answered: none of it" — the first
+    # should be asked, the second should not be asked again.
+    math_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    code_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(

@@ -50,6 +50,68 @@ SKILL_AXES: tuple[SkillAxis, ...] = (
     SkillAxis("complexity", "Complexity", "CPX", 39),
 )
 
+# --- where a newcomer starts -------------------------------------------------
+# What the two sign-up questions buy, and what they deliberately do not.
+#
+# They do not grant progress. Nothing below touches XP, mastery, a badge or a
+# skill score, because a claim is not a measurement and this codebase does not
+# show anybody a number they did not earn — that was the whole complaint against
+# the fixture learner it replaced.
+#
+# What they buy is a starting point: how many modules are open on the first day,
+# and which axis the first recommendation aims at while there is still no
+# evidence to aim it with. Both are suggestions the learner can ignore; the lock
+# was always an ordering hint rather than a paywall.
+
+#: Axes a maths and physics background actually helps with.
+MATH_AXES: tuple[str, ...] = (
+    "superposition",
+    "entanglement",
+    "gate-algebra",
+    "measurement",
+    "complexity",
+)
+#: Axes a programming background actually helps with.
+CODE_AXES: tuple[str, ...] = ("qiskit-code", "circuit-design", "algorithms")
+
+#: Highest answer index each question accepts. Three answers: 0, 1, 2.
+MAX_LEVEL = 2
+
+
+def starting_priors(
+    math_level: int | None, code_level: int | None
+) -> dict[str, float]:
+    """
+    Claimed confidence per axis, 0..1, from the two answers.
+
+    Used only to order a first suggestion. An axis nobody claims stays at zero,
+    which is what makes it the one worth aiming at.
+    """
+    if math_level is None and code_level is None:
+        return {}
+
+    maths = (math_level or 0) / MAX_LEVEL
+    code = (code_level or 0) / MAX_LEVEL
+    priors = {axis.key: 0.0 for axis in SKILL_AXES}
+    for key in MATH_AXES:
+        priors[key] = max(priors.get(key, 0.0), maths)
+    for key in CODE_AXES:
+        priors[key] = max(priors.get(key, 0.0), code)
+    return priors
+
+
+def head_start(math_level: int | None, code_level: int | None) -> int:
+    """
+    How many modules stand open on day one.
+
+    The track is gated in sequence — a module opens when the one before it is
+    finished — which is right for somebody meeting linear algebra and Python at
+    the same time, and insulting to somebody who has written Qiskit. One module
+    for everybody, and one more for each level of background claimed.
+    """
+    return 1 + (math_level or 0) + (code_level or 0)
+
+
 TRACK_LABEL: dict[str, str] = {
     "foundations": "Foundations",
     "algorithms": "Algorithms",

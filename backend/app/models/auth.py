@@ -81,6 +81,17 @@ class StudentProfile(BaseModel):
     cohort: str
     created_at: datetime
     last_login_at: datetime | None
+    # None until the two sign-up questions are answered. The client uses that
+    # to decide whether to ask; it must not treat it as "answered zero".
+    math_level: int | None = None
+    code_level: int | None = None
+
+
+class OnboardingRequest(BaseModel):
+    """The two questions asked once, after sign-up."""
+
+    math_level: int = Field(ge=0, le=2)
+    code_level: int = Field(ge=0, le=2)
 
 
 class AuthResponse(BaseModel):
