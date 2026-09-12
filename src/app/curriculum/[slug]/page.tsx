@@ -6,11 +6,10 @@ import { ArrowLeft, ArrowRight, GitFork } from "lucide-react";
 import { ActionLink } from "@/components/site/action";
 import { CHALLENGE_BY_SLUG } from "@/lib/challenges";
 import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
-import { lessonsFor, testFor } from "@/lib/lessons";
+import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
 import { LessonBodies } from "@/components/curriculum/lesson-body";
 import { ModuleOutline } from "@/components/curriculum/module-outline";
-import { ModuleTest } from "@/components/curriculum/module-test";
 import { ModuleRail } from "@/components/curriculum/module-rail";
 
 /**
@@ -65,7 +64,6 @@ export default async function ModulePage({
   const next = MODULES[index + 1];
 
   const written = lessonsFor(slug);
-  const test = testFor(slug);
   const lab = CHALLENGE_BY_SLUG[slug]
     ? { href: `/sandbox/${slug}`, title: CHALLENGE_BY_SLUG[slug].title }
     : null;
@@ -101,14 +99,6 @@ export default async function ModulePage({
 
             <LessonBodies slug={entry.slug} lessons={written} lab={lab} />
 
-            <div id="module-test" className="scroll-mt-28">
-              <ModuleTest
-                slug={entry.slug}
-                questions={test}
-                labHref={lab?.href ?? null}
-              />
-            </div>
-
             {/* The honest bit, while a module still has no bodies to show. */}
             {written.length === 0 && (
               <section className="panel mt-8 rounded-2xl p-5">
@@ -141,7 +131,6 @@ export default async function ModulePage({
               lessons={written}
               fallbackTitles={entry.concepts}
               hasLab={Boolean(lab)}
-              hasTest={test.length > 0}
             />
 
             <ModuleRail

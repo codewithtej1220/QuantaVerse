@@ -4,7 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Award, FlaskConical, Lock, Zap } from "lucide-react";
 
-import { GATE_BY_ID, MODULES, TRACK_LABEL, type Module, type Track } from "@/lib/data";
+import {
+  GATE_BY_ID,
+  MODULES,
+  TRACK_LABEL,
+  type Module,
+  type Track,
+} from "@/lib/data";
 import type { ModuleProgress } from "@/lib/auth";
 import { bySlug, moduleXp, useLiveProgress } from "@/lib/quest";
 import { Reveal } from "@/components/site/reveal";
@@ -126,16 +132,25 @@ function ModuleRow({
               !done && !current && "border-edge-hi text-dim",
             )}
           >
-            {locked ? <Lock className="size-3.5" /> : String(index + 1).padStart(2, "0")}
+            {locked ? (
+              <Lock className="size-3.5" />
+            ) : (
+              String(index + 1).padStart(2, "0")
+            )}
           </span>
           <span
-            className={cn("w-px flex-1", isLast ? "bg-transparent" : done ? "bg-photon" : "bg-edge")}
+            className={cn(
+              "w-px flex-1",
+              isLast ? "bg-transparent" : done ? "bg-photon" : "bg-edge",
+            )}
           />
         </span>
 
         <span className="min-w-0 py-0.5">
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="ket text-[13px] text-photon sm:hidden">{entry.ket}</span>
+            <span className="ket text-[13px] text-photon sm:hidden">
+              {entry.ket}
+            </span>
             <h3
               className={cn(
                 "font-display text-[1.35rem] leading-tight font-extrabold tracking-[-0.025em] sm:text-[1.55rem]",
@@ -149,7 +164,9 @@ function ModuleRow({
             </span>
           </span>
 
-          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-frost">{entry.summary}</p>
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-frost">
+            {entry.summary}
+          </p>
 
           <span className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2">
             <span className="flex flex-wrap items-center gap-1">
@@ -172,8 +189,10 @@ function ModuleRow({
               })}
             </span>
             <span className="font-mono text-[11.5px] text-dim tabular-nums">
-              {live ? `${live.lessons_completed}/${live.lessons}` : entry.lessons} lessons ·{" "}
-              {entry.minutes} min
+              {live
+                ? `${live.lessons_completed}/${live.lessons}`
+                : entry.lessons}{" "}
+              lessons · {entry.minutes} min
             </span>
             {/* What the module is worth, and what has been banked of it. Shown
                 only to an account, because to anyone else it is a number about
@@ -275,7 +294,8 @@ export function ModuleTrack() {
   }, []);
 
   // Filtering never re-sorts: a filtered view is a subsequence of the same walk.
-  const shown = filter === "all" ? MODULES : MODULES.filter((m) => m.track === filter);
+  const shown =
+    filter === "all" ? MODULES : MODULES.filter((m) => m.track === filter);
 
   return (
     <section>
@@ -300,7 +320,9 @@ export function ModuleTrack() {
               )}
             >
               {option.label}
-              <span className="text-[11px] tabular-nums opacity-70">{counts[option.id]}</span>
+              <span className="text-[11px] tabular-nums opacity-70">
+                {counts[option.id]}
+              </span>
             </button>
           );
         })}

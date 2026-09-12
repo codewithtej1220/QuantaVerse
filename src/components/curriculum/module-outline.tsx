@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Circle, FlaskConical, ListChecks } from "lucide-react";
+import { Check, Circle, FlaskConical } from "lucide-react";
 
 import { useLessonToggle } from "@/components/curriculum/use-lesson-toggle";
 import type { Lesson } from "@/lib/lessons";
@@ -25,18 +25,20 @@ export function ModuleOutline({
   lessons,
   fallbackTitles,
   hasLab,
-  hasTest,
 }: {
   slug: string;
   lessons: Lesson[];
   fallbackTitles: string[];
   hasLab: boolean;
-  hasTest: boolean;
 }) {
   const { isDone, signedIn } = useLessonToggle(slug);
 
   const rows = lessons.length
-    ? lessons.map((lesson, index) => ({ index, title: lesson.title, minutes: lesson.minutes }))
+    ? lessons.map((lesson, index) => ({
+        index,
+        title: lesson.title,
+        minutes: lesson.minutes,
+      }))
     : fallbackTitles.map((title, index) => ({ index, title, minutes: null }));
 
   const done = rows.filter((row) => isDone(row.index)).length;
@@ -60,9 +62,15 @@ export function ModuleOutline({
                 className="flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-strata focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
               >
                 {complete ? (
-                  <Check className="mt-0.5 size-3.5 shrink-0 text-photon" aria-hidden />
+                  <Check
+                    className="mt-0.5 size-3.5 shrink-0 text-photon"
+                    aria-hidden
+                  />
                 ) : (
-                  <Circle className="mt-0.5 size-3 shrink-0 text-frost" aria-hidden />
+                  <Circle
+                    className="mt-0.5 size-3 shrink-0 text-frost"
+                    aria-hidden
+                  />
                 )}
                 <span
                   className={cn(
@@ -88,21 +96,14 @@ export function ModuleOutline({
               href={`/sandbox/${slug}`}
               className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-strata focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
             >
-              <FlaskConical className="size-3.5 shrink-0 text-photon" aria-hidden />
-              <span className="flex-1 text-[13px] text-photon">Lab — build it</span>
+              <FlaskConical
+                className="size-3.5 shrink-0 text-photon"
+                aria-hidden
+              />
+              <span className="flex-1 text-[13px] text-photon">
+                Lab — build it
+              </span>
             </Link>
-          </li>
-        )}
-
-        {hasTest && (
-          <li>
-            <a
-              href="#module-test"
-              className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-strata focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
-            >
-              <ListChecks className="size-3.5 shrink-0 text-frost" aria-hidden />
-              <span className="flex-1 text-[13px] text-frost">Test — why it worked</span>
-            </a>
           </li>
         )}
       </ol>

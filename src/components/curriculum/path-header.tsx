@@ -26,11 +26,23 @@ const TOTAL_LESSONS = MODULES.reduce((sum, m) => sum + m.lessons, 0);
 const TOTAL_MINUTES = MODULES.reduce((sum, m) => sum + m.minutes, 0);
 const TOTAL_LABS = CHALLENGES.length;
 
-function Figure({ label, value, note }: { label: string; value: string; note?: string }) {
+function Figure({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+}) {
   return (
     <div>
-      <dt className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">{label}</dt>
-      <dd className="font-display mt-1 text-2xl font-extrabold text-paper tabular-nums">{value}</dd>
+      <dt className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
+        {label}
+      </dt>
+      <dd className="font-display mt-1 text-2xl font-extrabold text-paper tabular-nums">
+        {value}
+      </dd>
       {note && <dd className="mt-1 font-mono text-[11px] text-dim">{note}</dd>}
     </div>
   );
@@ -41,8 +53,12 @@ export function PathHeader() {
 
   const live = signedIn && data ? data : null;
 
-  const mastered = live ? live.modules.filter((m) => m.state === "mastered").length : 0;
-  const lessons = live ? live.modules.reduce((sum, m) => sum + m.lessons_completed, 0) : 0;
+  const mastered = live
+    ? live.modules.filter((m) => m.state === "mastered").length
+    : 0;
+  const lessons = live
+    ? live.modules.reduce((sum, m) => sum + m.lessons_completed, 0)
+    : 0;
   const labsPassed = live
     ? live.modules.filter((m) => m.challenge?.passed).length
     : 0;
@@ -66,11 +82,13 @@ export function PathHeader() {
         <p className="lede max-w-md">
           {live ? (
             <>
-              Ranked by where you are weakest, not by where the syllabus happens to start.
+              Ranked by where you are weakest, not by where the syllabus happens
+              to start.
               {weakest ? (
                 <>
                   {" "}
-                  Right now that is <span className="text-paper">{weakest}</span> — the module at
+                  Right now that is{" "}
+                  <span className="text-paper">{weakest}</span> — the module at
                   the top of the track is the first open one that moves it.
                 </>
               ) : (
@@ -79,9 +97,10 @@ export function PathHeader() {
             </>
           ) : (
             <>
-              Eight modules and a graded circuit at the end of most of them. Sign in and this stops
-              being a table of contents: the order is re-ranked by the skill your marked labs say is
-              weakest, and the figures below become yours.
+              Eight modules and a graded circuit at the end of most of them.
+              Sign in and this stops being a table of contents: the order is
+              re-ranked by the skill your marked labs say is weakest, and the
+              figures below become yours.
             </>
           )}
         </p>
@@ -94,8 +113,16 @@ export function PathHeader() {
         >
           {live ? (
             <>
-              <Figure label="Mastered" value={`${mastered}/${MODULES.length}`} note="modules" />
-              <Figure label="Lessons" value={`${lessons}/${TOTAL_LESSONS}`} note="marked complete" />
+              <Figure
+                label="Mastered"
+                value={`${mastered}/${MODULES.length}`}
+                note="modules"
+              />
+              <Figure
+                label="Lessons"
+                value={`${lessons}/${TOTAL_LESSONS}`}
+                note="marked complete"
+              />
               <Figure
                 label="Labs passed"
                 value={`${labsPassed}/${TOTAL_LABS}`}
@@ -107,7 +134,10 @@ export function PathHeader() {
               <Figure label="Lessons" value={String(TOTAL_LESSONS)} />
               <Figure label="Modules" value={String(MODULES.length)} />
               <Figure label="Graded labs" value={String(TOTAL_LABS)} />
-              <Figure label="Runtime" value={`${Math.round(TOTAL_MINUTES / 60)}h`} />
+              <Figure
+                label="Runtime"
+                value={`${Math.round(TOTAL_MINUTES / 60)}h`}
+              />
             </>
           )}
         </dl>

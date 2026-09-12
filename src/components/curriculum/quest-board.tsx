@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Award, Flame, Loader2, Lock, Target, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Award,
+  Flame,
+  Loader2,
+  Lock,
+  Target,
+  Zap,
+} from "lucide-react";
 
 import { MODULES } from "@/lib/data";
 import { moduleXp, totalXp, useLiveProgress } from "@/lib/quest";
@@ -37,7 +45,10 @@ function Tile({
   return (
     <div className="flex items-center gap-3">
       <Icon
-        className={cn("size-4 shrink-0", tone === "photon" ? "text-photon" : "text-frost")}
+        className={cn(
+          "size-4 shrink-0",
+          tone === "photon" ? "text-photon" : "text-frost",
+        )}
         aria-hidden
       />
       <div className="min-w-0">
@@ -49,7 +60,9 @@ function Tile({
         >
           {value}
         </p>
-        <p className="mt-1 font-mono text-[11px] tracking-[0.14em] text-dim uppercase">{label}</p>
+        <p className="mt-1 font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
+          {label}
+        </p>
       </div>
     </div>
   );
@@ -74,9 +87,10 @@ export function QuestBoard() {
         <div>
           <p className="eyebrow">Nothing tracked yet</p>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-frost">
-            {TOTAL_LESSONS} lessons across {MODULES.length} modules, and every one of them is
-            open right now. An account is only for keeping the score — XP, badges and the
-            streak are counted from circuits you pass, not lessons you open.
+            {TOTAL_LESSONS} lessons across {MODULES.length} modules, and every
+            one of them is open right now. An account is only for keeping the
+            score — XP, badges and the streak are counted from circuits you
+            pass, not lessons you open.
           </p>
         </div>
         <Link
@@ -92,7 +106,9 @@ export function QuestBoard() {
 
   const { stats, mastery, up_next: quest } = data;
   const xp = totalXp(data.modules);
-  const next = quest ? data.modules.find((row) => row.slug === quest.module_slug) : null;
+  const next = quest
+    ? data.modules.find((row) => row.slug === quest.module_slug)
+    : null;
   const nextXp = next ? moduleXp(next) : null;
 
   return (
@@ -112,7 +128,9 @@ export function QuestBoard() {
           <p className="flex items-center gap-2 font-mono text-[12px] text-frost tabular-nums">
             <Zap className="size-3.5 text-photon" aria-hidden />
             {xp.earned.toLocaleString("en-IN")}
-            <span className="text-dim">/ {xp.possible.toLocaleString("en-IN")} XP</span>
+            <span className="text-dim">
+              / {xp.possible.toLocaleString("en-IN")} XP
+            </span>
           </p>
         </div>
 
@@ -180,7 +198,8 @@ export function QuestBoard() {
                 <>
                   <span className="h-3 w-px bg-edge-hi" />
                   <span className="text-photon">
-                    +{(nextXp.possible - nextXp.earned).toLocaleString("en-IN")} XP left in it
+                    +{(nextXp.possible - nextXp.earned).toLocaleString("en-IN")}{" "}
+                    XP left in it
                   </span>
                 </>
               )}
@@ -210,7 +229,9 @@ export function QuestBoard() {
           the shape of. Showing what is still to win is most of the point. */}
       {data.badges.length > 0 && (
         <div className="panel rounded-2xl px-5 py-4">
-          <p className="eyebrow">Badges · {stats.badges_earned} of {data.badges.length}</p>
+          <p className="eyebrow">
+            Badges · {stats.badges_earned} of {data.badges.length}
+          </p>
           <ul className="mt-3 flex flex-wrap gap-2">
             {data.badges.map((badge) => (
               <li

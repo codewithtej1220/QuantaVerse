@@ -46,7 +46,13 @@ function embedSrc(url: string): string | null {
   }
 }
 
-export function LessonPlayer({ video, title }: { video?: LessonVideo; title: string }) {
+export function LessonPlayer({
+  video,
+  title,
+}: {
+  video?: LessonVideo;
+  title: string;
+}) {
   const embed = useMemo(() => (video ? embedSrc(video.url) : null), [video]);
 
   if (!video) {
@@ -57,7 +63,8 @@ export function LessonPlayer({ video, title }: { video?: LessonVideo; title: str
           Recording not made yet
         </p>
         <p className="max-w-sm px-6 text-[12.5px] leading-snug text-dim">
-          The written lesson below is complete on its own. A video goes here when it is recorded.
+          The written lesson below is complete on its own. A video goes here
+          when it is recorded.
         </p>
       </div>
     );
@@ -79,12 +86,21 @@ export function LessonPlayer({ video, title }: { video?: LessonVideo; title: str
           // Not a provider we recognise, so treat it as a file and let the
           // browser decide. `controls` rather than autoplay: a lesson page that
           // starts talking at you is a lesson page people close.
-          <video src={video.url} controls preload="metadata" className="size-full">
+          <video
+            src={video.url}
+            controls
+            preload="metadata"
+            className="size-full"
+          >
             Your browser cannot play this video.
           </video>
         )}
       </div>
-      {video.caption && <figcaption className="mt-2 text-[12.5px] text-dim">{video.caption}</figcaption>}
+      {video.caption && (
+        <figcaption className="mt-2 text-[12.5px] text-dim">
+          {video.caption}
+        </figcaption>
+      )}
     </figure>
   );
 }

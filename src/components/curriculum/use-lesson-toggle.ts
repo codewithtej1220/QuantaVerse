@@ -49,12 +49,31 @@ export function useLessonToggle(slug: string) {
     }
   };
 
+  /* One-way, for the quiz. Passing a checkpoint is evidence that the lesson
+     was read; failing a later retake is not evidence that it was un-read, so
+     the quiz may mark a lesson and may never unmark one. `toggle` keeps both
+     directions for anything that genuinely is a toggle. */
+  const markDone = async (index: number) => {
+    if (!completed || !user || completed.includes(index)) return;
+    setPending(index);
+    setError(null);
+    try {
+      await markLesson(slug, index);
+      await loadProgress(user.id, true);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "that did not save");
+    } finally {
+      setPending(null);
+    }
+  };
+
   return {
     completed,
     signedIn,
     pending,
     error,
     toggle,
+    markDone,
     isDone: (index: number) => Boolean(completed?.includes(index)),
   };
 }

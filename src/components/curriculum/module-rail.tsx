@@ -12,7 +12,11 @@ interface ModuleRailProps {
   fallbackBadge: string;
 }
 
-export function ModuleRail({ slug, fallbackProgress, fallbackBadge }: ModuleRailProps) {
+export function ModuleRail({
+  slug,
+  fallbackProgress,
+  fallbackBadge,
+}: ModuleRailProps) {
   const { entry } = useModuleProgress(slug);
 
   const percent = entry ? entry.percent : fallbackProgress;
@@ -23,7 +27,12 @@ export function ModuleRail({ slug, fallbackProgress, fallbackBadge }: ModuleRail
     <div className="panel rounded-2xl p-5">
       <AmplitudeBar value={percent} />
       <p className="mt-4 flex items-center gap-2 border-t border-edge pt-4 text-[12.5px]">
-        <Award className={cn("size-4 shrink-0", earned ? "text-photon" : "text-frost")} />
+        <Award
+          className={cn(
+            "size-4 shrink-0",
+            earned ? "text-photon" : "text-frost",
+          )}
+        />
         <span className={earned ? "text-paper" : "text-frost"}>{badge}</span>
         <span className="ml-auto font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
           {earned ? "earned" : "on completion"}
