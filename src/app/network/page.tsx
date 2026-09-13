@@ -28,11 +28,13 @@ export default function NetworkPage() {
             </p>
           </div>
 
-          {/* An entangled pair: two things that only mean something together,
-              which is the whole argument for the page. */}
+          {/* A graph with the visitor at the centre. This was an entangled
+              pair, on the argument that two things which only mean something
+              together describe a collaboration page well — true, and still a
+              picture of physics on a page that is a directory of people. */}
           <Zone
             id="network-hero"
-            focus="pair"
+            focus="network"
             scale={1.15}
             className="h-[220px] w-full cursor-crosshair sm:h-[260px]"
           />

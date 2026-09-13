@@ -16,6 +16,7 @@ import { useTrackScrollDepth } from "@/lib/scroll";
    |0>/|1> markers because both put the poles in the same place. */
 import { BlochPoleLabels } from "./bloch-sphere";
 import { BlochLattice } from "./bloch-lattice";
+import { ConnectionGraph } from "./connection-graph";
 import { EntangledPair } from "./entangled-pair";
 import { GateBlock } from "./gate-block";
 import { ProcessorChip } from "./processor-chip";
@@ -39,7 +40,7 @@ import { cn } from "@/lib/utils";
  * component.
  */
 
-type Focus = "qubit" | "gate" | "pair" | "chip";
+type Focus = "qubit" | "gate" | "pair" | "chip" | "network";
 
 /** The fixed canvas. Mount exactly one, on any page that uses a Zone. */
 export function Stage() {
@@ -110,6 +111,7 @@ export function Zone({
           {focus === "gate" && <GateBlock depthId={id} reducedMotion={reduced} />}
           {focus === "pair" && <EntangledPair depthId={id} reducedMotion={reduced} />}
           {focus === "chip" && <ProcessorChip depthId={id} reducedMotion={reduced} />}
+          {focus === "network" && <ConnectionGraph depthId={id} reducedMotion={reduced} />}
         </group>
       </View>
       {focus === "qubit" && <BlochPoleLabels inset="2%" />}
