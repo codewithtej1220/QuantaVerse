@@ -31,8 +31,22 @@ function embedSrc(url: string): string | null {
       const id = parsed.pathname.slice(1);
       return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
     }
-    if (host === "youtube.com" || host === "m.youtube.com") {
-      if (parsed.pathname.startsWith("/embed/")) return url;
+    if (
+      host === "youtube.com" ||
+      host === "m.youtube.com" ||
+      host === "youtube-nocookie.com"
+    ) {
+      /* An address pasted straight out of YouTube's embed dialog already points
+         at /embed/ and carries whatever options were ticked there. Keep the
+         query — those options are the author's choice — and move the host, so
+         an embed from the share panel gets the same no-cookie treatment as a
+         plain watch link instead of quietly opting out of it. */
+      if (parsed.pathname.startsWith("/embed/")) {
+        const id = parsed.pathname.slice("/embed/".length);
+        return id
+          ? `https://www.youtube-nocookie.com/embed/${id}${parsed.search}`
+          : null;
+      }
       const id = parsed.searchParams.get("v");
       return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
     }
@@ -96,9 +110,14 @@ export function LessonPlayer({
           </video>
         )}
       </div>
-      {video.caption && (
-        <figcaption className="mt-2 text-[12.5px] text-dim">
-          {video.caption}
+      {(video.minutes || video.caption) && (
+        <figcaption className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[12.5px] text-dim">
+          {video.minutes && (
+            <span className="font-mono text-[11px] tracking-[0.12em] uppercase">
+              {video.minutes} min
+            </span>
+          )}
+          {video.caption && <span>{video.caption}</span>}
         </figcaption>
       )}
     </figure>

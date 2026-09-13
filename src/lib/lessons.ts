@@ -80,7 +80,8 @@ export const LESSONS: Record<string, Lesson[]> = {
   "qubit-and-superposition": [
     {
       title: "A qubit is a direction, not a digit",
-      summary: "Why the state of a qubit needs two complex numbers instead of one bit.",
+      summary:
+        "Why the state of a qubit needs two complex numbers instead of one bit.",
       minutes: 8,
       body: [
         "A classical bit is in one of two states, and you can write it down with a single symbol: 0 or 1. A qubit is not a bit that is secretly one of those and hiding it. Its state is a vector — a direction in a two-dimensional complex space — and the two basis directions of that space are what we call |0⟩ and |1⟩.",
@@ -89,14 +90,22 @@ export const LESSONS: Record<string, Lesson[]> = {
       ],
       notation: {
         lines: ["|ψ⟩ = α|0⟩ + β|1⟩", "|α|² + |β|² = 1"],
-        caption: "α and β are complex. Their squared magnitudes are the two outcome probabilities.",
+        caption:
+          "α and β are complex. Their squared magnitudes are the two outcome probabilities.",
       },
       practice:
         "Open the sandbox with an empty circuit: one qubit sitting at α = 1, β = 0, which is |0⟩ and the north pole of the Bloch sphere.",
+      video: {
+        url: "https://www.youtube.com/embed/WnDZiH4wdBY?si=B5X3MjbGSYRvNJhn&controls=0",
+        minutes: 15,
+        caption:
+          "“Quantum Computing: What are Qubits?” by Advanced Maths — a lecture-length walk over the same ground as the text below.",
+      },
     },
     {
       title: "Amplitudes are not probabilities",
-      summary: "The sign is the part that makes a quantum computer worth building.",
+      summary:
+        "The sign is the part that makes a quantum computer worth building.",
       minutes: 10,
       body: [
         "It is tempting to read α and β as probabilities and move on. They are not. Probabilities are real numbers between zero and one. Amplitudes are complex — they can be negative, and they can carry a phase — and you only get a probability out of one by squaring its magnitude.",
@@ -114,7 +123,8 @@ export const LESSONS: Record<string, Lesson[]> = {
     },
     {
       title: "The Bloch sphere",
-      summary: "Four real numbers, two of which do not matter, leaving a point on a ball.",
+      summary:
+        "Four real numbers, two of which do not matter, leaving a point on a ball.",
       minutes: 9,
       body: [
         "Two complex amplitudes are four real numbers. Normalisation — the length being one — uses up one of them. Global phase, which the last lesson of this module deals with, uses up another, because multiplying the whole state by a phase changes nothing you can measure. Two real numbers are left, and two numbers are exactly what it takes to name a point on the surface of a sphere.",
@@ -123,14 +133,16 @@ export const LESSONS: Record<string, Lesson[]> = {
       ],
       notation: {
         lines: ["|ψ⟩ = cos(θ/2)|0⟩ + e^(iφ) sin(θ/2)|1⟩"],
-        caption: "θ is the angle down from the north pole. φ is the angle around the equator.",
+        caption:
+          "θ is the angle down from the north pole. φ is the angle around the equator.",
       },
       practice:
         "In the sandbox, place an X on q0 and watch the arrow swing from the north pole to the south. Then clear it and place an H: it lands on the equator.",
     },
     {
       title: "The Hadamard gate",
-      summary: "The gate that makes superposition, and undoes it just as reliably.",
+      summary:
+        "The gate that makes superposition, and undoes it just as reliably.",
       minutes: 10,
       body: [
         "The Hadamard gate is the first gate in almost every circuit in this course. It takes the north pole to the equator: fed |0⟩, it produces an equal superposition of |0⟩ and |1⟩ with both amplitudes positive. Fed |1⟩, it produces the same two outcomes with the |1⟩ amplitude negative.",
@@ -138,7 +150,12 @@ export const LESSONS: Record<string, Lesson[]> = {
         "H is its own inverse. Apply it twice and you are exactly back where you started — H·H is the identity matrix. That fact is more important than it looks, and the next lesson is about why.",
       ],
       notation: {
-        lines: ["H = (1/√2) [ 1   1 ]", "             [ 1  −1 ]", "", "H|0⟩ = |+⟩      H|1⟩ = |−⟩"],
+        lines: [
+          "H = (1/√2) [ 1   1 ]",
+          "             [ 1  −1 ]",
+          "",
+          "H|0⟩ = |+⟩      H|1⟩ = |−⟩",
+        ],
       },
       code: "qc.h(0)          # |0> -> |+>",
       practice:
@@ -146,10 +163,11 @@ export const LESSONS: Record<string, Lesson[]> = {
     },
     {
       title: 'Superposition is not "both at once"',
-      summary: "The two-Hadamard experiment, and why a random coin cannot fake it.",
+      summary:
+        "The two-Hadamard experiment, and why a random coin cannot fake it.",
       minutes: 11,
       body: [
-        "The popular phrasing is that a qubit in superposition is \"both 0 and 1 at the same time\". It is a bad sentence, because it suggests the qubit is secretly one of the two and we simply have not looked. A hidden coin, already heads or tails, would explain a 50/50 measurement just as well.",
+        'The popular phrasing is that a qubit in superposition is "both 0 and 1 at the same time". It is a bad sentence, because it suggests the qubit is secretly one of the two and we simply have not looked. A hidden coin, already heads or tails, would explain a 50/50 measurement just as well.',
         "The two-Hadamard experiment is what rules that out, and you can run it in about thirty seconds. One H on |0⟩ gives 50/50, exactly like a fair coin. Now apply a second H before measuring. If the first H had genuinely flipped a coin, the second would just flip it again and you would still see 50/50. You see 100% |0⟩ instead, every single time.",
         "The state after one H was not a coin that had landed. It was a definite state — a definite direction on the Bloch sphere — and the second H rotated it precisely back. Randomness cannot be undone. A rotation can. That is the whole difference, and it is the reason a quantum computer is not just a fast random number generator.",
       ],
