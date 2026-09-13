@@ -56,6 +56,7 @@ export function StepThrough({
   playing,
   onPlaying,
   qubits,
+  frameMs = FRAME_MS,
 }: {
   steps: Step[];
   /** Index into `steps`. The last frame is the finished circuit. */
@@ -64,6 +65,15 @@ export function StepThrough({
   playing: boolean;
   onPlaying: (playing: boolean) => void;
   qubits: number;
+  /**
+   * Milliseconds a step is held during playback.
+   *
+   * The sandbox default is brisk, because there you built the circuit and are
+   * watching your own work replay. A walkthrough is the opposite case: every
+   * step carries a paragraph to read, and a transport that moved on before the
+   * reader finished the sentence would be worse than no transport at all.
+   */
+  frameMs?: number;
 }) {
   const last = steps.length - 1;
   const step = steps[Math.min(at, last)] ?? steps[0];
@@ -89,10 +99,10 @@ export function StepThrough({
       // Stop at the end rather than looping: a circuit has a last step, and
       // a transport that silently restarts hides which frame you were on.
       if (next >= state.last) state.onPlaying(false);
-    }, FRAME_MS);
+    }, frameMs);
 
     return () => window.clearInterval(timer);
-  }, [playing, steps.length]);
+  }, [playing, steps.length, frameMs]);
 
   if (steps.length < 2) {
     return (

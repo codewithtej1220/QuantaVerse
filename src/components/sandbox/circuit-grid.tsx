@@ -51,6 +51,7 @@ export function CircuitGrid({
   onRemove,
   flag = null,
   highlight = null,
+  ghost,
   expanded = false,
   onToggleExpand,
 }: {
@@ -64,6 +65,16 @@ export function CircuitGrid({
   flag?: { wire: number; column: number } | null;
   /** A time step to light up, for a walkthrough parked on one. */
   highlight?: number | null;
+  /**
+   * Gates the circuit is heading towards but has not placed yet.
+   *
+   * A walkthrough builds its circuit up a step at a time, and a board that
+   * simply grew would give the reader no idea how much was still coming. These
+   * are drawn into the empty slots as dashed outlines: the shape of the
+   * finished circuit is legible from the first step, and the difference between
+   * a gate that is there and a gate that is coming is unmistakable.
+   */
+  ghost?: Placement[];
   /** Set while the board is filling the screen. */
   expanded?: boolean;
   /** Omit it and no takeover control is drawn: the board is simply inline. */
@@ -80,6 +91,19 @@ export function CircuitGrid({
       if (t < qubits) grid[t][p.column] = { placement: p, role: "target" };
     } else if (p.wires[0] < qubits) {
       grid[p.wires[0]][p.column] = { placement: p, role: "single" };
+    }
+  }
+
+  /* Same shape as `grid`, for the gates that have not arrived yet. */
+  const ahead: Cell[][] = Array.from({ length: qubits }, () => Array<Cell>(columns).fill(null));
+  for (const p of ghost ?? []) {
+    if (p.column >= columns) continue;
+    if (p.gate === "cnot" && p.wires.length === 2) {
+      const [c, t] = p.wires;
+      if (c < qubits) ahead[c][p.column] = { placement: p, role: "control" };
+      if (t < qubits) ahead[t][p.column] = { placement: p, role: "target" };
+    } else if (p.wires[0] < qubits) {
+      ahead[p.wires[0]][p.column] = { placement: p, role: "single" };
     }
   }
 
@@ -205,6 +229,8 @@ export function CircuitGrid({
                     const key = `${w}-${c}`;
                     const hovered = hover === key;
                     const gate = cell ? GATE_BY_ID[cell.placement.gate] : null;
+                    const coming = !cell ? ahead[w][c] : null;
+                    const comingGate = coming ? GATE_BY_ID[coming.placement.gate] : null;
                     const tone = gate ? TONE[gate.tone] : null;
                     const material = gate ? MATERIAL[gate.tone] : null;
 
@@ -348,6 +374,33 @@ export function CircuitGrid({
                                   : "border-transparent hover:border-edge-hi hover:bg-strata",
                             )}
                           />
+                        )}
+
+                        {/* A gate this circuit is going to place, but has not
+                            yet. Dashed and unlit, so it reads as a plan rather
+                            than as a component — and it takes no pointer
+                            events, so the slot underneath is still a slot. */}
+                        {comingGate && (
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "pointer-events-none absolute grid place-items-center rounded-[3px]",
+                              "border border-dashed border-edge-hi/70",
+                            )}
+                            style={{
+                              width: GATE_W,
+                              height: GATE_W,
+                              transform: `translateZ(${Z.slot}px)`,
+                            }}
+                          >
+                            <span className="font-mono text-[12px] text-dim/70">
+                              {coming?.role === "control"
+                                ? "●"
+                                : coming?.role === "target"
+                                  ? "⊕"
+                                  : comingGate.symbol}
+                            </span>
+                          </span>
                         )}
 
                         {cell && gate && tone && material && cell.role === "single" && (

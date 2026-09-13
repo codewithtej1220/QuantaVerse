@@ -27,14 +27,38 @@ import { quizFor } from "@/lib/quizzes";
  * the one item here that is measured rather than claimed.
  */
 
+/**
+ * A displayed equation, treated as one.
+ *
+ * It used to be a `pre` set smaller than the prose, tucked against the left
+ * margin like a code sample. Notation is not a code sample: it is the thing the
+ * paragraphs around it are describing, and on a page of unbroken text it is
+ * also the only place the eye is given to rest. So it is set larger than the
+ * body, given room either side, labelled, and stood in a well of its own. A
+ * page with three of these down it has a shape you can navigate by, which is
+ * most of what separates theory that reads as structured from theory that
+ * reads as a wall.
+ */
 function Notation({ lines, caption }: { lines: string[]; caption?: string }) {
   return (
-    <figure className="mt-5">
-      <pre className="overflow-x-auto rounded-xl border border-edge bg-void px-5 py-4 font-mono text-[13px] leading-relaxed text-paper">
-        {lines.join("\n")}
-      </pre>
+    <figure className="mt-7">
+      <div className="overflow-x-auto rounded-xl border border-edge bg-strata/50 px-6 py-5">
+        <p className="mb-3.5 font-mono text-[10px] tracking-[0.18em] text-dim uppercase">
+          Notation
+        </p>
+        <div className="flex flex-col gap-2.5">
+          {lines.map((line) => (
+            <p
+              key={line}
+              className="font-mono text-[15.5px] leading-snug whitespace-pre text-paper"
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
       {caption && (
-        <figcaption className="mt-2 text-[12.5px] text-dim">
+        <figcaption className="mt-2.5 max-w-[34rem] text-[13px] leading-relaxed text-dim">
           {caption}
         </figcaption>
       )}
@@ -72,20 +96,46 @@ export function LessonBodies({
                 Lesson {String(index + 1).padStart(2, "0")} · {lesson.minutes}{" "}
                 min
               </p>
-              <h3 className="mt-2.5 text-[21px] leading-tight font-medium text-paper">
+              <h3 className="mt-2.5 max-w-[22ch] text-[26px] leading-[1.15] font-medium text-balance text-paper sm:text-[30px]">
                 {lesson.title}
               </h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-dim">
+              {/* The standfirst, which is what it has always been — it was just
+                  set in the tertiary tone at body size, so it read as a caption
+                  that had drifted up the page rather than as the sentence
+                  telling you what the next four paragraphs are for. */}
+              <p className="mt-3 max-w-[34rem] text-[16.5px] leading-relaxed text-frost">
                 {lesson.summary}
               </p>
 
               <LessonPlayer video={lesson.video} title={lesson.title} />
 
-              <div className="mt-6 flex flex-col gap-4">
-                {lesson.body.map((paragraph) => (
+              {/* The theory.
+
+                  Three things were making this hard to read and none of them
+                  was the writing. It was set in `frost`, the *secondary* text
+                  tone, when `paper` is the one the palette designates for body
+                  copy — so the main material on the page was dimmer than the
+                  furniture around it. It ran the full 800px of the column,
+                  which at this size is about 104 characters a line, where a
+                  reader's eye reliably finds the next line at around 65. And
+                  every paragraph was identical, so nothing said where to start.
+
+                  Now: the page's own body colour, a measure that fits, and a
+                  first paragraph set a step larger to open the section.
+
+                  The width is in rem rather than `ch` on purpose. `ch` is the
+                  width of a zero, and IBM Plex Sans averages about 0.43em over
+                  real prose — so `60ch` measured out at 79 characters, not 60,
+                  and sizing by it quietly misses by a fifth. */}
+              <div className="mt-7 flex max-w-[31rem] flex-col gap-5">
+                {lesson.body.map((paragraph, i) => (
                   <p
                     key={paragraph.slice(0, 40)}
-                    className="text-[15.5px] leading-relaxed text-frost"
+                    className={
+                      i === 0
+                        ? "text-[17px] leading-[1.72] text-paper"
+                        : "text-[16px] leading-[1.75] text-paper"
+                    }
                   >
                     {paragraph}
                   </p>
@@ -100,19 +150,25 @@ export function LessonBodies({
               )}
 
               {lesson.code && (
-                <pre className="mt-5 overflow-x-auto rounded-xl bg-sheet px-5 py-4 font-mono text-[13px] leading-relaxed text-void">
-                  {lesson.code}
-                </pre>
+                <figure className="mt-7">
+                  <p className="mb-2 font-mono text-[10px] tracking-[0.18em] text-dim uppercase">
+                    In Qiskit
+                  </p>
+                  <pre className="overflow-x-auto rounded-xl bg-sheet px-5 py-4 font-mono text-[13px] leading-relaxed text-void">
+                    {lesson.code}
+                  </pre>
+                </figure>
               )}
 
               {lesson.practice && (
-                <p className="mt-5 border-l-2 border-photon pl-4 text-[14px] leading-relaxed text-paper">
-                  <span className="font-mono text-[11px] tracking-[0.14em] text-photon uppercase">
-                    Try it
-                  </span>
-                  <br />
-                  {lesson.practice}
-                </p>
+                <div className="mt-7 max-w-[31rem] rounded-xl border border-photon/30 bg-photon/[0.06] px-5 py-4">
+                  <p className="font-mono text-[10px] tracking-[0.18em] text-photon uppercase">
+                    Try it in the sandbox
+                  </p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-paper">
+                    {lesson.practice}
+                  </p>
+                </div>
               )}
 
               <LessonQuiz

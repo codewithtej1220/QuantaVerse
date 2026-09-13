@@ -52,6 +52,21 @@ export function AlgorithmTheatre({ algorithm }: { algorithm: Algorithm }) {
   const step = index > 0 ? algorithm.steps[index - 1] : null;
   const column = index > 0 ? index - 1 : null;
 
+  /* The board is built rather than revealed.
+     Showing the finished circuit and lighting one column of it asks the reader
+     to find the step among sixteen gates that all look equally final. Placing
+     only what has actually run, and outlining what is still to come, makes the
+     same information a thing you watch happen: each press puts a gate down,
+     and the gate plays the same drop animation it would in the sandbox. */
+  const placed = useMemo(
+    () => (column === null ? [] : placements.filter((p) => p.column <= column)),
+    [placements, column],
+  );
+  const upcoming = useMemo(
+    () => (column === null ? placements : placements.filter((p) => p.column > column)),
+    [placements, column],
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {/* ---- the circuit ---- */}
@@ -66,7 +81,8 @@ export function AlgorithmTheatre({ algorithm }: { algorithm: Algorithm }) {
         <CircuitGrid
           qubits={algorithm.qubits}
           columns={algorithm.steps.length}
-          placements={placements}
+          placements={placed}
+          ghost={upcoming}
           armed={null}
           onPlace={() => {}}
           onRemove={() => {}}
@@ -82,6 +98,7 @@ export function AlgorithmTheatre({ algorithm }: { algorithm: Algorithm }) {
         playing={playing}
         onPlaying={setPlaying}
         qubits={algorithm.qubits}
+        frameMs={3200}
       />
 
       {/* ---- what is happening, and the code doing it ---- */}
