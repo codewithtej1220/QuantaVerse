@@ -58,7 +58,7 @@ function Notation({ lines, caption }: { lines: string[]; caption?: string }) {
         </div>
       </div>
       {caption && (
-        <figcaption className="mt-2.5 max-w-[34rem] text-[13px] leading-relaxed text-dim">
+        <figcaption className="mt-2.5 text-[13px] leading-relaxed text-dim">
           {caption}
         </figcaption>
       )}
@@ -103,7 +103,7 @@ export function LessonBodies({
                   set in the tertiary tone at body size, so it read as a caption
                   that had drifted up the page rather than as the sentence
                   telling you what the next four paragraphs are for. */}
-              <p className="mt-3 max-w-[34rem] text-[16.5px] leading-relaxed text-frost">
+              <p className="mt-3 max-w-[52rem] text-[16.5px] leading-relaxed text-frost">
                 {lesson.summary}
               </p>
 
@@ -115,19 +115,20 @@ export function LessonBodies({
                   was the writing. It was set in `frost`, the *secondary* text
                   tone, when `paper` is the one the palette designates for body
                   copy — so the main material on the page was dimmer than the
-                  furniture around it. It ran the full 800px of the column,
-                  which at this size is about 104 characters a line, where a
-                  reader's eye reliably finds the next line at around 65. And
-                  every paragraph was identical, so nothing said where to start.
+                  furniture around it. The summary above it was in the tertiary
+                  tone at body size, so it read as a caption that had drifted up
+                  the page. And every paragraph was identical, so nothing said
+                  where to start.
 
-                  Now: the page's own body colour, a measure that fits, and a
-                  first paragraph set a step larger to open the section.
-
-                  The width is in rem rather than `ch` on purpose. `ch` is the
-                  width of a zero, and IBM Plex Sans averages about 0.43em over
-                  real prose — so `60ch` measured out at 79 characters, not 60,
-                  and sizing by it quietly misses by a fifth. */}
-              <div className="mt-7 flex max-w-[31rem] flex-col gap-5">
+                  Colour and hierarchy were the fix. The measure is the
+                  column's, on purpose: it ran narrow for a while and the page
+                  read worse rather than better — a 500px ribbon of text under a
+                  full-width video leaves the right half of every lesson empty,
+                  and the eye spends the page noticing the gap instead of
+                  reading. It now sets to the same width as the video above it
+                  and the notation below it, so a lesson has one left edge and
+                  one right edge the whole way down. */}
+              <div className="mt-7 flex flex-col gap-5">
                 {lesson.body.map((paragraph, i) => (
                   <p
                     key={paragraph.slice(0, 40)}
@@ -161,7 +162,7 @@ export function LessonBodies({
               )}
 
               {lesson.practice && (
-                <div className="mt-7 max-w-[31rem] rounded-xl border border-photon/30 bg-photon/[0.06] px-5 py-4">
+                <div className="mt-7 rounded-xl border border-photon/30 bg-photon/[0.06] px-5 py-4">
                   <p className="font-mono text-[10px] tracking-[0.18em] text-photon uppercase">
                     Try it in the sandbox
                   </p>
