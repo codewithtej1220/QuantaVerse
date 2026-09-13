@@ -4,6 +4,7 @@ import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { TutorSidebar } from "@/components/ai/tutor-sidebar";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { SiteFooter } from "@/components/site/site-footer";
+import { MotionPreferences } from "@/components/site/motion-preferences";
 import { SiteNav } from "@/components/site/site-nav";
 import { MascotDirector } from "@/components/mascot/mascot-director";
 import { MascotStage } from "@/components/mascot/mascot-stage";
@@ -83,19 +84,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <AuthProvider>
-          {/* The field behind every route but the landing page, which brings
+          <MotionPreferences>
+            {/* The field behind every route but the landing page, which brings
               its own along with the stage its zones render into. */}
-          <RouteField />
-          <SiteNav />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter />
-          <TutorSidebar />
-          {/* Mounted here, not in a page: the layout survives navigation, so the
+            <RouteField />
+            <SiteNav />
+            <main id="main" className="flex-1">
+              {children}
+            </main>
+            <SiteFooter />
+            <TutorSidebar />
+            {/* Mounted here, not in a page: the layout survives navigation, so the
               canvas is never torn down and the cat flies between routes. */}
-          <MascotStage />
-          <MascotDirector />
+            <MascotStage />
+            <MascotDirector />
+          </MotionPreferences>
         </AuthProvider>
       </body>
     </html>
