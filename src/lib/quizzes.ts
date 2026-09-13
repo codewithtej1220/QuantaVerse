@@ -1,4 +1,11 @@
 import type { TestQuestion } from "@/lib/lessons";
+import * as measurement from "@/lib/modules/measurement-and-probability";
+import * as shor from "@/lib/modules/shors-factoring";
+import * as grover from "@/lib/modules/grovers-search";
+import * as deutschJozsa from "@/lib/modules/deutsch-jozsa";
+import * as qiskitModule from "@/lib/modules/circuits-with-qiskit";
+import * as entanglement from "@/lib/modules/quantum-entanglement";
+import * as singleQubit from "@/lib/modules/single-qubit-gates";
 
 /**
  * The quiz at the end of each lesson.
@@ -242,6 +249,13 @@ export const LESSON_QUIZZES: Record<string, TestQuestion[][]> = {
       },
     ],
   ],
+  "measurement-and-probability": measurement.quiz,
+  "shors-factoring": shor.quiz,
+  "grovers-search": grover.quiz,
+  "deutsch-jozsa": deutschJozsa.quiz,
+  "circuits-with-qiskit": qiskitModule.quiz,
+  "quantum-entanglement": entanglement.quiz,
+  "single-qubit-gates": singleQubit.quiz,
 };
 
 export function quizFor(slug: string, index: number): TestQuestion[] {

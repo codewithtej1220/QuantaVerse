@@ -68,6 +68,14 @@ export interface Lesson {
   video?: LessonVideo;
 }
 
+import * as measurement from "@/lib/modules/measurement-and-probability";
+import * as shor from "@/lib/modules/shors-factoring";
+import * as grover from "@/lib/modules/grovers-search";
+import * as deutschJozsa from "@/lib/modules/deutsch-jozsa";
+import * as qiskitModule from "@/lib/modules/circuits-with-qiskit";
+import * as entanglement from "@/lib/modules/quantum-entanglement";
+import * as singleQubit from "@/lib/modules/single-qubit-gates";
+
 export const LESSONS: Record<string, Lesson[]> = {
   "qubit-and-superposition": [
     {
@@ -173,6 +181,13 @@ export const LESSONS: Record<string, Lesson[]> = {
         "Build H then Z then H on q0. The Z is invisible on its own, but the second H turns it into a certain |1⟩ — a relative phase made visible.",
     },
   ],
+  "measurement-and-probability": measurement.lessons,
+  "shors-factoring": shor.lessons,
+  "grovers-search": grover.lessons,
+  "deutsch-jozsa": deutschJozsa.lessons,
+  "circuits-with-qiskit": qiskitModule.lessons,
+  "quantum-entanglement": entanglement.lessons,
+  "single-qubit-gates": singleQubit.lessons,
 };
 
 /** Lessons written so far. The rest of the modules still publish their outline. */
