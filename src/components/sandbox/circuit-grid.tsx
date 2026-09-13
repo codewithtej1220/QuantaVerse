@@ -50,6 +50,7 @@ export function CircuitGrid({
   onPlace,
   onRemove,
   flag = null,
+  highlight = null,
   expanded = false,
   onToggleExpand,
 }: {
@@ -61,6 +62,8 @@ export function CircuitGrid({
   onRemove: (id: string) => void;
   /** The cell the tutor is currently taking issue with, if any. */
   flag?: { wire: number; column: number } | null;
+  /** A time step to light up, for a walkthrough parked on one. */
+  highlight?: number | null;
   /** Set while the board is filling the screen. */
   expanded?: boolean;
   /** Omit it and no takeover control is drawn: the board is simply inline. */
@@ -132,8 +135,13 @@ export function CircuitGrid({
           lean into, and this is the one element on the page that clips. */}
       <div className="overflow-x-auto px-8 py-12 sm:px-14">
         <div
-          className="min-w-[660px]"
           style={{
+            /* Sized by the circuit rather than fixed at the sandbox's ten
+               columns: the walkthroughs run longer than that, and a board
+               whose columns shrink to fit draws gates that overlap their own
+               neighbours. Below ten it holds the sandbox's width exactly, so
+               nothing there moves. */
+            minWidth: Math.max(660, columns * 66),
             perspective: `${PERSPECTIVE}px`,
             // Moving the vanishing point with the pointer is the cue that sells
             // it: the board is not spinning in place, you are moving your head.
@@ -215,6 +223,20 @@ export function CircuitGrid({
                         )}
                         style={{ "--lift": `${Z.gate}px` } as CSSProperties}
                       >
+                        {/* The step a walkthrough is parked on. Drawn per
+                            cell rather than as one tall band, because the board
+                            is a 3D deck and a single element spanning the rows
+                            would have to leave the cell's own transform to do
+                            it. Behind the wire, so it reads as the column
+                            being lit rather than as something laid over it. */}
+                        {highlight === c && (
+                          <span
+                            aria-hidden
+                            className="absolute inset-y-0 -left-px -right-px border-x border-photon/25 bg-photon/8"
+                            style={{ transform: `translateZ(${Z.wire - 1}px)` }}
+                          />
+                        )}
+
                         {/* The wire. */}
                         <span
                           aria-hidden

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/curriculum", label: "Curriculum" },
+  { href: "/algorithms", label: "Algorithms" },
   { href: "/sandbox", label: "Sandbox" },
   { href: "/lab", label: "Lab" },
   { href: "/network", label: "Hub" },
