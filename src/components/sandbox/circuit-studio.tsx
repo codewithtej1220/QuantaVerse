@@ -13,6 +13,7 @@ import {
   type HealthResponse,
   type SimulationResponse,
 } from "@/lib/api";
+import { WorkspaceTabs, type WorkspaceTab } from "@/components/sandbox/workspace-tabs";
 import { useAuth } from "@/components/auth/auth-provider";
 import { readSession } from "@/lib/auth";
 import { challengeIR, type Challenge } from "@/lib/challenges";
@@ -115,6 +116,128 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const [gradeError, setGradeError] = useState<string | null>(null);
   /** Keyed by the circuit that was graded, so an edit retires the verdict. */
   const [verdict, setVerdict] = useState<{ key: string; result: GradeResponse } | null>(null);
+
+  /* ---- open circuits -------------------------------------------------
+     A workspace is everything that belongs to one circuit: its register
+     width, its gates, its code, and the results of the last time it was run.
+     Rather than rewrite two dozen hooks to read out of an array, the live
+     state above stays the active circuit and a switch snapshots it back into
+     the list before loading the next one. Same behaviour, a fraction of the
+     surface area to get wrong.
+
+     Transient things — what is armed, where the step-through is paused — are
+     deliberately not saved. They describe what you were doing a moment ago
+     rather than what the circuit is, and restoring them would leave a tab
+     half-way through an interaction nobody started. */
+  interface Workspace {
+    id: number;
+    name: string;
+    qubits: number;
+    placements: Placement[];
+    code: string;
+    preset: Preset | null;
+    edited: boolean;
+    shots: number[] | null;
+    verdict: { key: string; result: GradeResponse } | null;
+    runNote: string | null;
+  }
+
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => [
+    {
+      id: 1,
+      name: challenge ? "attempt-1" : "circuit-1",
+      qubits: challenge?.qubits ?? 3,
+      placements: opening ? presetPlacements(opening) : [],
+      code: toQiskit(opening ? presetPlacements(opening) : [], challenge?.qubits ?? 3),
+      preset: opening,
+      edited: false,
+      shots: null,
+      verdict: null,
+      runNote: null,
+    },
+  ]);
+  const [active, setActive] = useState(0);
+  const workspaceId = useRef(2);
+
+  const snapshot = useCallback(
+    (): Workspace => ({
+      id: workspaces[active]?.id ?? 1,
+      name: workspaces[active]?.name ?? "circuit-1",
+      qubits,
+      placements,
+      code,
+      preset,
+      edited,
+      shots,
+      verdict,
+      runNote,
+    }),
+    [workspaces, active, qubits, placements, code, preset, edited, shots, verdict, runNote],
+  );
+
+  const load = useCallback((space: Workspace) => {
+    setQubits(space.qubits);
+    setPlacements(space.placements);
+    setCode(space.code);
+    setPreset(space.preset);
+    setEdited(space.edited);
+    setShots(space.shots);
+    setVerdict(space.verdict);
+    setRunNote(space.runNote);
+    // Not carried across: these describe an interaction, not a circuit.
+    setArmed(null);
+    setStepAt(Number.POSITIVE_INFINITY);
+    setPlaying(false);
+    setBuildNote(null);
+    setGradeError(null);
+  }, []);
+
+  const selectWorkspace = (index: number) => {
+    if (index === active) return;
+    const saved = snapshot();
+    setWorkspaces((all) => all.map((item, i) => (i === active ? saved : item)));
+    const target = workspaces[index];
+    if (target) load(target);
+    setActive(index);
+  };
+
+  const createWorkspace = () => {
+    const saved = snapshot();
+    const width = challenge?.qubits ?? 3;
+    const fresh: Workspace = {
+      id: workspaceId.current++,
+      name: `circuit-${workspaceId.current - 1}`,
+      qubits: width,
+      placements: [],
+      code: toQiskit([], width),
+      preset: null,
+      edited: false,
+      shots: null,
+      verdict: null,
+      runNote: null,
+    };
+    setWorkspaces((all) => [...all.map((item, i) => (i === active ? saved : item)), fresh]);
+    setActive(workspaces.length);
+    load(fresh);
+  };
+
+  const closeWorkspace = (index: number) => {
+    if (workspaces.length < 2) return;
+    const remaining = workspaces.filter((_, i) => i !== index);
+    /* Closing a tab left of the active one shifts it; closing the active one
+       falls back to its left neighbour, or to the new first tab. */
+    const nextActive =
+      index === active ? Math.max(0, index - 1) : active > index ? active - 1 : active;
+    setWorkspaces(remaining);
+    setActive(nextActive);
+    if (index === active) load(remaining[nextActive]);
+  };
+
+  const tabs: WorkspaceTab[] = workspaces.map((space, index) => ({
+    id: space.id,
+    name: space.name,
+    gates: index === active ? placements.length : space.placements.length,
+  }));
 
   const nextId = useRef(100);
   const runCount = useRef(0);
@@ -537,6 +660,19 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="panel flex min-w-0 flex-col gap-5 rounded-2xl p-4 lg:p-5">
           <Bench expanded={bench} onExit={() => setBench(false)}>
+            <WorkspaceTabs
+              tabs={tabs}
+              active={active}
+              onSelect={selectWorkspace}
+              onCreate={createWorkspace}
+              onClose={closeWorkspace}
+              onRename={(index, name) =>
+                setWorkspaces((all) =>
+                  all.map((item, i) => (i === index ? { ...item, name } : item)),
+                )
+              }
+            />
+
             <GatePalette armed={armed} onArm={setArmed} />
 
             {/* The grid frames itself: it is a lit stage with a board standing
