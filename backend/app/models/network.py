@@ -38,6 +38,13 @@ class PersonCard(BaseModel):
     headline: str | None = None
     interests: list[str] = Field(default_factory=list)
     open_to_mentoring: bool = False
+    # The expanded profile, shown when a row is opened. Optional throughout —
+    # a card with none of it set still renders, just shorter.
+    position: str | None = None
+    education: str | None = None
+    focus: str | None = None
+    mentoring: str | None = None
+    availability: str | None = None
     # A seeded example profile so a fresh install has a directory to browse.
     # Surfaced so the UI can say so on the card — a fixture that looks like a
     # real academic is the one thing this feature must not ship.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
   Clock,
   GraduationCap,
   Loader2,
@@ -145,6 +146,59 @@ function Interests({ tags }: { tags: string[] }) {
   );
 }
 
+/**
+ * What a directory row opens into.
+ *
+ * A card has room for a name, an institution and one line; everything that
+ * would actually help somebody decide whether to write — what this person
+ * works on, who they have supervised, whether they have any time — does not
+ * fit and used to simply not exist. It lives here instead, behind a
+ * disclosure, so the list stays scannable and the detail is one press away.
+ *
+ * Sections render only when they have something in them. A member who has
+ * filled in nothing gets a shorter panel rather than a grid of empty labels,
+ * which is the difference between a profile that is sparse and one that looks
+ * broken.
+ */
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">{label}</p>
+      <p className="mt-1.5 text-[13.5px] leading-relaxed text-frost">{children}</p>
+    </div>
+  );
+}
+
+function ProfilePanel({ person }: { person: PersonCard }) {
+  const anything =
+    person.position || person.education || person.focus || person.mentoring || person.availability;
+
+  return (
+    <div className="mt-4 flex flex-col gap-4 border-t border-edge pt-4">
+      {person.position && <Detail label="Position">{person.position}</Detail>}
+      {person.education && <Detail label="Academic background">{person.education}</Detail>}
+      {person.focus && <Detail label="Research focus">{person.focus}</Detail>}
+      {person.mentoring && <Detail label="Mentoring">{person.mentoring}</Detail>}
+      {person.availability && <Detail label="Availability">{person.availability}</Detail>}
+
+      {!anything && (
+        <p className="text-[13px] leading-relaxed text-dim">
+          This member has not filled in a full profile yet.
+        </p>
+      )}
+
+      {/* Said again, in a sentence, because the chip on the card can be cropped
+          out of a screenshot and this is the claim that must not travel. */}
+      {person.is_demo && (
+        <p className="border-l-2 border-collapse pl-3 text-[12.5px] leading-relaxed text-dim">
+          This is an example profile shipped with the instance so the directory has something to
+          show. The person is invented and the account cannot be signed into.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** The button whose label is entirely decided by where you stand. */
 function StandingAction({
   person,
@@ -226,6 +280,9 @@ export function ResearchHub() {
   const [notice, setNotice] = useState<string | null>(null);
 
   /** The person a note is being written to, if any. */
+  /* One row open at a time. Several open at once turns a scannable list into a
+     wall of prose, which is the thing the disclosure exists to prevent. */
+  const [opened, setOpened] = useState<number | null>(null);
   const [composing, setComposing] = useState<PersonCard | null>(null);
   const [note, setNote] = useState("");
   const noteBox = useRef<HTMLTextAreaElement>(null);
@@ -483,6 +540,25 @@ export function ResearchHub() {
               {people.map((person) => (
                 <li key={person.id} className="panel flex flex-col rounded-xl p-4">
                   <div className="flex items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setOpened((prev) => (prev === person.id ? null : person.id))}
+                      aria-expanded={opened === person.id}
+                      aria-label={
+                        opened === person.id
+                          ? `Hide ${person.display_name}'s profile`
+                          : `Show ${person.display_name}'s profile`
+                      }
+                      className="mt-1 grid size-6 shrink-0 place-items-center rounded-md text-frost transition-colors hover:bg-strata hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "size-4 transition-transform duration-200",
+                          opened === person.id && "rotate-180",
+                        )}
+                        aria-hidden
+                      />
+                    </button>
                     <Identity person={person} />
                     <StandingAction
                       person={person}
@@ -506,6 +582,8 @@ export function ResearchHub() {
                     <p className="mt-3 text-[13.5px] leading-relaxed text-frost">{person.headline}</p>
                   )}
                   <Interests tags={person.interests} />
+
+                  {opened === person.id && <ProfilePanel person={person} />}
 
                   {person.standing === "connected" && person.modules_completed !== null && (
                     <p className="mt-3 border-t border-edge pt-2.5 font-mono text-[11.5px] text-dim tabular-nums">

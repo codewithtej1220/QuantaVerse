@@ -118,6 +118,11 @@ def card_of(
         headline=user.headline,
         interests=split_interests(user.interests),
         open_to_mentoring=bool(user.open_to_mentoring),
+        position=user.position,
+        education=user.education,
+        focus=user.focus,
+        mentoring=user.mentoring,
+        availability=user.availability,
         is_demo=bool(user.is_demo),
         joined_at=user.created_at,
         standing=standing,  # type: ignore[arg-type]

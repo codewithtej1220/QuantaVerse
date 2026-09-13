@@ -47,6 +47,16 @@ class User(Base):
     # and nobody mistakes a fixture for a real academic.
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # --- the expanded profile ----------------------------------------------
+    # What the directory row reveals when somebody opens it. All nullable: a
+    # student who has filled in nothing still has a perfectly good card, and the
+    # panel simply shows fewer sections rather than a grid of empty labels.
+    position: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    education: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    focus: Mapped[str | None] = mapped_column(String(700), nullable=True)
+    mentoring: Mapped[str | None] = mapped_column(String(700), nullable=True)
+    availability: Mapped[str | None] = mapped_column(String(180), nullable=True)
+
     # --- the starting point -------------------------------------------------
     # Two questions asked once, at sign-up: how familiar the learner is with the
     # maths and physics, and how much programming they have done. Nullable

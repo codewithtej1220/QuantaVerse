@@ -35,6 +35,14 @@ export interface PersonCard {
   interests: string[];
   open_to_mentoring: boolean;
   is_demo: boolean;
+  /* The expanded profile, revealed when a directory row is opened. Every one
+     is optional: a member who has filled in nothing still has a card, and the
+     panel renders fewer sections rather than a grid of empty labels. */
+  position: string | null;
+  education: string | null;
+  focus: string | null;
+  mentoring: string | null;
+  availability: string | null;
   joined_at: string;
   standing: Standing;
   connection_id: number | null;
