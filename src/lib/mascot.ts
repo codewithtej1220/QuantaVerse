@@ -27,7 +27,9 @@ export type MascotPose =
   /** Slumped, for a streak that has gone to zero. */
   | "distressed"
   /** Bouncing, for a passed assessment. */
-  | "celebrating";
+  | "celebrating"
+  /** Leaning in and waving, for a fault it has spotted in the circuit. */
+  | "flagging";
 
 /**
  * Where on the viewport the cat should sit, in normalised coordinates.
@@ -193,4 +195,49 @@ export function hush() {
 export function celebrate() {
   mascot.burst += 1;
   setPose("celebrating");
+}
+
+/* ---------------- what the cat is looking at ---------------- */
+
+/**
+ * The thing currently being carried across the screen, in pointer space.
+ *
+ * At rest the eyes track the pointer, read straight from `pointer.ts`. A drag
+ * is the one gesture where that breaks: the browser stops firing `pointermove`
+ * the instant a drag begins and fires `dragover` instead, so through the whole
+ * of picking a gate up and carrying it to a wire — precisely the moment the cat
+ * should look most attentive — the eyes sit frozen wherever the gate was lifted
+ * from. These are the coordinates from the events that do still fire.
+ *
+ * `held` is also what earns the head turn. Rolling the eyes is the right
+ * response to a pointer wandering past; turning to follow is the right response
+ * to somebody carrying something, and a head that swung at every stray mouse
+ * move would read as twitchy rather than interested.
+ */
+export const mascotGaze: { x: number; y: number; held: boolean } = {
+  x: 0,
+  y: 0,
+  held: false,
+};
+
+function trackDrag(event: DragEvent) {
+  /* Chrome stamps the last `drag` of a gesture at the origin. Taken at face
+     value the cat snaps to the top-left corner just as the gate lands. */
+  if (!event.clientX && !event.clientY) return;
+  mascotGaze.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mascotGaze.y = 1 - (event.clientY / window.innerHeight) * 2;
+  mascotGaze.held = true;
+}
+
+/** A gate has left the palette. Follow it until it lands. */
+export function watchDrag() {
+  document.addEventListener("dragover", trackDrag);
+  document.addEventListener("drag", trackDrag);
+}
+
+/** Safe to call unmatched — removing a listener that is not there is a no-op. */
+export function releaseDrag() {
+  document.removeEventListener("dragover", trackDrag);
+  document.removeEventListener("drag", trackDrag);
+  mascotGaze.held = false;
 }

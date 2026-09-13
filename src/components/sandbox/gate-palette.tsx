@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
 import { GATES } from "@/lib/data";
+import { releaseDrag, watchDrag } from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 import { ContactShadow, SlabBody, TRAY_PERSPECTIVE } from "./circuit-3d";
 import { GATE_MIME, MATERIAL, TONE } from "./tone";
@@ -59,6 +60,10 @@ export function GatePalette({
      back is blank. So the palette carries one flat stand-in off-screen, styled
      as the gate about to be dropped, and hands it over at dragstart. */
   const ghost = useRef<HTMLDivElement>(null);
+
+  /* A drag that ends with the palette gone never fires `dragend`, and the
+     listeners it left behind would keep the cat staring at a stale point. */
+  useEffect(() => releaseDrag, []);
 
   /* One fixed angle for the tray, the same for everybody. It is what gives the
      cards a lit face and a visible edge; it is not something the pointer gets
@@ -129,8 +134,13 @@ export function GatePalette({
                       }
 
                       onArm(gate.id);
+                      // Let the cat follow the gate across the board.
+                      watchDrag();
                     }}
-                    onDragEnd={() => onArm(null)}
+                    onDragEnd={() => {
+                      onArm(null);
+                      releaseDrag();
+                    }}
                     onClick={() => onArm(isArmed ? null : gate.id)}
                     aria-pressed={isArmed}
                     aria-label={

@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import { mascot, type MascotPose } from "@/lib/mascot";
+import { mascot, mascotGaze, type MascotPose } from "@/lib/mascot";
 import { pointerState } from "@/lib/pointer";
 
 /**
@@ -262,6 +262,18 @@ export function QuantumCat({
       squash = 0.94;
     }
 
+    if (pose === "flagging") {
+      /* Waving: a quick rock side to side with a small lift, fast enough to
+         catch peripheral vision and stopping short of the celebration hop so
+         the two never read as the same thing. Being noticed is the entire job
+         of this pose — it fires while somebody is looking at the board, not
+         at the cat. */
+      const wave = Math.sin(time * 7.5);
+      lean = wave * 0.26 * calm;
+      bob = 0.08 + Math.abs(wave) * 0.05 * calm;
+      squash = 1.02;
+    }
+
     if (pose === "celebrating") {
       const hop = Math.abs(Math.sin(time * 6.5));
       bob = hop * 0.36;
@@ -280,15 +292,22 @@ export function QuantumCat({
       boxGroup.current.position.x = rattle * 0.35;
     }
 
-    /* ---- eyes follow the pointer ---- */
+    /* ---- eyes follow whatever is worth following ---- */
+    /* The pointer, unless something is being carried, in which case the thing
+       being carried. A drag suppresses `pointermove` for its whole duration,
+       so without this the eyes freeze the moment a gate is picked up. */
+    const carrying = mascotGaze.held;
+    const lookX = carrying ? mascotGaze.x : pointerState.x;
+    const lookY = carrying ? mascotGaze.y : pointerState.y;
+
     if (pupilL.current && pupilR.current) {
-      /* The pointer is in viewport space, and the cat's own place in that
-         space is now fixed by CSS rather than computed — it is pinned to the
+      /* Both are in viewport space, and the cat's own place in that space is
+         now fixed by CSS rather than computed — it is pinned to the
          bottom-right corner. These two numbers mirror that placement, so the
          vector between them is the direction to look, with no raycast and no
          layout read inside the frame loop. */
-      let dx = pointerState.x - CORNER_X;
-      let dy = pointerState.y - CORNER_Y;
+      let dx = lookX - CORNER_X;
+      let dy = lookY - CORNER_Y;
       const reach = Math.hypot(dx, dy) || 1;
       const gaze = Math.min(1, reach) / reach;
       dx *= gaze * 0.075;
@@ -325,10 +344,19 @@ export function QuantumCat({
       tail.current.rotation.z = Math.sin(time * swish) * 0.3 * calm;
     }
 
-    /* ---- head tilt, for character ---- */
+    /* ---- head: tilt for character, turn to follow a gate ---- */
     if (head.current) {
-      const tilt = pose === "thinking" ? Math.sin(time * 2.4) * 0.12 : pointerState.x * 0.05;
+      const tilt = pose === "thinking" ? Math.sin(time * 2.4) * 0.12 : lookX * 0.05;
       head.current.rotation.z += (tilt - head.current.rotation.z) * (1 - Math.exp(-step * 6));
+
+      /* A turn of the head, not just a glance, and only while a gate is
+         actually in transit. The shapes are flat, so rotating the group
+         foreshortens the face — which is the point: it reads as the cat
+         squaring up to what you are doing rather than as a sprite sliding. */
+      const turn = carrying ? THREE.MathUtils.clamp(lookX - CORNER_X, -1, 1) * 0.3 : 0;
+      const dip = carrying ? THREE.MathUtils.clamp(lookY - CORNER_Y, -1, 1) * -0.16 : 0;
+      head.current.rotation.y += (turn - head.current.rotation.y) * (1 - Math.exp(-step * 7));
+      head.current.rotation.x += (dip - head.current.rotation.x) * (1 - Math.exp(-step * 7));
     }
   });
 

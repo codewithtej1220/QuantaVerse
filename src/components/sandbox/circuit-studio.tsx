@@ -13,10 +13,12 @@ import {
   type HealthResponse,
   type SimulationResponse,
 } from "@/lib/api";
+import { ProactiveToggle } from "@/components/sandbox/proactive-toggle";
 import { WorkspaceTabs, type WorkspaceTab } from "@/components/sandbox/workspace-tabs";
 import { useAuth } from "@/components/auth/auth-provider";
 import { readSession } from "@/lib/auth";
 import { challengeIR, type Challenge } from "@/lib/challenges";
+import { checkCircuit } from "@/lib/circuit-check";
 import { clearCircuit, describeCircuit, publishCircuit } from "@/lib/circuit-store";
 import { GATE_BY_ID } from "@/lib/data";
 import { fromCircuitIR, histogramToCounts, toCircuitIR } from "@/lib/ir";
@@ -28,7 +30,7 @@ import {
   toQiskit,
   type Placement,
 } from "@/lib/quantum";
-import { celebrate, hush, say, setPose } from "@/lib/mascot";
+import { celebrate, hush, mascot, mascotOffer, say, setPose } from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 
 import { Bench } from "./bench";
@@ -238,6 +240,66 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     name: space.name,
     gates: index === active ? placements.length : space.placements.length,
   }));
+
+  /* ---- proactive help -------------------------------------------------
+     On, the cat reads the board after every edit and says something when the
+     circuit has a fault that can be proved by looking at it. Off, it only
+     answers when spoken to.
+
+     The detecting is done locally rather than by asking the tutor, and that
+     is deliberate: this runs on every gate placed, a model round trip would
+     cost a second and a request each time, and a mascot that occasionally
+     cries wolf about a correct circuit is worse than one that stays quiet.
+     Everything it flags is provable from the placements. Explaining a fault
+     at length is still the tutor's job, and the offer attached to the remark
+     is what hands it over. */
+  const [proactive, setProactive] = useState(true);
+  const flagged = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!proactive) {
+      /* Turning it off should take the last remark with it, but must not
+         stamp on a pose something else owns — a celebration outlives this. */
+      if (flagged.current) {
+        flagged.current = null;
+        /* Take the remark with it, not just the pose. Silencing something that
+           leaves its last sentence on screen has not been silenced. Guarded on
+           the pose so this never clears a message another part of the page
+           owns — a celebration outlives the switch. */
+        if (mascot.pose === "flagging") {
+          setPose("idle");
+          hush();
+        }
+      }
+      return;
+    }
+
+    /* Waiting out the edit. Somebody mid-way through placing a CNOT has an
+       inert control for about a second, and being told so while still
+       reaching for the Hadamard is the definition of unhelpful. */
+    const timer = setTimeout(() => {
+      const issues = checkCircuit(placements, qubits);
+      const worst = issues[0] ?? null;
+      const key = worst ? `${worst.kind}:${worst.wire}:${worst.column}` : null;
+      if (key === flagged.current) return;
+      flagged.current = key;
+
+      if (!worst) {
+        if (mascot.pose === "flagging") setPose("idle");
+        return;
+      }
+      if (mascot.pose === "celebrating") return;
+
+      setPose("flagging");
+      /* `offer` is the affordance; the question behind it lives in
+         `mascotOffer.ask`, so tapping the bubble opens the tutor already
+         holding the fault rather than a blank prompt. */
+      mascotOffer.ask = `${worst.message} Why is that a problem, and what should I do instead?`;
+      say(`${worst.message} ${worst.fix}`, { eyebrow: "spotted something", offer: true });
+    }, 750);
+
+    return () => clearTimeout(timer);
+  }, [proactive, placements, qubits]);
 
   const nextId = useRef(100);
   const runCount = useRef(0);
@@ -574,6 +636,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         )}
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <ProactiveToggle on={proactive} onChange={setProactive} />
           <EnginePicker
             engine={engine}
             onChange={(next) => {
