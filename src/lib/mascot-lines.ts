@@ -12,6 +12,8 @@
  * ask me why" is the thing people actually keep around.
  */
 
+import { ALGORITHM_BY_SLUG } from "@/lib/algorithms";
+
 export interface Line {
   text: string;
   eyebrow: string;
@@ -46,6 +48,16 @@ const GUIDE: Record<string, Line> = {
     eyebrow: "the lab",
     ask: "Are my two qubits entangled?",
   },
+  "/algorithms": {
+    text: "Five algorithms that beat the classical way of doing it, each one actually running. Ask me which is worth your time first.",
+    eyebrow: "the shelf",
+    ask: "Which of these algorithms should I understand first?",
+  },
+  "/network": {
+    text: "Mentors and peers, with what each of them works on. Ask me who to approach about a topic and I will tell you honestly which of them are examples.",
+    eyebrow: "the hub",
+    ask: "Who here could help me with quantum algorithms?",
+  },
   "/dashboard": {
     text: "These numbers come from circuits that passed, not lessons you opened. Ask me what to practise.",
     eyebrow: "your record",
@@ -60,6 +72,24 @@ export function guideFor(path: string): Line | null {
       text: "Read it, then build it — every module ends with a circuit to finish.",
       eyebrow: "module",
       ask: "Explain this module simply.",
+    };
+  }
+  if (path.startsWith("/algorithms/")) {
+    /* Named, because "this algorithm" is a worse offer than "Grover". The
+       walkthrough replaces this the moment the reader steps, so the line only
+       has to cover the frame before anything has happened. */
+    const found = ALGORITHM_BY_SLUG[path.split("/")[2] ?? ""];
+    if (found) {
+      return {
+        text: `${found.name}, in ${found.steps.length} steps. Play it through and tap me on whichever one stops making sense.`,
+        eyebrow: "walkthrough",
+        ask: `Explain ${found.name} to me simply, in plain language.`,
+      };
+    }
+    return {
+      text: "Every circuit here runs on the same simulator as the sandbox. Step through one and ask me about any gate in it.",
+      eyebrow: "walkthrough",
+      ask: "What is this algorithm doing?",
     };
   }
   if (path.startsWith("/sandbox/")) {

@@ -101,9 +101,21 @@ function ModuleRow({
       <Link
         href={`/curriculum/${entry.slug}`}
         className={cn(
-          "grid grid-cols-[auto_2.75rem_minmax(0,1fr)] items-stretch gap-x-4 py-6",
-          "sm:grid-cols-[4.5rem_2.75rem_minmax(0,1fr)_9rem] sm:gap-x-6",
-          "transition-colors hover:bg-nebula",
+          "grid grid-cols-[auto_2.75rem_minmax(0,1fr)] items-stretch gap-x-4 py-6 pr-4 pl-3",
+          "sm:grid-cols-[4.5rem_2.75rem_minmax(0,1fr)_9rem] sm:gap-x-6 sm:pl-4",
+          "border-l-[3px] transition-colors",
+          /* Eight rows of the same weight separated by one hairline is a list
+             you have to read to navigate. The accent and the wash say which
+             state a row is in before any of its words do — and they are the
+             only thing on the row that differs by state, so they cannot
+             disagree with the number on the right. */
+          done
+            ? "border-photon/70 bg-photon/[0.045] hover:bg-photon/[0.09]"
+            : current
+              ? "border-paper bg-paper/[0.05] hover:bg-paper/[0.08]"
+              : locked
+                ? "border-edge hover:bg-nebula/60"
+                : "border-edge-hi hover:bg-nebula",
         )}
       >
         {/* The spine. Every row's ket sits on the same axis. */}
@@ -161,6 +173,29 @@ function ModuleRow({
             </h3>
             <span className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
               {TRACK_LABEL[entry.track]}
+            </span>
+            {/* The state, said rather than implied. `percent` alone cannot
+                distinguish a module you have not opened from one you cannot
+                open yet, and those are very different things to a reader. */}
+            <span
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 font-mono text-[10px] tracking-[0.14em] uppercase",
+                done
+                  ? "border-photon/50 bg-photon/10 text-photon"
+                  : current
+                    ? "border-paper/40 bg-paper/10 text-paper"
+                    : locked
+                      ? "border-edge text-dim"
+                      : "border-edge-hi text-frost",
+              )}
+            >
+              {done
+                ? "Mastered"
+                : current
+                  ? "In progress"
+                  : locked
+                    ? "Locked"
+                    : "Open"}
             </span>
           </span>
 

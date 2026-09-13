@@ -6,12 +6,12 @@ import {
   Award,
   Flame,
   Loader2,
-  Lock,
   Target,
   Zap,
 } from "lucide-react";
 
 import { MODULES } from "@/lib/data";
+import { BadgeShelf } from "@/components/curriculum/badge-shelf";
 import { moduleXp, totalXp, useLiveProgress } from "@/lib/quest";
 import { cn } from "@/lib/utils";
 
@@ -31,39 +31,55 @@ import { cn } from "@/lib/utils";
 
 const TOTAL_LESSONS = MODULES.reduce((sum, module) => sum + module.lessons, 0);
 
+const TONES = {
+  filament: {
+    icon: "text-filament",
+    value: "text-filament",
+    ring: "border-filament/35",
+  },
+  photon: {
+    icon: "text-photon",
+    value: "text-photon",
+    ring: "border-photon/35",
+  },
+  quiet: { icon: "text-frost", value: "text-paper", ring: "border-edge" },
+} as const;
+
+/**
+ * One counted thing.
+ *
+ * These used to be four icon-and-number pairs in a row on the same ground,
+ * separated by grid gap alone — so four unrelated measurements read as one
+ * run-on line and the eye had to parse the labels to find the boundaries.
+ * Each one now stands in its own well with its own accent, which is the
+ * difference between a row of numbers and four facts.
+ */
 function Tile({
   icon: Icon,
   value,
   label,
-  tone,
+  tone = "quiet",
 }: {
   icon: typeof Flame;
   value: string;
   label: string;
-  tone?: "photon";
+  tone?: keyof typeof TONES;
 }) {
+  const t = TONES[tone];
   return (
-    <div className="flex items-center gap-3">
-      <Icon
+    <div className={cn("rounded-xl border bg-strata/45 px-3.5 py-3", t.ring)}>
+      <Icon className={cn("size-4 shrink-0", t.icon)} aria-hidden />
+      <p
         className={cn(
-          "size-4 shrink-0",
-          tone === "photon" ? "text-photon" : "text-frost",
+          "mt-2.5 font-display text-[1.55rem] leading-none font-extrabold tabular-nums",
+          t.value,
         )}
-        aria-hidden
-      />
-      <div className="min-w-0">
-        <p
-          className={cn(
-            "font-display text-[1.5rem] leading-none font-extrabold tabular-nums",
-            tone === "photon" ? "text-photon" : "text-paper",
-          )}
-        >
-          {value}
-        </p>
-        <p className="mt-1 font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
-          {label}
-        </p>
-      </div>
+      >
+        {value}
+      </p>
+      <p className="mt-1.5 font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
+        {label}
+      </p>
     </div>
   );
 }
@@ -116,13 +132,21 @@ export function QuestBoard() {
       {/* Level and XP. The bar is the mastery percent the server computes, so
           the title above it and the fill under it cannot disagree. */}
       <div className="panel rounded-2xl px-5 py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-          <p className="flex items-baseline gap-3">
-            <span className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
-              level {mastery.level}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          {/* The level was a line of small grey mono next to the title, which
+              made the one number the whole panel is named after the least
+              visible thing on it. It is a numeral in a chip now. */}
+          <p className="flex items-center gap-3.5">
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-photon/45 bg-photon/10 font-display text-[1.4rem] leading-none font-extrabold text-photon tabular-nums">
+              {mastery.level}
             </span>
-            <span className="font-display text-[1.6rem] leading-none font-extrabold text-paper">
-              {mastery.title}
+            <span className="min-w-0">
+              <span className="block font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
+                Level {mastery.level}
+              </span>
+              <span className="mt-0.5 block font-display text-[1.5rem] leading-none font-extrabold text-paper">
+                {mastery.title}
+              </span>
             </span>
           </p>
           <p className="flex items-center gap-2 font-mono text-[12px] text-frost tabular-nums">
@@ -135,7 +159,7 @@ export function QuestBoard() {
         </div>
 
         <div
-          className="mt-3 h-1.5 w-full overflow-hidden bg-strata"
+          className="mt-5 h-2.5 w-full overflow-hidden rounded-full border border-edge bg-void"
           role="progressbar"
           aria-valuenow={mastery.percent}
           aria-valuemin={0}
@@ -143,7 +167,7 @@ export function QuestBoard() {
           aria-label={`Progress to ${mastery.next_title ?? "the last level"}`}
         >
           <div
-            className="h-full bg-photon transition-[width] duration-700 ease-out"
+            className="h-full rounded-full bg-photon transition-[width] duration-700 ease-out"
             style={{ width: `${Math.max(1.5, mastery.percent)}%` }}
           />
         </div>
@@ -153,27 +177,30 @@ export function QuestBoard() {
             : "top level reached"}
         </p>
 
-        <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-edge pt-4 sm:grid-cols-4">
+        <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Tile
             icon={Flame}
             value={String(stats.streak_days)}
             label={stats.streak_days === 1 ? "day streak" : "day streak"}
-            tone={stats.streak_days > 0 ? "photon" : undefined}
+            tone={stats.streak_days > 0 ? "filament" : "quiet"}
           />
           <Tile
             icon={Target}
             value={`${stats.lessons_completed}/${stats.lessons_total}`}
             label="lessons"
+            tone={stats.lessons_completed > 0 ? "photon" : "quiet"}
           />
           <Tile
             icon={Award}
             value={`${stats.badges_earned}/${data.badges.length}`}
             label="badges"
+            tone={stats.badges_earned > 0 ? "filament" : "quiet"}
           />
           <Tile
             icon={Zap}
             value={`${stats.challenges_passed}/${stats.challenges_total}`}
             label="circuits passed"
+            tone={stats.challenges_passed > 0 ? "photon" : "quiet"}
           />
         </dl>
       </div>
@@ -182,13 +209,16 @@ export function QuestBoard() {
       {quest && (
         <Link
           href={`/curriculum/${quest.module_slug}`}
-          className="group panel flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-2xl border-photon px-5 py-4 transition-colors hover:bg-photon/5"
+          className="group relative flex flex-wrap items-center justify-between gap-x-8 gap-y-5 overflow-hidden rounded-2xl border border-photon/70 bg-gradient-to-br from-photon/[0.14] via-nebula to-nebula px-6 py-6 transition-colors hover:from-photon/20"
         >
           <div className="min-w-0">
-            <p className="eyebrow text-photon">Current quest</p>
+            <p className="eyebrow flex items-center gap-2 text-photon">
+              <Target className="size-3.5" aria-hidden />
+              Current quest
+            </p>
             <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="ket text-[15px] text-photon">{quest.ket}</span>
-              <span className="font-display text-[1.4rem] leading-tight font-extrabold text-paper">
+              <span className="font-display text-[1.75rem] leading-tight font-extrabold text-paper">
                 {quest.title}
               </span>
             </p>
@@ -225,35 +255,8 @@ export function QuestBoard() {
         </Link>
       )}
 
-      {/* Badges as a shelf: earned ones lit, the rest as outlines you can see
-          the shape of. Showing what is still to win is most of the point. */}
       {data.badges.length > 0 && (
-        <div className="panel rounded-2xl px-5 py-4">
-          <p className="eyebrow">
-            Badges · {stats.badges_earned} of {data.badges.length}
-          </p>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {data.badges.map((badge) => (
-              <li
-                key={badge.id}
-                title={badge.detail}
-                className={cn(
-                  "flex items-center gap-2 border px-2.5 py-1.5 font-mono text-[11.5px]",
-                  badge.earned
-                    ? "border-photon/60 bg-photon/10 text-photon"
-                    : "border-edge text-dim",
-                )}
-              >
-                {badge.earned ? (
-                  <Award className="size-3.5 shrink-0" aria-hidden />
-                ) : (
-                  <Lock className="size-3 shrink-0" aria-hidden />
-                )}
-                {badge.name}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <BadgeShelf badges={data.badges} earned={stats.badges_earned} />
       )}
     </div>
   );

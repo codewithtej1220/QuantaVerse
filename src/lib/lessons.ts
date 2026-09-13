@@ -96,7 +96,7 @@ export const LESSONS: Record<string, Lesson[]> = {
       practice:
         "Open the sandbox with an empty circuit: one qubit sitting at α = 1, β = 0, which is |0⟩ and the north pole of the Bloch sphere.",
       video: {
-        url: "https://www.youtube.com/embed/WnDZiH4wdBY?si=B5X3MjbGSYRvNJhn&controls=0",
+        url: "https://www.youtube.com/embed/WnDZiH4wdBY?si=B5X3MjbGSYRvNJhn",
         minutes: 15,
         caption:
           "“Quantum Computing: What are Qubits?” by Advanced Maths — a lecture-length walk over the same ground as the text below.",
@@ -121,7 +121,7 @@ export const LESSONS: Record<string, Lesson[]> = {
           "Identical probabilities, different states. Nothing you measure in this basis can tell them apart — but they behave completely differently once another gate is applied.",
       },
       video: {
-        url: "https://www.youtube.com/embed/SVpD7rTEDgM?si=1BU4omNX4afQS4Tk&controls=0",
+        url: "https://www.youtube.com/embed/SVpD7rTEDgM?si=1BU4omNX4afQS4Tk",
         caption:
           "“Q4 Amplitude of probability” by Cedric Simenel — where the squared magnitude comes from, and why the sign survives it.",
       },
@@ -144,7 +144,7 @@ export const LESSONS: Record<string, Lesson[]> = {
       practice:
         "In the sandbox, place an X on q0 and watch the arrow swing from the north pole to the south. Then clear it and place an H: it lands on the equator.",
       video: {
-        url: "https://www.youtube.com/embed/4EGY4ajn1Iw?si=Qa7wFuC-VhWt2yVJ&controls=0",
+        url: "https://www.youtube.com/embed/4EGY4ajn1Iw?si=Qa7wFuC-VhWt2yVJ",
         caption:
           "“Quantum Computing Course: 1.3 Representing a Qubit on the Bloch Sphere” by Quantum Soar — the same construction as the text below, drawn as it is built.",
       },
@@ -171,7 +171,7 @@ export const LESSONS: Record<string, Lesson[]> = {
       practice:
         "Build H on q0 and run it: roughly 50/50. Then add a second H on the same wire and run again — the histogram collapses back to 100% on |0⟩.",
       video: {
-        url: "https://www.youtube.com/embed/JGl_hPy_pCQ?si=ZYnroETML-nXK-48&controls=0",
+        url: "https://www.youtube.com/embed/JGl_hPy_pCQ?si=ZYnroETML-nXK-48",
         caption:
           "“Quantum Computing: Understanding the Hadamard Gate” by Advanced Maths — the gate worked through on the sphere and in the matrix.",
       },
@@ -195,7 +195,7 @@ export const LESSONS: Record<string, Lesson[]> = {
       practice:
         "Run H, then H·H, and compare the two histograms. This is the single most convincing thing in the module — do not skip it.",
       video: {
-        url: "https://www.youtube.com/embed/TZ-sUHK8vVQ?si=WnqTs0CWBMDZH-Ox&controls=0",
+        url: "https://www.youtube.com/embed/TZ-sUHK8vVQ?si=WnqTs0CWBMDZH-Ox",
         caption:
           "“Superposition: The Quantum Principle That Changes Everything” by Qiskit — the same correction to the popular phrasing, from the people who maintain the SDK.",
       },
@@ -218,7 +218,7 @@ export const LESSONS: Record<string, Lesson[]> = {
       practice:
         "Build H then Z then H on q0. The Z is invisible on its own, but the second H turns it into a certain |1⟩ — a relative phase made visible.",
       video: {
-        url: "https://www.youtube.com/embed/bIxJDU5raQs?si=stlyxFuHntZWxG_P&controls=0",
+        url: "https://www.youtube.com/embed/bIxJDU5raQs?si=stlyxFuHntZWxG_P",
         caption:
           "“Quantum Computing: What is Phase? Understanding Global and Relative Phases” by Advanced Maths — the distinction this lesson turns on, at length.",
       },

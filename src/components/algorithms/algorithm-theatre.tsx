@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
 import {
@@ -8,6 +8,7 @@ import {
   algorithmPlacements,
   type Algorithm,
 } from "@/lib/algorithms";
+import { mascotOffer } from "@/lib/mascot";
 import { simulateSteps } from "@/lib/quantum";
 import { cn } from "@/lib/utils";
 import { CircuitGrid } from "@/components/sandbox/circuit-grid";
@@ -63,9 +64,23 @@ export function AlgorithmTheatre({ algorithm }: { algorithm: Algorithm }) {
     [placements, column],
   );
   const upcoming = useMemo(
-    () => (column === null ? placements : placements.filter((p) => p.column > column)),
+    () =>
+      column === null
+        ? placements
+        : placements.filter((p) => p.column > column),
     [placements, column],
   );
+
+  /* Hand the tutor the step the reader is actually looking at.
+     The cat carries one question, set by whatever owns the page. Left to the
+     route's guide line it would offer "explain Grover" on every frame, which
+     is the least useful moment to ask it — the reader who taps is almost never
+     stuck on the algorithm, they are stuck on the gate in front of them. */
+  useEffect(() => {
+    mascotOffer.ask = step
+      ? `In ${algorithm.name}, step ${index} of ${last} is: ${step.say} Why is that step there, and what would break without it?`
+      : `Explain ${algorithm.name} to me simply, in plain language.`;
+  }, [algorithm.name, step, index, last]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,7 +118,12 @@ export function AlgorithmTheatre({ algorithm }: { algorithm: Algorithm }) {
 
       {/* ---- what is happening, and the code doing it ---- */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
-        <Narration algorithm={algorithm} index={index} step={step} last={last} />
+        <Narration
+          algorithm={algorithm}
+          index={index}
+          step={step}
+          last={last}
+        />
         <CodeScroll lines={code} active={column} />
       </div>
 
