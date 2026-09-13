@@ -22,8 +22,13 @@ import { guideFor, INVITE } from "@/lib/mascot-lines";
 /** Pages already greeted this session. */
 const greeted = new Set<string>();
 
-/** Poses the tutor owns. The director must not stomp on them. */
-const BUSY = new Set(["thinking", "resolving", "working", "celebrating"]);
+/** Poses something else owns. The director must not stomp on them.
+
+    `flagging` is in here for the same reason the rest are: the sandbox has
+    spotted a fault in the circuit in front of the reader and is pointing at it,
+    and a standing invitation to ask a question is a strictly worse thing to
+    have on screen than a specific remark about their own work. */
+const BUSY = new Set(["thinking", "resolving", "working", "celebrating", "flagging"]);
 
 export function MascotDirector() {
   const path = usePathname();

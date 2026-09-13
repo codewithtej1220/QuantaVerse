@@ -18,7 +18,7 @@ import { WorkspaceTabs, type WorkspaceTab } from "@/components/sandbox/workspace
 import { useAuth } from "@/components/auth/auth-provider";
 import { readSession } from "@/lib/auth";
 import { challengeIR, type Challenge } from "@/lib/challenges";
-import { checkCircuit } from "@/lib/circuit-check";
+import { checkCircuit, type CircuitIssue } from "@/lib/circuit-check";
 import { clearCircuit, describeCircuit, publishCircuit } from "@/lib/circuit-store";
 import { GATE_BY_ID } from "@/lib/data";
 import { fromCircuitIR, histogramToCounts, toCircuitIR } from "@/lib/ir";
@@ -82,6 +82,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
      fits without scrolling sideways, so it is where the dragging is done. */
   const [bench, setBench] = useState(false);
   const [edited, setEdited] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [preset, setPreset] = useState<Preset | null>(opening);
   const [shots, setShots] = useState<number[] | null>(null);
   const [running, setRunning] = useState(false);
@@ -139,6 +140,11 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     code: string;
     preset: Preset | null;
     edited: boolean;
+    /* Whether anything has been placed, removed, loaded or typed on this board.
+       Distinct from `edited`, which is only about the Qiskit text: dropping a
+       gate on a wire regenerates that text and so clears `edited`, and a learner
+       who has just built a circuit by hand is very much not untouched. */
+    touched: boolean;
     shots: number[] | null;
     verdict: { key: string; result: GradeResponse } | null;
     runNote: string | null;
@@ -153,6 +159,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       code: toQiskit(opening ? presetPlacements(opening) : [], challenge?.qubits ?? 3),
       preset: opening,
       edited: false,
+      touched: false,
       shots: null,
       verdict: null,
       runNote: null,
@@ -170,11 +177,24 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       code,
       preset,
       edited,
+      touched,
       shots,
       verdict,
       runNote,
     }),
-    [workspaces, active, qubits, placements, code, preset, edited, shots, verdict, runNote],
+    [
+      workspaces,
+      active,
+      qubits,
+      placements,
+      code,
+      preset,
+      edited,
+      touched,
+      shots,
+      verdict,
+      runNote,
+    ],
   );
 
   const load = useCallback((space: Workspace) => {
@@ -183,6 +203,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setCode(space.code);
     setPreset(space.preset);
     setEdited(space.edited);
+    setTouched(space.touched);
     setShots(space.shots);
     setVerdict(space.verdict);
     setRunNote(space.runNote);
@@ -214,6 +235,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       code: toQiskit([], width),
       preset: null,
       edited: false,
+      touched: false,
       shots: null,
       verdict: null,
       runNote: null,
@@ -255,6 +277,9 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
      is what hands it over. */
   const [proactive, setProactive] = useState(true);
   const flagged = useRef<string | null>(null);
+  /* The finding the board is currently ringing. State rather than a ref,
+     because unlike `flagged` this one has to be drawn. */
+  const [issue, setIssue] = useState<CircuitIssue | null>(null);
 
   useEffect(() => {
     if (!proactive) {
@@ -262,6 +287,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
          stamp on a pose something else owns — a celebration outlives this. */
       if (flagged.current) {
         flagged.current = null;
+        setIssue(null);
         /* Take the remark with it, not just the pose. Silencing something that
            leaves its last sentence on screen has not been silenced. Guarded on
            the pose so this never clears a message another part of the page
@@ -279,13 +305,27 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
        reaching for the Hadamard is the definition of unhelpful. */
     const timer = setTimeout(() => {
       const issues = checkCircuit(placements, qubits);
-      const worst = issues[0] ?? null;
+      /* Advice waits until the learner has actually touched the board. The
+         opening preset is a correct Bell pair on a three-wire register, so the
+         one thing to say about it is that q2 is idle — which, said to somebody
+         who has not yet placed a gate, is a stranger opening with a complaint
+         about work they did not do. Faults speak immediately; they are about a
+         circuit that does not do what it looks like it does. */
+      const worst = issues.find((i) => touched || i.severity === "fault") ?? null;
       const key = worst ? `${worst.kind}:${worst.wire}:${worst.column}` : null;
       if (key === flagged.current) return;
       flagged.current = key;
 
+      setIssue(worst);
+
       if (!worst) {
-        if (mascot.pose === "flagging") setPose("idle");
+        /* Fixed. Take the remark down with the pose — a complaint left on
+           screen about a circuit that no longer has anything wrong with it
+           reads as still true, which is worse than having said nothing. */
+        if (mascot.pose === "flagging") {
+          setPose("idle");
+          hush();
+        }
         return;
       }
       if (mascot.pose === "celebrating") return;
@@ -295,11 +335,14 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
          `mascotOffer.ask`, so tapping the bubble opens the tutor already
          holding the fault rather than a blank prompt. */
       mascotOffer.ask = `${worst.message} Why is that a problem, and what should I do instead?`;
-      say(`${worst.message} ${worst.fix}`, { eyebrow: "spotted something", offer: true });
+      say(`${worst.message} ${worst.fix}`, {
+        eyebrow: worst.severity === "fault" ? "spotted something" : "one small thing",
+        offer: true,
+      });
     }, 750);
 
     return () => clearTimeout(timer);
-  }, [proactive, placements, qubits]);
+  }, [proactive, placements, qubits, touched]);
 
   const nextId = useRef(100);
   const runCount = useRef(0);
@@ -363,6 +406,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setPlaying(false);
     setCode(toQiskit(next, qubits));
     setEdited(false);
+    setTouched(true);
     setPreset(from);
     setShots(null);
     setRunNote(null);
@@ -374,6 +418,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setCode(next);
     setPlacements(fromQiskit(next, qubits));
     setEdited(true);
+    setTouched(true);
     setPreset(null);
     setShots(null);
     setRunNote(null);
@@ -510,6 +555,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
         setQubits(outcome.qubits);
         setPlacements(outcome.placements);
+        setTouched(true);
         setPreset(null);
         setShots(null);
         setRunNote(null);
@@ -747,6 +793,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               armed={armed}
               onPlace={onPlace}
               onRemove={onRemove}
+              flag={issue}
               expanded={bench}
               onToggleExpand={() => setBench((open) => !open)}
             />

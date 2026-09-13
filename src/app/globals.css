@@ -151,6 +151,10 @@
   --animate-arrive: arrive 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-wire: wire-run 4.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   --animate-breathe: breathe 2.4s ease-in-out infinite;
+  /* The tutor pointing at a cell it has taken issue with. This one carries
+     information in both halves: a held ring says which cell, and the ping says
+     the remark is live rather than left over from an edit ago. */
+  --animate-flag: flag-ping 1.9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 
   @keyframes rise {
     from {
@@ -196,6 +200,17 @@
     }
     100% {
       transform: translateX(846px);
+      opacity: 0;
+    }
+  }
+  @keyframes flag-ping {
+    0% {
+      transform: scale(0.88);
+      opacity: 0.9;
+    }
+    65%,
+    100% {
+      transform: scale(1.42);
       opacity: 0;
     }
   }

@@ -49,6 +49,7 @@ export function CircuitGrid({
   armed,
   onPlace,
   onRemove,
+  flag = null,
   expanded = false,
   onToggleExpand,
 }: {
@@ -58,6 +59,8 @@ export function CircuitGrid({
   armed: string | null;
   onPlace: (gateId: string, wire: number, column: number) => void;
   onRemove: (id: string) => void;
+  /** The cell the tutor is currently taking issue with, if any. */
+  flag?: { wire: number; column: number } | null;
   /** Set while the board is filling the screen. */
   expanded?: boolean;
   /** Omit it and no takeover control is drawn: the board is simply inline. */
@@ -220,6 +223,32 @@ export function CircuitGrid({
                             transform: `translateY(-50%) translateZ(${Z.wire}px)`,
                           }}
                         />
+
+                        {/* Where the tutor is pointing.
+
+                            The remark in the speech bubble names a wire and a
+                            step, and a learner should not have to count columns
+                            to find the cell it means. Amber because that is the
+                            cat's own colour — the mark and the voice saying it
+                            are visibly the same thing, and it is the one hue on
+                            this board that no gate already uses. Sits above the
+                            gate in Z so it rings a filled cell as readily as an
+                            empty one, and takes no pointer events, so the slot
+                            underneath is still a slot. */}
+                        {flag && flag.wire === w && flag.column === c && (
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute grid place-items-center"
+                            style={{
+                              width: GATE_W + 12,
+                              height: GATE_W + 12,
+                              transform: `translateZ(${Z.gate + 2}px)`,
+                            }}
+                          >
+                            <span className="absolute inset-0 rounded-[3px] border border-filament/55" />
+                            <span className="animate-flag absolute inset-0 rounded-[3px] border border-filament" />
+                          </span>
+                        )}
 
                         {/* CNOT connector: a rod in the air between two blocks,
                             not a line on the board. */}
