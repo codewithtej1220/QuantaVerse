@@ -53,12 +53,19 @@ export function MascotStage() {
        cat's button and the bubble opt back in. */
     <div className="pointer-events-none fixed right-4 bottom-5 z-30 sm:right-6 sm:bottom-7">
       {/* Above the cat and opening leftward: it sits against the right edge of
-          the window, so it has nowhere else to go. */}
+          the window, so it has nowhere else to go.
+
+          Kept narrow on purpose. At 26vw it reached about 336px, hanging some
+          190px past the left of a 146px cat and across whatever the reader was
+          actually looking at — a code pane, the module outline, a row of
+          directory cards. It is an aside from a mascot, not a panel, so it is
+          sized to sit against the cat rather than to fill the space it could
+          reach. */}
       {open && (
-        <div className="animate-rise pointer-events-auto absolute right-0 bottom-full mb-3 w-[clamp(15rem,26vw,21rem)] origin-bottom-right">
-          <div className="panel rounded-2xl px-4 py-3.5">
+        <div className="animate-rise pointer-events-auto absolute right-0 bottom-full mb-2 w-[clamp(12.5rem,17vw,16.5rem)] origin-bottom-right">
+          <div className="panel rounded-2xl px-3.5 py-3">
             {speech.eyebrow && <p className="eyebrow mb-1.5 text-filament">{speech.eyebrow}</p>}
-            <p className="text-[13.5px] leading-relaxed text-paper" role="status" aria-live="polite">
+            <p className="text-[13px] leading-relaxed text-paper" role="status" aria-live="polite">
               {speech.text}
               {speech.streaming && (
                 <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[0.15em] animate-pulse bg-filament align-middle" />
