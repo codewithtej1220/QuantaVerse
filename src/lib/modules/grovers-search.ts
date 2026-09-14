@@ -98,7 +98,7 @@ export const lessons: Lesson[] = [
       ],
     },
     practice:
-      "Open this module's lab and build the two-qubit version: H on the second wire, a CNOT, then H again. Watch how a single pass changes the histogram.",
+      "Before the lab, build just the oracle for |11⟩ in the sandbox: H on q1, a CNOT from q0, then H on q1 again. Put Hadamards on both qubits in front of it and the histogram stays flat — the mark is there, and only the diffuser turns it into an answer.",
   },
   {
     title: "How many iterations",

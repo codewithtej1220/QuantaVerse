@@ -7,6 +7,7 @@ import { LessonQuiz } from "@/components/curriculum/lesson-quiz";
 import { LessonPlayer } from "@/components/curriculum/lesson-video";
 import { useLessonToggle } from "@/components/curriculum/use-lesson-toggle";
 import type { Lesson } from "@/lib/lessons";
+import type { GradeMode } from "@/lib/challenges";
 import { quizFor } from "@/lib/quizzes";
 
 /**
@@ -79,7 +80,14 @@ export function LessonBodies({
 }: {
   slug: string;
   lessons: Lesson[];
-  lab: { href: string; title: string } | null;
+  lab: {
+    href: string;
+    title: string;
+    goal: string;
+    level: number;
+    of: number;
+    mode: GradeMode;
+  } | null;
 }) {
   const { isDone, markDone, pending, signedIn, error } = useLessonToggle(slug);
 
@@ -207,16 +215,22 @@ export function LessonBodies({
         >
           <p className="eyebrow flex items-center gap-2 text-photon">
             <FlaskConical className="size-3.5" aria-hidden />
-            Lab · the assessment
+            Lab {lab.level} of {lab.of} · the assessment
           </p>
           <h3 className="mt-2.5 text-[19px] font-medium text-paper">
             {lab.title}
           </h3>
+          <p className="mt-2.5 max-w-2xl text-[14px] leading-relaxed text-paper">
+            {lab.goal}
+          </p>
+          {/* Said before the first attempt, because the two modes accept
+              different things: any route to a state, or only a circuit that
+              does the whole job on every input. */}
           <p className="mt-2.5 max-w-2xl text-[14px] leading-relaxed text-frost">
-            Now build it. The simulator marks this by measuring the state your
-            circuit actually produces and comparing it to the target — both the
-            final state and the whole operation, up to global phase. Ticking a
-            lesson is something you say; this is something it checks.
+            {lab.mode === "state"
+              ? "It is marked on the state your circuit reaches, up to a global phase, so any route to that state passes."
+              : "It is marked on every input, up to a global phase, so the circuit has to do what the algorithm does — landing on the right answer from |0…0⟩ alone does not pass."}{" "}
+            Ticking a lesson is something you say; this is something it checks.
           </p>
           <Link
             href={lab.href}

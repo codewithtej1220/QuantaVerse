@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, GitFork } from "lucide-react";
 
 import { ActionLink } from "@/components/site/action";
-import { CHALLENGE_BY_SLUG } from "@/lib/challenges";
+import { CHALLENGES, CHALLENGE_BY_SLUG } from "@/lib/challenges";
 import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
 import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
@@ -64,8 +64,16 @@ export default async function ModulePage({
   const next = MODULES[index + 1];
 
   const written = lessonsFor(slug);
-  const lab = CHALLENGE_BY_SLUG[slug]
-    ? { href: `/sandbox/${slug}`, title: CHALLENGE_BY_SLUG[slug].title }
+  const challenge = CHALLENGE_BY_SLUG[slug];
+  const lab = challenge
+    ? {
+        href: `/sandbox/${slug}`,
+        title: challenge.title,
+        goal: challenge.goal,
+        level: challenge.level,
+        of: CHALLENGES.length,
+        mode: challenge.mode,
+      }
     : null;
 
   return (

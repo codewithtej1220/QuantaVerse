@@ -1,42 +1,61 @@
 "use client";
 
-import { CheckCircle2, CircleSlash, Loader2, Save, Target, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleSlash,
+  Info,
+  Loader2,
+  Save,
+  Target,
+  XCircle,
+} from "lucide-react";
 
 import type { GradeResponse } from "@/lib/api";
-import type { Challenge } from "@/lib/challenges";
+import { CHALLENGES, MODE_LABEL, type Challenge } from "@/lib/challenges";
 import { cn } from "@/lib/utils";
 
 /**
  * The graded task.
  *
- * The verdict is the API's, printed as it came back: two named checks, each with
- * its own score, and the server's hint when they do not both pass. Nothing here
- * decides whether the circuit is right — that is the grader's job, and hiding
- * which of the two checks failed would waste the most useful part of the answer.
+ * The verdict is the grader's, printed as it came back: each named check with
+ * its own score, and the grader's hint when the grade is not a pass. Nothing
+ * here decides whether the circuit is right — hiding which check failed would
+ * waste the most useful part of the answer.
+ *
+ * The card also says two things the old one left the learner to discover by
+ * failing: where this lab sits on the ladder, and what it is marked on. A lab
+ * marked on the state accepts any route to the state; one marked on every
+ * input does not accept a circuit that only lands on the answer from |0…0⟩,
+ * and that is worth knowing before the first attempt rather than after it.
  */
 
+/* For a server that predates labelled checks. */
 const CHECK_LABEL: Record<string, string> = {
   state_fidelity: "Final state",
-  unitary_equivalence: "Whole operation",
+  unitary_equivalence: "Every input",
+  measurement_order: "Measurements",
 };
 
 export function ChallengeCard({
   challenge,
   verdict,
+  offline,
   error,
   grading,
-  available,
   onCheck,
 }: {
   challenge: Challenge;
   /** The last verdict for the circuit currently on the grid, if any. */
   verdict: GradeResponse | null;
+  /** True when the check runs in this tab because no API can be reached. */
+  offline: boolean;
   error: string | null;
   grading: boolean;
-  /** False when there is no API to grade against. */
-  available: boolean;
   onCheck: () => void;
 }) {
+  const mode = MODE_LABEL[challenge.mode];
+  const total = CHALLENGES.length;
+
   return (
     <section
       className={cn(
@@ -49,18 +68,44 @@ export function ChallengeCard({
           shrink rather than wrap, so the row has to be turned off explicitly. */}
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-6">
         <div className="min-w-0 sm:flex-1">
-          <p className="eyebrow flex items-center gap-2">
-            <Target className="size-3.5 text-paper" />
-            Circuit lab
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <p className="eyebrow flex items-center gap-2">
+              <Target className="size-3.5 text-paper" />
+              Circuit lab {challenge.level} of {total}
+            </p>
+            {/* The ladder, as a count you can see: one pip per lab, the ones
+                up to this one filled. */}
+            <span
+              className="flex items-center gap-1"
+              role="img"
+              aria-label={`Difficulty ${challenge.level} of ${total}`}
+            >
+              {Array.from({ length: total }, (_, index) => (
+                <span
+                  key={index}
+                  aria-hidden
+                  className={cn(
+                    "h-1.5 w-3 rounded-full",
+                    index < challenge.level ? "bg-photon" : "bg-edge",
+                  )}
+                />
+              ))}
+            </span>
+          </div>
           <h2 className="mt-2 text-[17px] font-semibold tracking-[-0.01em] text-paper">
             {challenge.title}
           </h2>
-          <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-frost">
+          <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-paper">
             {challenge.goal}
           </p>
           <p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-frost">
             {challenge.why}
+          </p>
+          <p className="mt-3 flex max-w-2xl items-start gap-2 text-[12px] leading-relaxed text-frost">
+            <span className="shrink-0 rounded-md border border-edge-hi px-1.5 py-0.5 font-mono text-[10.5px] tracking-[0.12em] text-paper uppercase">
+              {mode.name}
+            </span>
+            <span className="pt-px">{mode.detail}</span>
           </p>
         </div>
 
@@ -68,8 +113,7 @@ export function ChallengeCard({
           <button
             type="button"
             onClick={onCheck}
-            disabled={grading || !available}
-            title={available ? undefined : "The check runs on the QuantaVerse API"}
+            disabled={grading}
             className={cn(
               "flex items-center gap-2 rounded-lg border px-3.5 py-2 font-mono text-[11px] tracking-[0.12em] uppercase",
               "transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-phase",
@@ -85,7 +129,8 @@ export function ChallengeCard({
             {grading ? "checking" : "check my circuit"}
           </button>
           <span className="font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
-            {challenge.qubits} qubits · qiskit marks it
+            {challenge.qubits} qubits ·{" "}
+            {offline ? "checked in this tab" : "qiskit marks it"}
           </span>
         </div>
       </div>
@@ -112,7 +157,7 @@ export function ChallengeCard({
                   ) : (
                     <XCircle className="size-4.5 shrink-0 text-collapse" />
                   )}
-                  {verdict.passed ? "Solved — both checks pass." : "Not there yet."}
+                  {verdict.passed ? "Solved." : "Not there yet."}
                 </p>
 
                 {verdict.recorded && (
@@ -123,34 +168,66 @@ export function ChallengeCard({
                       ` · badge earned: ${verdict.earned_badges.join(", ")}`}
                   </p>
                 )}
+                {offline && (
+                  <p className="mt-2 font-mono text-[11px] leading-relaxed text-frost">
+                    Marked in this tab — the QuantaVerse API is not running, so
+                    the result is not saved. The in-tab check is the same one
+                    the server runs.
+                  </p>
+                )}
 
                 <dl className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {verdict.checks.map((check) => (
-                    <div
-                      key={check.check}
-                      className={cn(
-                        "rounded-xl border px-3 py-2.5",
-                        check.passed
-                          ? "border-photon bg-photon/10"
-                          : "border-edge-hi bg-strata",
-                      )}
-                    >
-                      <dt className="flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] uppercase">
-                        <span className={check.passed ? "text-photon" : "text-collapse"}>
-                          {check.passed ? "pass" : "fail"}
-                        </span>
-                        <span className="text-frost">
-                          {CHECK_LABEL[check.check] ?? check.check}
-                        </span>
-                        <span className="ml-auto text-frost tabular-nums">
-                          {check.score.toFixed(4)}
-                        </span>
-                      </dt>
-                      <dd className="mt-1.5 text-[12.5px] leading-relaxed text-frost">
-                        {check.detail}
-                      </dd>
-                    </div>
-                  ))}
+                  {verdict.checks.map((check) => {
+                    const informative = check.required === false;
+                    return (
+                      <div
+                        key={check.check}
+                        className={cn(
+                          "rounded-xl border px-3 py-2.5",
+                          informative
+                            ? "border-edge bg-transparent"
+                            : check.passed
+                              ? "border-photon bg-photon/10"
+                              : "border-edge-hi bg-strata",
+                        )}
+                      >
+                        <dt className="flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] uppercase">
+                          {informative ? (
+                            <span className="flex items-center gap-1 text-frost">
+                              <Info className="size-3" aria-hidden />
+                              info
+                            </span>
+                          ) : (
+                            <span
+                              className={
+                                check.passed ? "text-photon" : "text-collapse"
+                              }
+                            >
+                              {check.passed ? "pass" : "fail"}
+                            </span>
+                          )}
+                          <span className="text-frost normal-case tracking-normal">
+                            {check.label ||
+                              CHECK_LABEL[check.check] ||
+                              check.check}
+                          </span>
+                          <span className="ml-auto text-frost tabular-nums">
+                            {check.score.toFixed(4)}
+                          </span>
+                        </dt>
+                        <dd className="mt-1.5 text-[12.5px] leading-relaxed text-frost">
+                          {check.detail}
+                          {informative && (
+                            <span className="text-dim">
+                              {" "}
+                              — shown for information; it cannot pass or fail
+                              the lab.
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    );
+                  })}
                 </dl>
 
                 {verdict.hint && (

@@ -18,9 +18,20 @@ export interface ScreenCircuit {
   summary: string;
   /** Lesson or preset the learner is working on, when there is one. */
   lessonId: string | null;
+  /**
+   * The graded lab on screen, if any. Sent to the tutor so it answers about
+   * that task — it is marked against a reference the tutor can check the
+   * circuit against, and advice about circuits in general is wrong there.
+   */
+  challengeSlug?: string | null;
 }
 
-const EMPTY: ScreenCircuit = { ir: null, summary: "no circuit open", lessonId: null };
+const EMPTY: ScreenCircuit = {
+  ir: null,
+  summary: "no circuit open",
+  lessonId: null,
+  challengeSlug: null,
+};
 
 let current: ScreenCircuit = EMPTY;
 const subscribers = new Set<(circuit: ScreenCircuit) => void>();

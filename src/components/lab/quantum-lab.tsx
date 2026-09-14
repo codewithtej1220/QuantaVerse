@@ -123,6 +123,15 @@ export function QuantumLab() {
     setImpulse((n) => n + 1);
   };
 
+  /* The one way the register changes, whether from the buttons under the board
+     or from picking an Arena task of another width. */
+  const resize = (n: number) => {
+    setQubits(n);
+    setPlacements((current) => current.filter((p) => p.wires.every((w) => w < n)));
+    setFocus((f) => Math.min(f, n - 1));
+    setMeasured(null);
+  };
+
   const reset = () => {
     setPlacements([]);
     setMeasured(null);
@@ -231,7 +240,12 @@ export function QuantumLab() {
 
         <div className="flex min-w-0 flex-col gap-5">
           <ProfessorConsole focus={vector} />
-          <Arena placements={placements} qubits={qubits} onVerdict={onVerdict} />
+          <Arena
+            placements={placements}
+            qubits={qubits}
+            onVerdict={onVerdict}
+            onRegister={resize}
+          />
         </div>
       </div>
 
@@ -271,12 +285,7 @@ export function QuantumLab() {
               <button
                 key={n}
                 type="button"
-                onClick={() => {
-                  setQubits(n);
-                  setPlacements((current) => current.filter((p) => p.wires.every((w) => w < n)));
-                  setFocus((f) => Math.min(f, n - 1));
-                  setMeasured(null);
-                }}
+                onClick={() => resize(n)}
                 className={cn(
                   "border px-2.5 py-1 font-mono text-[11px] transition-colors",
                   n === qubits

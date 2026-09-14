@@ -35,31 +35,40 @@ const near = (a: number, b: number, tol = 0.02) => Math.abs(a - b) <= tol;
 /** Index of a bit-string in the probability array; q0 is the least significant. */
 const at = (bits: string) => parseInt(bits, 2);
 
+const length = (b: { x: number; y: number; z: number }) =>
+  Math.hypot(b.x, b.y, b.z);
+
+/* In the order they get harder: one qubit and a sign, then two qubits with no
+   entanglement, then an entangled pair, then all three. They used to run the
+   other way — the Bell pair first and a single qubit last, under a title,
+   "Phase kickback", naming a technique the task does not use. Every brief now
+   says exactly what its checks test: "depth of 1" was a check the uniform
+   superposition brief never mentioned, and it failed a correct answer built
+   one gate at a time. */
 const TASKS: Task[] = [
   {
-    id: "bell",
-    title: "Bell pair",
-    brief: "Entangle two qubits so the register only ever reads 00 or 11.",
-    qubits: 2,
+    id: "minus",
+    title: "Minus state",
+    brief:
+      "Reach |−⟩ = (|0⟩ − |1⟩)/√2 on one qubit: an even superposition with a minus sign on |1⟩.",
+    qubits: 1,
     target: [
-      { id: "t1", gate: "h", column: 0, wires: [0] },
-      { id: "t2", gate: "cnot", column: 1, wires: [0, 1] },
+      { id: "t1", gate: "x", column: 0, wires: [0] },
+      { id: "t2", gate: "h", column: 1, wires: [0] },
     ],
     checks: [
-      { label: "P(00) = 0.5", run: (r) => near(r.probabilities[at("00")], 0.5) },
-      { label: "P(11) = 0.5", run: (r) => near(r.probabilities[at("11")], 0.5) },
-      { label: "P(01) = 0", run: (r) => near(r.probabilities[at("01")], 0) },
-      { label: "P(10) = 0", run: (r) => near(r.probabilities[at("10")], 0) },
+      { label: "P(0) = 0.5", run: (r) => near(r.probabilities[0], 0.5) },
       {
-        label: "both qubits maximally mixed",
-        run: (r) => r.bloch.slice(0, 2).every((b) => Math.hypot(b.x, b.y, b.z) < 0.02),
+        label: "arrow on −X (the minus sign)",
+        run: (r) => near(r.bloch[0].x, -1, 0.03),
       },
     ],
   },
   {
     id: "uniform",
     title: "Uniform superposition",
-    brief: "Put a two-qubit register into an equal superposition of all four states.",
+    brief:
+      "Put two qubits into (|00⟩ + |01⟩ + |10⟩ + |11⟩)/2 — all four outcomes, every amplitude +½.",
     qubits: 2,
     target: [
       { id: "t1", gate: "h", column: 0, wires: [0] },
@@ -71,28 +80,101 @@ const TASKS: Task[] = [
         run: (r) => r.probabilities.slice(0, 4).every((p) => near(p, 0.25)),
       },
       {
-        label: "no entanglement (both vectors full length)",
-        run: (r) => r.bloch.slice(0, 2).every((b) => near(Math.hypot(b.x, b.y, b.z), 1, 0.03)),
+        label: "both arrows on +X (no stray signs, no entanglement)",
+        run: (r) => r.bloch.slice(0, 2).every((b) => near(b.x, 1, 0.03)),
       },
-      { label: "depth of 1", run: (r) => r.depth === 1 },
     ],
   },
   {
-    id: "flip",
-    title: "Phase kickback",
-    brief: "Reach |−⟩ on q0 — an equal superposition carrying a π phase.",
-    qubits: 1,
+    id: "bell",
+    title: "Bell pair",
+    brief: "Entangle two qubits so the register only ever reads 00 or 11.",
+    qubits: 2,
     target: [
-      { id: "t1", gate: "x", column: 0, wires: [0] },
-      { id: "t2", gate: "h", column: 1, wires: [0] },
+      { id: "t1", gate: "h", column: 0, wires: [0] },
+      { id: "t2", gate: "cnot", column: 1, wires: [0, 1] },
     ],
     checks: [
-      { label: "P(0) = 0.5", run: (r) => near(r.probabilities[0], 0.5) },
-      { label: "vector on −x", run: (r) => near(r.bloch[0].x, -1, 0.03) },
-      { label: "no z component", run: (r) => near(r.bloch[0].z, 0, 0.03) },
+      {
+        label: "P(00) = 0.5",
+        run: (r) => near(r.probabilities[at("00")], 0.5),
+      },
+      {
+        label: "P(11) = 0.5",
+        run: (r) => near(r.probabilities[at("11")], 0.5),
+      },
+      { label: "P(01) = 0", run: (r) => near(r.probabilities[at("01")], 0) },
+      { label: "P(10) = 0", run: (r) => near(r.probabilities[at("10")], 0) },
+      {
+        label: "both qubits maximally mixed",
+        run: (r) => r.bloch.slice(0, 2).every((b) => length(b) < 0.02),
+      },
+    ],
+  },
+  {
+    id: "ghz",
+    title: "GHZ state",
+    brief:
+      "Entangle all three qubits so the register only ever reads 000 or 111.",
+    qubits: 3,
+    target: [
+      { id: "t1", gate: "h", column: 0, wires: [0] },
+      { id: "t2", gate: "cnot", column: 1, wires: [0, 1] },
+      { id: "t3", gate: "cnot", column: 2, wires: [1, 2] },
+    ],
+    checks: [
+      {
+        label: "P(000) = 0.5",
+        run: (r) => near(r.probabilities[at("000")], 0.5),
+      },
+      {
+        label: "P(111) = 0.5",
+        run: (r) => near(r.probabilities[at("111")], 0.5),
+      },
+      {
+        label: "all three qubits maximally mixed",
+        run: (r) => r.bloch.slice(0, 3).every((b) => length(b) < 0.02),
+      },
     ],
   },
 ];
+
+/**
+ * The two checks every task shares, ahead of its own.
+ *
+ * The register first, because every other check indexes the probabilities by
+ * bit-string, and on a register of the wrong width "P(00)" is quietly a
+ * different outcome — a three-qubit Bell attempt could pass, while the fidelity
+ * beside it read 0.000. And measurement, because the simulator steps over an M
+ * rather than collapsing: an H, a measurement and then a CNOT reads as a
+ * perfect Bell pair to every amplitude check, and is not one.
+ */
+function sharedChecks(
+  task: Task,
+  placements: Placement[],
+  qubits: number,
+): Check[] {
+  return [
+    {
+      label: `register of ${task.qubits} qubit${task.qubits === 1 ? "" : "s"}`,
+      run: () => qubits === task.qubits,
+    },
+    {
+      label: "nothing after a measurement",
+      run: () =>
+        !placements.some(
+          (m) =>
+            m.gate === "m" &&
+            placements.some(
+              (g) =>
+                g.gate !== "m" &&
+                g.column > m.column &&
+                g.wires.some((w) => m.wires.includes(w)),
+            ),
+        ),
+    },
+  ];
+}
 
 /** |⟨target|ψ⟩|², the standard state fidelity. */
 function fidelityOf(a: SimulationResult, b: SimulationResult) {
@@ -119,47 +201,91 @@ export function Arena({
   placements,
   qubits,
   onVerdict,
+  onRegister,
 }: {
   placements: Placement[];
   qubits: number;
   onVerdict: (passed: boolean) => void;
+  /** Resize the lab's register — picking a task sets it to the task's width. */
+  onRegister: (qubits: number) => void;
 }) {
-  const [taskId, setTaskId] = useState(TASKS[0].id);
-  const [ran, setRan] = useState<{ task: string; results: boolean[] } | null>(null);
+  /* Opens on the first task that fits the register the page opened with, so
+     the first Verify is not a complaint about a setting nobody has touched. */
+  const [taskId, setTaskId] = useState(
+    () => (TASKS.find((t) => t.qubits === qubits) ?? TASKS[0]).id,
+  );
+  const [ran, setRan] = useState<{
+    task: string;
+    results: boolean[];
+    key: string;
+  } | null>(null);
 
   const task = TASKS.find((t) => t.id === taskId) ?? TASKS[0];
-  const mine = useMemo(() => simulate(placements, qubits), [placements, qubits]);
+  const mine = useMemo(
+    () => simulate(placements, qubits),
+    [placements, qubits],
+  );
   const goal = useMemo(() => simulate(task.target, task.qubits), [task]);
 
   const fidelity = qubits === task.qubits ? fidelityOf(mine, goal) : 0;
   const durationNs = mine.depth * GATE_NS;
   const headroom = Math.max(0, 100 - (durationNs / (T2_US * 1000)) * 100);
 
-  const verdict = ran && ran.task === task.id ? ran.results : null;
+  /* A verdict speaks for the board it was run on. Edit the circuit and the
+     ticks clear, rather than standing beside a circuit they were not about. */
+  const verdict =
+    ran &&
+    ran.task === task.id &&
+    ran.key === JSON.stringify([placements, qubits])
+      ? ran.results
+      : null;
   const passed = verdict !== null && verdict.every(Boolean);
 
+  const checks = useMemo(
+    () => [...sharedChecks(task, placements, qubits), ...task.checks],
+    [task, placements, qubits],
+  );
+
   const run = () => {
-    const results = task.checks.map((check) => {
-      try {
-        return check.run(mine);
-      } catch {
-        return false;
-      }
+    const shared = sharedChecks(task, placements, qubits).map((check) =>
+      check.run(mine),
+    );
+    /* A task's own checks only mean something on its register. */
+    const fits = shared[0];
+    const results = [
+      ...shared,
+      ...task.checks.map((check) => {
+        if (!fits) return false;
+        try {
+          return check.run(mine);
+        } catch {
+          return false;
+        }
+      }),
+    ];
+    setRan({
+      task: task.id,
+      results,
+      key: JSON.stringify([placements, qubits]),
     });
-    setRan({ task: task.id, results });
     onVerdict(results.every(Boolean));
   };
 
   return (
     <section className="well flex min-h-0 flex-col p-5">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge pb-3">
-        <p className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">Arena</p>
+        <p className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">
+          Arena
+        </p>
         <div className="flex flex-wrap gap-1.5">
           {TASKS.map((option) => (
             <button
               key={option.id}
               type="button"
-              onClick={() => setTaskId(option.id)}
+              onClick={() => {
+                setTaskId(option.id);
+                if (option.qubits !== qubits) onRegister(option.qubits);
+              }}
               className={cn(
                 "border px-2.5 py-1 font-mono text-[10.5px] tracking-[0.12em] uppercase transition-colors",
                 option.id === task.id
@@ -173,11 +299,16 @@ export function Arena({
         </div>
       </div>
 
-      <p className="mt-3.5 text-[13px] leading-relaxed text-frost">{task.brief}</p>
+      <p className="mt-3.5 text-[13px] leading-relaxed text-frost">
+        {task.brief}
+      </p>
       <p className="mt-1.5 font-mono text-[11px] text-dim">
         register: {task.qubits} qubits
         {qubits !== task.qubits && (
-          <span className="text-paper"> · yours is {qubits} — set the register to match</span>
+          <span className="text-paper">
+            {" "}
+            · yours is {qubits} — set the register to match
+          </span>
         )}
       </p>
 
@@ -194,14 +325,25 @@ export function Arena({
             [
               "Fidelity",
               fidelity.toFixed(3),
-              fidelity > 0.999 ? "text-photon" : fidelity > 0.5 ? "text-paper" : "text-frost",
+              fidelity > 0.999
+                ? "text-photon"
+                : fidelity > 0.5
+                  ? "text-paper"
+                  : "text-frost",
             ],
             ["Coherence headroom", `${headroom.toFixed(1)}%`, "text-paper"],
           ] as const
         ).map(([label, value, tone]) => (
           <div key={label}>
-            <p className="font-mono text-[10px] tracking-[0.14em] text-dim uppercase">{label}</p>
-            <p className={cn("font-display mt-1 text-xl font-extrabold tabular-nums", tone)}>
+            <p className="font-mono text-[10px] tracking-[0.14em] text-dim uppercase">
+              {label}
+            </p>
+            <p
+              className={cn(
+                "font-display mt-1 text-xl font-extrabold tabular-nums",
+                tone,
+              )}
+            >
               {value}
             </p>
           </div>
@@ -209,12 +351,12 @@ export function Arena({
       </div>
 
       <p className="mt-2 font-mono text-[10.5px] leading-relaxed text-dim">
-        headroom = depth × {GATE_NS} ns against a {T2_US} µs T₂. An assumption, stated — the
-        simulator has no decoherence of its own to measure.
+        headroom = depth × {GATE_NS} ns against a {T2_US} µs T₂. An assumption,
+        stated — the simulator has no decoherence of its own to measure.
       </p>
 
       <ul className="mt-4 min-h-0 flex-1 space-y-1.5 overflow-y-auto font-mono text-[12px]">
-        {task.checks.map((check, i) => {
+        {checks.map((check, i) => {
           const state = verdict ? verdict[i] : null;
           return (
             <li

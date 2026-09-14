@@ -95,16 +95,17 @@ export const lessons: Lesson[] = [
     summary: "Gates are matrices, matrices do not commute, and circuits read left to right.",
     minutes: 9,
     body: [
-      "Applying X then Z is not the same as applying Z then X. This is not a quirk of notation — it is matrix multiplication, which does not commute in general, and it is the reason a circuit is a sequence rather than a set. Two circuits with identical gate counts and identical gates can compute completely different things.",
+      "Applying H then Z is not the same as applying Z then H. This is not a quirk of notation — it is matrix multiplication, which does not commute in general, and it is the reason a circuit is a sequence rather than a set. Two circuits with identical gate counts and identical gates can compute completely different things.",
       "Rotations make the reason obvious. Turn a globe 90° about the vertical axis and then 90° about the horizontal one, and you land somewhere quite different from doing it the other way round. Try it with a physical object once and you will never need reminding.",
-      "There is one piece of notation that trips everybody at first. A circuit diagram reads left to right in time, but the matrix product is written right to left — the gate applied first sits nearest the state vector. So a diagram showing X then Z is the product Z·X. The sandbox draws time order; Qiskit's code follows the same order as the drawing, and only the matrices reverse.",
+      "There is one piece of notation that trips everybody at first. A circuit diagram reads left to right in time, but the matrix product is written right to left — the gate applied first sits nearest the state vector. So a diagram showing H then Z is the product Z·H. The sandbox draws time order; Qiskit's code follows the same order as the drawing, and only the matrices reverse.",
     ],
     notation: {
       lines: [
-        "diagram:   |0⟩ ── X ── Z ──",
-        "matrix:    Z · X |0⟩",
+        "diagram:   |0⟩ ── H ── Z ──",
+        "matrix:    Z · H |0⟩",
         "",
-        "X·Z ≠ Z·X",
+        "H·Z ≠ Z·H",
+        "X·Z = −Z·X     (a global phase apart: the same circuit)",
       ],
     },
     practice:
@@ -230,9 +231,9 @@ export const quiz: TestQuestion[][] = [
     {
       prompt: "Why does entanglement require two qubits?",
       options: [
-        "It is only defined for pairs",
-        "Because shortening one qubit's Bloch vector is impossible with one-qubit gates",
-        "Because CNOT has two inputs",
+        "Because a single qubit cannot be put into superposition",
+        "Because one-qubit gates only rotate an arrow, and a shortened arrow needs a correlation with another qubit",
+        "Because the CNOT symbol happens to have two ends",
         "It does not — one qubit can be entangled alone",
       ],
       answer: 1,
@@ -312,14 +313,15 @@ export const quiz: TestQuestion[][] = [
   ],
   [
     {
-      prompt: "Is X·Z the same as Z·X?",
+      prompt: "Is H·Z the same as Z·H?",
       options: ["Yes", "No", "Only on |0⟩", "Only up to global phase"],
       answer: 1,
-      because: "Matrices do not commute in general, which is why a circuit is a sequence and not a set.",
+      because:
+        "No, not even up to a phase: H then Z leaves |0⟩ at |−⟩, Z then H leaves it at |+⟩. Careful with X and Z, though — X·Z = −Z·X, a global phase apart, so those two orders are physically the same circuit.",
     },
     {
-      prompt: "A circuit diagram shows X and then Z. The matrix product is:",
-      options: ["X · Z", "Z · X", "Either", "X + Z"],
+      prompt: "A circuit diagram shows H and then Z. The matrix product is:",
+      options: ["H · Z", "Z · H", "Either", "H + Z"],
       answer: 1,
       because:
         "Z · X. The diagram reads left to right in time, but the gate applied first sits nearest the state vector.",

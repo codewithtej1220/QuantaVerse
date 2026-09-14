@@ -181,10 +181,10 @@ export const quiz: TestQuestion[][] = [
   [
     {
       prompt: "You run a fair circuit for 1,024 shots. Getting exactly 512/512 is:",
-      options: ["Guaranteed", "Expected but not guaranteed", "Impossible", "A sign of a bug"],
+      options: ["Guaranteed", "Possible, but uncommon", "Impossible", "A sign of a bug"],
       answer: 1,
       because:
-        "It is the most likely single result and still uncommon. Finite sampling wobbles around the true value.",
+        "It is the most likely single count and still only turns up about one run in forty. Finite sampling wobbles around the true value.",
     },
     {
       prompt: "Roughly how large is the wobble at 1,024 shots and p = 0.5?",

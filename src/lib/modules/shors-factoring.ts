@@ -46,7 +46,7 @@ export const lessons: Lesson[] = [
     minutes: 11,
     body: [
       "The quantum step needs a^x mod N computed for every x at once — that is, as a unitary acting on a register in superposition. This is the oracle of this algorithm, and unlike the toy oracles of the previous two modules it has to be built from arithmetic, in gates, reversibly.",
-      "That construction dominates everything. The Fourier transform that gets all the attention is comparatively cheap; the modular exponentiation is where almost all the qubits and almost all the depth go. Estimates for factoring a 2048-bit RSA key run to millions of physical qubits, and it is the arithmetic that drives that number rather than the transform.",
+      "That construction dominates everything. The Fourier transform that gets all the attention is comparatively cheap; the modular exponentiation is where almost all the qubits and almost all the depth go. Estimates for factoring a 2048-bit RSA key run to around a million physical qubits or more, and it is the arithmetic that drives that number rather than the transform.",
       "This is also the honest answer to why nobody has factored anything interesting yet. The algorithm is correct and has been for thirty years; the obstacle is building a machine that can run enough reversible arithmetic without the errors swamping it. That is an engineering problem, but it is a very large one.",
     ],
     notation: {
@@ -137,7 +137,7 @@ export const lessons: Lesson[] = [
     minutes: 12,
     body: [
       "Physical qubits are noisy. Gates misfire at rates around one in a thousand on good hardware, and states decay on timescales that a deep circuit easily exceeds. A circuit with a million sequential gates and a one-in-a-thousand error rate produces noise, not an answer — the errors compound long before the end.",
-      "Error correction is the response, and it is expensive. Many physical qubits are combined into one logical qubit that behaves far better than any of its parts, and current estimates put that ratio at roughly a thousand to one for the code distances a factoring circuit would need. That is where the millions-of-qubits figures come from: it is thousands of logical qubits multiplied by the correction overhead.",
+      "Error correction is the response, and it is expensive. Many physical qubits are combined into one logical qubit that behaves far better than any of its parts, and current estimates put that ratio at roughly a thousand to one for the code distances a factoring circuit would need. That is where the million-qubit figures come from: it is logical qubits by the thousand multiplied by the correction overhead.",
       "So a demonstration factoring 15 is not a cheat, and it is not evidence the algorithm is wrong. It is evidence that the machine is small. The gap between 15 and a 2048-bit key is entirely an engineering gap in qubit count and error rate, and the honest summary is that the algorithm has been ready for decades and the hardware has not.",
     ],
     notation: {
@@ -146,7 +146,7 @@ export const lessons: Lesson[] = [
         "a circuit of 10⁶ gates  ->  error is certain without correction",
         "",
         "logical qubit ≈ 10³ physical qubits",
-        "RSA-2048  ->  thousands of logical  ->  millions of physical",
+        "RSA-2048  ->  thousands of logical  ->  around a million physical, or more",
       ],
     },
   },
@@ -273,7 +273,7 @@ export const quiz: TestQuestion[][] = [
     },
     {
       prompt: "Estimates for RSA-2048 run to:",
-      options: ["Hundreds of qubits", "Thousands of qubits", "Millions of physical qubits", "A dozen qubits"],
+      options: ["Hundreds of qubits", "Thousands of qubits", "Around a million physical qubits or more", "A dozen qubits"],
       answer: 2,
       because: "And it is the arithmetic that drives that number rather than the transform.",
     },
@@ -448,7 +448,7 @@ export const quiz: TestQuestion[][] = [
       prompt: "Roughly how many physical qubits make one logical qubit, for this purpose?",
       options: ["2", "10", "About 1,000", "1,000,000"],
       answer: 2,
-      because: "Which is where the millions-of-physical-qubits estimates come from.",
+      because: "Which is where the million-physical-qubit estimates come from.",
     },
     {
       prompt: "Demonstrations factoring 15 show that:",

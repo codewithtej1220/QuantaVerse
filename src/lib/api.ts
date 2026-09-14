@@ -23,6 +23,8 @@ export interface IRGate {
 export interface IRMeasurement {
   targets: number[];
   clbits?: number[];
+  /** The time step it sits at. Left out, it is taken to follow every gate. */
+  step?: number | null;
 }
 
 export interface CircuitIR {
@@ -94,7 +96,10 @@ export class ApiError extends Error {
 /** One AbortSignal that fires on either the caller's signal or a deadline. */
 function deadline(ms: number, external?: AbortSignal) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new ApiError("the API did not answer in time")), ms);
+  const timer = setTimeout(
+    () => controller.abort(new ApiError("the API did not answer in time")),
+    ms,
+  );
   const forward = () => controller.abort(external?.reason);
   external?.addEventListener("abort", forward, { once: true });
   return {
@@ -200,7 +205,12 @@ export async function fetchHealth(signal?: AbortSignal) {
   for (const ms of deadlines) {
     if (signal?.aborted) throw new ApiError("the request was cancelled");
     try {
-      return await request<HealthResponse>("/api/health", undefined, signal, ms);
+      return await request<HealthResponse>(
+        "/api/health",
+        undefined,
+        signal,
+        ms,
+      );
     } catch (error) {
       last = error;
       /* A status means something answered — it is awake and it is broken, and
@@ -223,19 +233,39 @@ export function introspectCode(code: string, signal?: AbortSignal) {
   return request<SandboxResponse>("/api/introspect", { code }, signal, 45_000);
 }
 
+export interface GradeCheck {
+  check: string;
+  /** What the check is called on the page. Older servers leave it out. */
+  label?: string;
+  /** False for a check shown for information, which cannot fail the grade. */
+  required?: boolean;
+  passed: boolean;
+  score: number;
+  threshold: number;
+  detail: string;
+}
+
 export interface GradeResponse {
   passed: boolean;
-  checks: { check: string; passed: boolean; score: number; threshold: number; detail: string }[];
+  checks: GradeCheck[];
   hint: string | null;
+  /** How it was marked: "state" or "operation". */
+  mode?: string | null;
   recorded: boolean;
   earned_badges: string[];
 }
 
+/**
+ * Have a circuit marked.
+ *
+ * For a lab, name it and send only the submission: the server marks against
+ * its own reference. `target` exists for comparing two arbitrary circuits.
+ */
 export function gradeCircuit(
   body: {
-    target: CircuitIR;
+    target?: CircuitIR;
     submission: CircuitIR;
-    threshold?: number;
+    mode?: "state" | "operation";
     challenge_slug?: string | null;
   },
   signal?: AbortSignal,
@@ -272,6 +302,8 @@ export interface TutorAsk {
   prompt: string;
   circuit?: CircuitIR | null;
   lesson_id?: string | null;
+  /** The graded lab on screen, so the answer is about that task. */
+  challenge_slug?: string | null;
   history?: { role: "user" | "assistant"; content: string }[];
 }
 
@@ -290,13 +322,18 @@ export async function streamTutor(
   try {
     response = await fetch(`${API_BASE}/api/tutor/ask`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
       body: JSON.stringify(ask),
       signal,
       cache: "no-store",
     });
   } catch {
-    throw new ApiError(`cannot reach the tutor at ${API_BASE} — is uvicorn running?`);
+    throw new ApiError(
+      `cannot reach the tutor at ${API_BASE} — is uvicorn running?`,
+    );
   }
 
   if (!response.ok || !response.body) {
@@ -329,7 +366,8 @@ export async function streamTutor(
     }
 
     if (event.type === "meta") handlers.onMeta?.(event as unknown as TutorMeta);
-    else if (event.type === "delta" && typeof event.text === "string") handlers.onDelta(event.text);
+    else if (event.type === "delta" && typeof event.text === "string")
+      handlers.onDelta(event.text);
     else if (event.type === "done") {
       handlers.onDone?.({
         source: String(event.source ?? "unknown"),

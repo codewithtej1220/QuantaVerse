@@ -52,6 +52,7 @@ async def _stream_openai(request: TutorRequest) -> AsyncIterator[str]:
         request.circuit,
         request.lesson_id,
         [turn.model_dump() for turn in request.history],
+        request.challenge_slug,
     )
 
     try:
@@ -77,7 +78,9 @@ async def _stream_openai(request: TutorRequest) -> AsyncIterator[str]:
             error,
         )
         async for chunk in _stream_offline(
-            offline_answer(request.prompt, request.circuit, request.lesson_id),
+            offline_answer(
+                request.prompt, request.circuit, request.lesson_id, request.challenge_slug
+            ),
             reason=f"model unavailable: {error}",
         ):
             yield chunk
@@ -98,7 +101,9 @@ async def _stream_openai(request: TutorRequest) -> AsyncIterator[str]:
     except Exception as error:
         if not produced:
             async for chunk in _stream_offline(
-                offline_answer(request.prompt, request.circuit, request.lesson_id),
+                offline_answer(
+                request.prompt, request.circuit, request.lesson_id, request.challenge_slug
+            ),
                 reason=f"stream broke: {error}",
             ):
                 yield chunk
@@ -126,7 +131,9 @@ async def ask(request: TutorRequest) -> StreamingResponse:
                 yield chunk
         else:
             async for chunk in _stream_offline(
-                offline_answer(request.prompt, request.circuit, request.lesson_id),
+                offline_answer(
+                request.prompt, request.circuit, request.lesson_id, request.challenge_slug
+            ),
                 reason="OPENAI_API_KEY is not set on the server",
             ):
                 yield chunk
@@ -141,7 +148,9 @@ async def explain(request: TutorRequest) -> dict[str, Any]:
     return {
         "reading": classify(request.circuit) if request.circuit else None,
         "digest": circuit_digest(request.circuit),
-        "answer": offline_answer(request.prompt, request.circuit, request.lesson_id),
+        "answer": offline_answer(
+                request.prompt, request.circuit, request.lesson_id, request.challenge_slug
+            ),
         "live": get_settings().tutor_live,
         "looking": tutor_meta(request.circuit, request.lesson_id),
     }

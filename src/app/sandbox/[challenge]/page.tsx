@@ -63,9 +63,9 @@ export default async function ChallengePage({ params }: PageProps<"/sandbox/[cha
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-frost">
               Place the gates on the grid or write the Qiskit — either pane will do. The check
-              sends both circuits to the API, which rebuilds them with Qiskit and compares the
-              state they reach and the operation they perform, so a different route to the same
-              answer still counts.
+              sends your circuit to the API, which rebuilds it with Qiskit and compares it with
+              the lab&rsquo;s own reference: on the state it reaches, for a lab that asks for a
+              state, and on every input, for a lab that asks for an algorithm.
             </p>
           </div>
 

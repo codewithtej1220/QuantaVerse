@@ -42,11 +42,17 @@ class SimulationResponse(BaseModel):
 class GradeRequest(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
-    target: CircuitIR
+    #: Only consulted when no challenge is named. For a lab the server marks
+    #: against its own reference, whatever arrives here.
+    target: CircuitIR | None = None
     submission: CircuitIR = Field(
         validation_alias=AliasChoices("submission", "candidate", "user")
     )
+    #: Kept so older clients still validate. Marking is exact — within rounding
+    #: — so there is no bar for a client to move.
     threshold: float = Field(default=0.99, ge=0.0, le=1.0)
+    #: "state" or "operation", for a free comparison. A lab has its own.
+    mode: Literal["state", "operation"] | None = None
     challenge_slug: str | None = Field(
         default=None,
         max_length=64,
@@ -60,12 +66,18 @@ class GradeCheck(BaseModel):
     score: float
     threshold: float
     detail: str
+    #: What the check is called on the page.
+    label: str = ""
+    #: False for a check shown for information, which cannot fail the grade.
+    required: bool = True
 
 
 class GradeResponse(BaseModel):
     passed: bool
     checks: list[GradeCheck]
     hint: str | None = None
+    #: How it was marked: "state" or "operation".
+    mode: str | None = None
     recorded: bool = False
     earned_badges: list[str] = Field(default_factory=list)
 
@@ -102,6 +114,12 @@ class TutorRequest(BaseModel):
     )
     lesson_id: str | None = Field(
         default=None, validation_alias=AliasChoices("lesson_id", "lessonId", "lesson")
+    )
+    #: The graded lab on screen, if any, so the tutor answers about that task.
+    challenge_slug: str | None = Field(
+        default=None,
+        max_length=64,
+        validation_alias=AliasChoices("challenge_slug", "challengeSlug", "challenge"),
     )
     history: list[TutorMessage] = Field(default_factory=list, max_length=12)
     backend: str = "qiskit"

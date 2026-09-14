@@ -23,7 +23,8 @@ from app.services.adapters.factory import (
     get_adapter,
     probe_backends,
 )
-from app.services.grader import grade
+from app.core.curriculum import CHALLENGE_BY_SLUG
+from app.services.grader import grade, reference_ir
 from app.services.sandbox import execute_and_introspect
 from app.services import progress as progress_service
 from app.core.config import get_settings
@@ -42,7 +43,12 @@ def _record_grade(
     session: Session, user: User, slug: str, payload: dict[str, Any]
 ) -> list[str]:
     checks = payload.get("checks") or []
-    scores = [float(check.get("score", 0.0)) for check in checks]
+    # The attempt's score is its weakest required check. A check shown for
+    # information — the run from |0…0⟩ on an algorithm lab — cannot fail the
+    # grade, so it has no business dragging the recorded score down either.
+    scores = [
+        float(check.get("score", 0.0)) for check in checks if check.get("required", True)
+    ]
     progress_service.record_attempt(
         session,
         user,
@@ -107,10 +113,28 @@ async def simulate(request: SimulationRequest) -> SimulationResponse:
 async def grade_submission(
     request: GradeRequest, session: DatabaseSession, user: OptionalUser
 ) -> GradeResponse:
-    try:
-        payload = await run_in_threadpool(
-            grade, request.target, request.submission, request.threshold
+    # A named lab is marked against the server's own reference, in the lab's
+    # own mode, whatever target the request carries. The target used to come
+    # from the client, and a record and a badge rested on it.
+    if request.challenge_slug:
+        challenge = CHALLENGE_BY_SLUG.get(request.challenge_slug)
+        if challenge is None:
+            raise HTTPException(
+                status_code=404, detail=f"there is no lab called '{request.challenge_slug}'"
+            )
+        target = reference_ir(challenge)
+        mode = challenge.mode
+    elif request.target is not None:
+        target = request.target
+        mode = request.mode or "operation"
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="name a lab with challenge_slug, or send the target circuit to compare with",
         )
+
+    try:
+        payload = await run_in_threadpool(grade, target, request.submission, mode)
     except AdapterError as error:
         raise HTTPException(status_code=422, detail=error.message) from error
     except Exception as error:

@@ -35,7 +35,7 @@ export const lessons: Lesson[] = [
     body: [
       "A circuit on its own computes nothing — it is a description. To get numbers you hand it to a backend and ask for some number of shots, each of which prepares the state from scratch, runs the instructions and measures. What comes back is a dictionary of outcome labels to how often each appeared.",
       "The default in this course is 1,024 shots, which is a convention rather than a law. It is enough to see a 50/50 split clearly and cheap enough to feel instant, and as the shot-noise lesson showed, the wobble at that count is around sixteen. Raise it when you need a small difference resolved and accept that precision improves only as the square root.",
-      "The counts dictionary is keyed by the register as a string, highest-numbered qubit leftmost, exactly as the sandbox histogram labels them. Anything you never measured simply does not appear in the key, which is why a circuit that measures two of three qubits returns two-character labels.",
+      "The counts dictionary is keyed by the classical register as a string, highest-numbered bit leftmost, exactly as the sandbox histogram labels them. A key has one character per classical bit, not per qubit you measured: measure two of three qubits into QuantumCircuit(3, 2) and the labels have two characters, while the same measurement into QuantumCircuit(3, 3) gives three, with the unused bit reading 0.",
     ],
     code: "from qiskit_aer import AerSimulator\n\nsim = AerSimulator()\nresult = sim.run(qc, shots=1024).result()\nprint(result.get_counts())   # {'00': 511, '11': 513}",
     practice:
@@ -217,10 +217,11 @@ export const quiz: TestQuestion[][] = [
       because: "A convention rather than a law. Precision still only improves as the square root.",
     },
     {
-      prompt: "A circuit measures two of three qubits. The keys are:",
+      prompt: "A circuit declared as QuantumCircuit(3, 2) measures two of its qubits. The keys are:",
       options: ["Three characters", "Two characters", "One character", "Empty"],
       answer: 1,
-      because: "Only what you measured appears in the key.",
+      because:
+        "One character per classical bit, and there are two. Declare QuantumCircuit(3, 3) for the same measurement and the keys grow to three, the unused bit reading 0.",
     },
   ],
   [

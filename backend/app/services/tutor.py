@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.core.curriculum import CHALLENGE_BY_SLUG, Challenge
 from app.models.circuit_ir import CircuitIR
+from app.services.grader import grade, reference_ir
 
 SYSTEM_PROMPT = """You are the QuantaVerse tutor, built into a free quantum-computing course.
 You are looking at the learner's own circuit, described below in a canonical form.
@@ -108,7 +110,10 @@ def circuit_digest(ir: CircuitIR | None) -> str:
 
     lines = [
         f"qubits: {ir.qubits}    depth: {ir.depth}    gates: {len(ir.timeline)}",
-        "gate counts: " + (", ".join(f"{k}x{v}" for k, v in counts.items()) or "none"),
+        # "X×2", not "xx2": a gate called x followed by a multiplication sign
+        # written as an x read as a gate called xx.
+        "gate counts: "
+        + (", ".join(f"{k.upper()}×{v}" for k, v in counts.items()) or "none"),
         "per wire:",
         *_wire_summary(ir),
         f"measured qubits: {ir.measured_qubits() or 'none (statevector only)'}",
@@ -125,14 +130,79 @@ def circuit_digest(ir: CircuitIR | None) -> str:
     return "\n".join(lines)
 
 
+def lab_for(challenge_slug: str | None) -> Challenge | None:
+    return CHALLENGE_BY_SLUG.get(challenge_slug) if challenge_slug else None
+
+
+def lab_reading(challenge: Challenge, ir: CircuitIR | None) -> dict[str, Any] | None:
+    """The grader's own verdict on the circuit on screen, or None if it cannot run."""
+    if ir is None:
+        return None
+    try:
+        return grade(reference_ir(challenge), ir, challenge.mode)  # type: ignore[arg-type]
+    except Exception:
+        return None
+
+
+def lab_context(challenge: Challenge, ir: CircuitIR | None) -> str:
+    """
+    What the tutor needs to know to give advice about *this* task.
+
+    Without it the model saw a circuit and a slug, and answered about circuits in
+    general — so a learner halfway to Grover's iteration could be told their
+    CNOT "never fires" and should get an H in front of it, which is true of the
+    state from |00⟩ and exactly wrong for the task. The grader's reading goes in
+    as well, so the model is not left to work out for itself whether the circuit
+    already passes.
+    """
+    lines = [
+        f'The learner is working on the graded lab "{challenge.title}".',
+        f"The task, as they see it: {challenge.goal}",
+    ]
+    if challenge.mode == "state":
+        lines.append(
+            "How it is marked: only the state the circuit reaches from |0...0> counts, up "
+            "to a global phase. Any gates that reach that state pass."
+        )
+    else:
+        lines.append(
+            "How it is marked: the circuit must do what the reference does to every input, "
+            "up to a global phase. A circuit that only lands on the right answer from "
+            "|0...0> does not pass, so do not judge it by that run alone."
+        )
+
+    reading = lab_reading(challenge, ir)
+    if reading is not None:
+        if reading["passed"]:
+            lines.append(
+                "The grader's reading of the circuit on screen: it already passes. Tell them "
+                "to press Check my circuit if they have not."
+            )
+        else:
+            lines.append(
+                "The grader's reading of the circuit on screen: not passing yet. "
+                f"{reading.get('hint') or ''}".strip()
+            )
+    lines.append(
+        "Help them reach the goal from their own circuit: name the gate or qubit to look at "
+        "and the reason. Do not recite the complete solution unless they ask outright for "
+        "the answer."
+    )
+    return "\n".join(lines)
+
+
 def build_messages(
     prompt: str,
     ir: CircuitIR | None,
     lesson_id: str | None,
     history: list[dict[str, str]] | None = None,
+    challenge_slug: str | None = None,
 ) -> list[dict[str, str]]:
     context = [f"Circuit on screen:\n{circuit_digest(ir)}"]
-    if lesson_id:
+    challenge = lab_for(challenge_slug)
+    if challenge is not None:
+        context.append(lab_context(challenge, ir))
+    elif lesson_id:
         context.append(f"Current lesson: {lesson_id}")
 
     messages: list[dict[str, str]] = [
@@ -195,7 +265,61 @@ def _answer_for_keywords(prompt: str, ir: CircuitIR | None) -> str | None:
     return None
 
 
-def offline_answer(prompt: str, ir: CircuitIR | None, lesson_id: str | None = None) -> str:
+LAB_WORDS = (
+    "why",
+    "fix",
+    "wrong",
+    "hint",
+    "stuck",
+    "help",
+    "missing",
+    "next",
+    "check",
+    "pass",
+    "how",
+    "approach",
+    "start",
+    "should",
+)
+
+
+def offline_answer(
+    prompt: str,
+    ir: CircuitIR | None,
+    lesson_id: str | None = None,
+    challenge_slug: str | None = None,
+) -> str:
+    """
+    The deterministic answer, for a server with no model key.
+
+    On a lab, a question about what is wrong is answered with the grader's own
+    reading of the circuit against that lab — the one piece of advice here that
+    is guaranteed to be about the task rather than about circuits in general.
+    """
+    challenge = lab_for(challenge_slug)
+    if challenge is not None and (ir is None or not ir.timeline):
+        # An empty board on a lab. The general answer below suggests a Bell
+        # pair, which is the right first circuit in the sandbox and the wrong
+        # one on five of the six labs.
+        marked = (
+            "only the state your circuit reaches is compared, so build towards it a gate "
+            "at a time and watch the state read-out"
+            if challenge.mode == "state"
+            else "the whole circuit is compared on every input, so build it piece by piece "
+            "in the order the task lists, not just something that lands on the answer"
+        )
+        return f'The lab "{challenge.title}" asks: {challenge.goal} It is marked so that {marked}.'
+    if challenge is not None and any(word in prompt.lower() for word in LAB_WORDS):
+        reading = lab_reading(challenge, ir)
+        if reading is not None:
+            if reading["passed"]:
+                return (
+                    f'Checked against the lab "{challenge.title}", this circuit already '
+                    "passes. Press Check my circuit to have it marked and saved."
+                )
+            if reading.get("hint"):
+                return f'Checked against the lab "{challenge.title}": {reading["hint"]}'
+
     keyed = _answer_for_keywords(prompt, ir)
     if keyed:
         return keyed

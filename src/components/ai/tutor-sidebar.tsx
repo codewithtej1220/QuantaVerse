@@ -223,6 +223,7 @@ export function TutorSidebar() {
     ir: null,
     summary: "no circuit open",
     lessonId: null,
+    challengeSlug: null,
   });
   const [health, setHealth] = useState<HealthResponse | null>(null);
   /* Whether the probe has answered yet. Until it has, the panel does not know
@@ -327,6 +328,7 @@ export function TutorSidebar() {
             prompt: text,
             circuit: circuit.ir,
             lesson_id: circuit.lessonId,
+            challenge_slug: circuit.challengeSlug ?? null,
             history,
           },
           {
@@ -388,7 +390,7 @@ export function TutorSidebar() {
         window.setTimeout(hush, 9000);
       }
     },
-    [busy, circuit.ir, circuit.lessonId, messages],
+    [busy, circuit.ir, circuit.lessonId, circuit.challengeSlug, messages],
   );
 
   /* The open handler is registered once, so it reads these through a ref:

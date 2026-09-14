@@ -13,6 +13,7 @@
  */
 
 import { ALGORITHM_BY_SLUG } from "@/lib/algorithms";
+import { CHALLENGES, CHALLENGE_BY_SLUG } from "@/lib/challenges";
 
 export interface Line {
   text: string;
@@ -75,8 +76,14 @@ const GUIDE: Record<string, Line> = {
 export function guideFor(path: string): Line | null {
   if (GUIDE[path]) return GUIDE[path];
   if (path.startsWith("/curriculum/")) {
+    /* Two modules have no lab, so "every module ends with a circuit to
+       finish" was untrue on exactly the pages where a learner would go
+       looking for one. */
+    const challenge = CHALLENGE_BY_SLUG[path.slice("/curriculum/".length)];
     return {
-      text: "Read it, then build it — every module ends with a circuit to finish.",
+      text: challenge
+        ? `Read it, then build it — this module ends with lab ${challenge.level} of ${CHALLENGES.length}, "${challenge.title}".`
+        : "Read it, then check yourself — this module has no graded lab, so the checkpoint under each lesson is the test.",
       eyebrow: "module",
       ask: "Explain this module simply.",
     };
@@ -100,11 +107,20 @@ export function guideFor(path: string): Line | null {
     };
   }
   if (path.startsWith("/sandbox/")) {
-    return {
-      text: "This one is graded. It compares the amplitudes you produced, so a different route to the same state still passes.",
-      eyebrow: "graded lab",
-      ask: "How do I build this circuit?",
-    };
+    /* Said per lab, because the two marking modes accept different things and
+       the old line promised the lenient one everywhere — "a different route
+       to the same state still passes" is exactly wrong on an algorithm lab. */
+    const challenge = CHALLENGE_BY_SLUG[path.slice("/sandbox/".length)];
+    if (challenge) {
+      return {
+        text:
+          challenge.mode === "state"
+            ? `Lab ${challenge.level} of ${CHALLENGES.length}, marked on the state you reach — any route there passes. I'll point out a mistake I can prove, and say when the board is right.`
+            : `Lab ${challenge.level} of ${CHALLENGES.length}, marked on every input — landing on the answer from |0…0⟩ is not enough. I'll say when the board does the whole job.`,
+        eyebrow: "graded lab",
+        ask: `How should I approach the lab "${challenge.title}"?`,
+      };
+    }
   }
   return null;
 }

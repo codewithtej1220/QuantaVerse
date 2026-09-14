@@ -27,7 +27,8 @@ import {
 } from "@/components/sandbox/workspace-tabs";
 import { useAuth } from "@/components/auth/auth-provider";
 import { readSession } from "@/lib/auth";
-import { challengeIR, type Challenge } from "@/lib/challenges";
+import { type Challenge } from "@/lib/challenges";
+import { gradeLocally } from "@/lib/challenge-grade";
 import { checkCircuit, type CircuitIssue } from "@/lib/circuit-check";
 import {
   clearCircuit,
@@ -105,13 +106,59 @@ const GRID_LIMITS = {
   maxQubits: QUBIT_OPTIONS[QUBIT_OPTIONS.length - 1],
   columns: COLUMNS,
 };
-/* How the board's tidiness notes are signed, so one can be taken back without
+/* How the board's own remarks are signed, so one can be taken back without
    silencing anything else the cat is saying. */
 const NOTE_EYEBROW = "one small thing";
+const SOLVED_EYEBROW = "looks right";
 const NO_ALERT: AlertState = { alert: null, open: false };
+
+/**
+ * The general checks, read against a lab.
+ *
+ * Every one of them is a statement about the state from |0…0⟩, which is
+ * exactly what a state lab marks — so there they all stand. An operation lab
+ * marks the whole operation, and there the same statements are false alarms: a
+ * CNOT that "never fires" from |00⟩ fires on the inputs that matter, and a
+ * Hadamard pair that cancels is often where the oracle meets the diffuser in a
+ * perfectly good build. Only a measurement in the middle is wrong on any lab.
+ *
+ * A board the lab would pass has nothing wrong with it at all, whatever the
+ * general checks think of its tidiness. And an idle wire is only worth a word
+ * when the lab needs that wire — "drop the register a qubit" is the wrong
+ * advice on a lab that fixes its register.
+ */
+function forLab(
+  issues: CircuitIssue[],
+  challenge: Challenge,
+  reading: GradeResponse,
+): CircuitIssue[] {
+  if (reading.passed) return [];
+  const needed = new Set(challenge.ops.flatMap((op) => op.wires));
+  return issues.flatMap((issue): CircuitIssue[] => {
+    if (issue.kind === "idle-qubit") {
+      if (!needed.has(issue.wire)) return [];
+      return [
+        {
+          ...issue,
+          message: `Nothing touches q${issue.wire} yet, and this lab needs it.`,
+          fix: `The goal has q${issue.wire} doing something, so at least one gate has to land on it.`,
+        },
+      ];
+    }
+    if (challenge.mode === "operation" && issue.kind !== "after-measure") {
+      return [];
+    }
+    return [issue];
+  });
+}
 
 export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const { user } = useAuth();
+  /* A lab can ask for a longer board: a full Grover iteration is eighteen
+     gates, and ten columns only hold it if the learner already knows which
+     of them can share a step. */
+  const columns = challenge?.columns ?? COLUMNS;
+  const limits = { ...GRID_LIMITS, columns };
   const opening = challenge ? null : PRESETS[0];
   const [qubits, setQubits] = useState(challenge?.qubits ?? 3);
   const [placements, setPlacements] = useState<Placement[]>(() =>
@@ -164,6 +211,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const [verdict, setVerdict] = useState<{
     key: string;
     result: GradeResponse;
+    /** Marked in this tab because the API could not be reached: not saved. */
+    offline?: boolean;
   } | null>(null);
 
   /* ---- open circuits -------------------------------------------------
@@ -192,7 +241,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
        who has just built a circuit by hand is very much not untouched. */
     touched: boolean;
     shots: number[] | null;
-    verdict: { key: string; result: GradeResponse } | null;
+    verdict: { key: string; result: GradeResponse; offline?: boolean } | null;
     runNote: string | null;
   }
 
@@ -367,7 +416,16 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
        inert control for about a second, and being told so while still
        reaching for the Hadamard is the definition of unhelpful. */
     const timer = setTimeout(() => {
-      const issues = checkCircuit(placements, qubits);
+      /* On a lab the general checks are read against the task. They judge a
+         circuit by what it does to |0…0⟩, which on an algorithm lab is the
+         wrong question: a correct Grover oracle has a CNOT whose control is
+         |0⟩ on that input, and the cat used to fly to it and call it broken. */
+      const reading = challenge
+        ? gradeLocally(challenge, placements, qubits)
+        : null;
+      const general = checkCircuit(placements, qubits);
+      const issues =
+        challenge && reading ? forLab(general, challenge, reading) : general;
       const faults = issues.filter((issue) => issue.severity === "fault");
       /* When the circuit came from typed Qiskit, a fault is pointed at in the
          code — the line the reader actually wrote — because that is what they
@@ -419,31 +477,56 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
          thing to say about it is that q2 is idle — which, said to somebody who
          has not yet placed a gate, is a stranger opening with a complaint
          about work they did not do. */
-      const next =
-        touched && !faults.length
-          ? (issues.find((issue) => issue.severity === "advice") ?? null)
-          : null;
-      const key = next ? `${next.kind}:${next.wire}:${next.column}` : null;
+      let remark: {
+        key: string;
+        eyebrow: string;
+        text: string;
+        ask: string;
+        issue: CircuitIssue | null;
+      } | null = null;
+
+      if (touched && !faults.length) {
+        const advice = issues.find((issue) => issue.severity === "advice");
+        if (challenge && reading?.passed) {
+          /* A right answer, said once. The check is still the learner's to
+             press — this is the cat noticing, not the mark. */
+          remark = {
+            key: "solved",
+            eyebrow: SOLVED_EYEBROW,
+            text: "That does it — this circuit meets the lab's goal. Press Check my circuit to have it marked.",
+            ask: `My circuit for the lab "${challenge.title}" seems to work. Can you explain why it does?`,
+            issue: null,
+          };
+        } else if (advice) {
+          remark = {
+            key: `${advice.kind}:${advice.wire}:${advice.column}`,
+            eyebrow: NOTE_EYEBROW,
+            text: `${advice.message} ${advice.fix}`,
+            ask: `${advice.message} Why does that matter?`,
+            issue: advice,
+          };
+        }
+      }
+
+      const key = remark?.key ?? null;
       if (key === advised.current) return;
       advised.current = key;
-      setNote(next);
+      setNote(remark?.issue ?? null);
 
-      if (!next) {
+      if (!remark) {
         /* Taken down once it no longer applies: a remark left on screen about
            a circuit that no longer has the problem reads as still true. */
-        if (mascotSnapshot().eyebrow === NOTE_EYEBROW) hush();
+        const said = mascotSnapshot().eyebrow;
+        if (said === NOTE_EYEBROW || said === SOLVED_EYEBROW) hush();
         return;
       }
       if (mascot.pose === "celebrating") return;
-      mascotOffer.ask = `${next.message} Why does that matter?`;
-      say(`${next.message} ${next.fix}`, {
-        eyebrow: NOTE_EYEBROW,
-        offer: true,
-      });
+      mascotOffer.ask = remark.ask;
+      say(remark.text, { eyebrow: remark.eyebrow, offer: true });
     }, 750);
 
     return () => clearTimeout(timer);
-  }, [proactive, placements, qubits, touched, code, edited]);
+  }, [proactive, placements, qubits, touched, code, edited, challenge]);
 
   /* ---- the code, watched the same way ------------------------------------
      The parser keeps what it can use and silently drops the rest, so a typo
@@ -572,6 +655,13 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     () => toCircuitIR(placements, qubits),
     [placements, qubits],
   );
+  /* The circuit as the grader needs it: every measurement kept where it was
+     placed, because a gate after one is a different circuit from the same
+     gates with the measurement at the end, and the statevector cannot tell. */
+  const gradeable = useMemo(
+    () => toCircuitIR(placements, qubits, { measurementSteps: true }),
+    [placements, qubits],
+  );
 
   /* Hand the tutor the circuit that is actually on screen, measurements and all. */
   useEffect(() => {
@@ -580,6 +670,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       ir,
       summary: describeCircuit(ir, finalResult.depth, finalResult.gateCount),
       lessonId: challenge?.slug ?? preset?.id ?? null,
+      challengeSlug: challenge?.slug ?? null,
     });
   }, [
     placements,
@@ -771,7 +862,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
           return;
         }
 
-        const outcome = fromCircuitIR(response.circuit, GRID_LIMITS);
+        const outcome = fromCircuitIR(response.circuit, limits);
         if (!outcome.ok) {
           const text = `built, but not drawable — ${outcome.reason}`;
           setBuildNote({ text, failed: true, stdout: printed });
@@ -803,42 +894,68 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       .finally(() => setBuilding(false));
   };
 
-  /** Send the grid to the grader, which rebuilds both circuits and compares them. */
+  /**
+   * Have the board marked.
+   *
+   * The server marks it against its own copy of the lab — the request names
+   * the lab and carries only the learner's circuit, measurements in place. With
+   * no API to reach, the same grader runs in this tab instead, and the card
+   * says the result was not saved rather than refusing to mark anything.
+   */
   const check = () => {
     if (!challenge) return;
-    const key = JSON.stringify(submission);
+    const key = JSON.stringify(gradeable);
     setGrading(true);
     setGradeError(null);
 
+    const conclude = (result: GradeResponse, offline: boolean) => {
+      setVerdict({ key, result, offline });
+      if (result.passed) {
+        /* Badges out of the box, and the cat says what was won. Passing is the
+           one result that has earned an interruption. */
+        celebrate();
+        say(
+          result.earned_badges.length
+            ? `Passed. You earned ${result.earned_badges.join(" and ")}.`
+            : offline
+              ? "That passes — though with no API running, it has not been saved to your record."
+              : "Passed — your circuit does exactly what the lab asks.",
+          { eyebrow: "assessment" },
+        );
+        window.setTimeout(() => {
+          setPose("idle");
+          hush();
+        }, 6500);
+        return;
+      }
+      /* A failed check was asked for, so the cat may say why — and what it says
+         is the grader's own reading of this board against this lab, which is
+         the one piece of advice guaranteed to be about the task. */
+      if (result.hint) {
+        mascotOffer.ask = `The lab "${challenge.title}" asks: ${challenge.goal} The check says: ${result.hint} What am I missing?`;
+        say(result.hint, { eyebrow: "not there yet", offer: true });
+      }
+    };
+
+    if (!health) {
+      conclude(gradeLocally(challenge, placements, qubits), true);
+      setGrading(false);
+      return;
+    }
+
     gradeCircuit(
-      {
-        target: challengeIR(challenge),
-        submission,
-        challenge_slug: user ? challenge.slug : null,
-      },
+      { submission: gradeable, challenge_slug: challenge.slug },
       undefined,
       user ? readSession()?.access_token : null,
     )
-      .then((result) => {
-        setVerdict({ key, result });
-        if (result.passed) {
-          /* Badges out of the box, and the cat says what was won. This is the
-             only place the mascot interrupts unprompted, because passing is
-             the only thing that has earned an interruption. */
-          celebrate();
-          say(
-            result.earned_badges.length
-              ? `Passed. You earned ${result.earned_badges.join(" and ")}.`
-              : "Passed — the amplitudes match the target.",
-            { eyebrow: "assessment" },
-          );
-          window.setTimeout(() => {
-            setPose("idle");
-            hush();
-          }, 6500);
-        }
-      })
+      .then((result) => conclude(result, false))
       .catch((error: unknown) => {
+        /* Unreachable is not a verdict on the circuit. Mark it here, and say
+           it was not saved; a real refusal from the server is shown as is. */
+        if (error instanceof ApiError && error.status === 0) {
+          conclude(gradeLocally(challenge, placements, qubits), true);
+          return;
+        }
         setGradeError(
           error instanceof ApiError ? error.message : "the check could not run",
         );
@@ -848,9 +965,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
   /** A verdict only speaks for the circuit it was given. */
   const fresh =
-    verdict && verdict.key === JSON.stringify(submission)
-      ? verdict.result
-      : null;
+    verdict && verdict.key === JSON.stringify(gradeable) ? verdict : null;
 
   const measured = placements.some((p) => p.gate === "m");
 
@@ -860,10 +975,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       {challenge && (
         <ChallengeCard
           challenge={challenge}
-          verdict={fresh}
+          verdict={fresh?.result ?? null}
+          offline={fresh?.offline ?? !health}
           error={gradeError}
           grading={grading}
-          available={Boolean(health)}
           onCheck={check}
         />
       )}
@@ -927,31 +1042,56 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             timings={timings}
           />
 
-          <div
-            className="flex items-center gap-1 rounded-lg border border-edge p-1"
-            role="group"
-            aria-label="Register width"
-          >
-            <span className="px-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
+          {challenge ? (
+            /* A lab fixes its register. The picker would only offer a way to
+               be marked on the wrong number of qubits — though a program
+               built from code can still change it, so there is a way back. */
+            <div className="flex items-center gap-2 rounded-lg border border-edge px-2.5 py-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
               qubits
-            </span>
-            {QUBIT_OPTIONS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => changeQubits(n)}
-                aria-pressed={qubits === n}
-                className={cn(
-                  "rounded-md px-2 py-1 font-mono text-[12px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
-                  qubits === n
-                    ? "bg-paper text-void"
-                    : "text-frost hover:bg-strata hover:text-paper",
-                )}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+              <span className="rounded-md bg-paper px-2 py-0.5 text-[12px] text-void">
+                {challenge.qubits}
+              </span>
+              {qubits !== challenge.qubits ? (
+                <button
+                  type="button"
+                  onClick={() => changeQubits(challenge.qubits)}
+                  className="rounded-md border border-photon px-2 py-0.5 text-[11px] text-photon transition-colors hover:bg-photon/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                >
+                  yours is {qubits} · reset
+                </button>
+              ) : (
+                <span className="normal-case tracking-normal text-dim">
+                  set by the lab
+                </span>
+              )}
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1 rounded-lg border border-edge p-1"
+              role="group"
+              aria-label="Register width"
+            >
+              <span className="px-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
+                qubits
+              </span>
+              {QUBIT_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => changeQubits(n)}
+                  aria-pressed={qubits === n}
+                  className={cn(
+                    "rounded-md px-2 py-1 font-mono text-[12px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
+                    qubits === n
+                      ? "bg-paper text-void"
+                      : "text-frost hover:bg-strata hover:text-paper",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
 
           <button
             type="button"
@@ -1021,7 +1161,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
                 in it, not a diagram that needs a box drawn round it. */}
             <CircuitGrid
               qubits={qubits}
-              columns={COLUMNS}
+              columns={columns}
               placements={placements}
               armed={armed}
               onPlace={onPlace}

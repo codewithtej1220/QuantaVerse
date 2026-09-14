@@ -20,9 +20,30 @@ class Badge:
 
 @dataclass(frozen=True)
 class Challenge:
+    """
+    One graded build, and the circuit it is marked against.
+
+    The reference lives here, on the server, and nowhere a client can edit it.
+    The grade endpoint used to take the target from the request along with the
+    submission, which meant the one number a badge rests on was chosen by the
+    browser: send the same circuit as both and anything passed.
+
+    `mode` is what the task is actually asking for. A lab that says "reach this
+    state" is marked on the state, so every route to it counts; a lab that says
+    "build this algorithm" is marked on the whole operation, input by input, so
+    a shortcut that only happens to land on the answer from |0…0⟩ does not.
+    Marking a state task as an operation failed correct answers — Y then H does
+    reach |−⟩ — and marking an algorithm as a state passed circuits that never
+    ran the algorithm at all.
+    """
+
     slug: str
     title: str
     qubits: int
+    goal: str
+    mode: str
+    #: The reference circuit in reading order: (gate, wires), controls first.
+    ops: tuple[tuple[str, tuple[int, ...]], ...]
 
 
 @dataclass(frozen=True)
@@ -132,7 +153,14 @@ MODULES: tuple[Module, ...] = (
             "First Superposition",
             "Put a qubit in an equal superposition and read the histogram.",
         ),
-        challenge=Challenge("qubit-and-superposition", "One qubit, two places", 2),
+        challenge=Challenge(
+            slug="qubit-and-superposition",
+            title="One qubit, two places",
+            qubits=2,
+            goal="Put q0 into the equal superposition |+⟩ = (|0⟩ + |1⟩)/√2, and leave q1 in |0⟩.",
+            mode="state",
+            ops=(("h", (0,)),),
+        ),
         skills=(("superposition", 1.0), ("gate-algebra", 0.3), ("measurement", 0.2)),
     ),
     Module(
@@ -164,7 +192,17 @@ MODULES: tuple[Module, ...] = (
             "Rotation Fluent",
             "Reached any point on the Bloch sphere in three gates or fewer.",
         ),
-        challenge=Challenge("single-qubit-gates", "Reach the minus state", 2),
+        challenge=Challenge(
+            slug="single-qubit-gates",
+            title="Point it at −Y",
+            qubits=2,
+            goal=(
+                "Turn q0 from |0⟩ into (|0⟩ − i|1⟩)/√2, the state at the −Y pole of the "
+                "Bloch sphere, and leave q1 in |0⟩."
+            ),
+            mode="state",
+            ops=(("h", (0,)), ("s", (0,)), ("z", (0,))),
+        ),
         skills=(("gate-algebra", 1.0), ("superposition", 0.4), ("circuit-design", 0.3)),
     ),
     Module(
@@ -180,7 +218,17 @@ MODULES: tuple[Module, ...] = (
             "Bell Pair",
             "Built all four Bell states from scratch without a hint.",
         ),
-        challenge=Challenge("quantum-entanglement", "Build a Bell pair", 2),
+        challenge=Challenge(
+            slug="quantum-entanglement",
+            title="The singlet",
+            qubits=2,
+            goal=(
+                "Build the singlet (|01⟩ − |10⟩)/√2: the two qubits always measure opposite, "
+                "and the two branches carry opposite signs."
+            ),
+            mode="state",
+            ops=(("x", (0,)), ("h", (0,)), ("cnot", (0, 1)), ("x", (1,))),
+        ),
         skills=(("entanglement", 1.0), ("circuit-design", 0.5), ("measurement", 0.3)),
     ),
     Module(
@@ -196,7 +244,23 @@ MODULES: tuple[Module, ...] = (
             "Transpiler Reader",
             "Explain why the transpiler rewrote your circuit.",
         ),
-        challenge=Challenge("circuits-with-qiskit", "Stretch it to three", 3),
+        challenge=Challenge(
+            slug="circuits-with-qiskit",
+            title="Four in a row, with a twist",
+            qubits=4,
+            goal=(
+                "Put all four qubits into (|0000⟩ − |1111⟩)/√2: they always agree when "
+                "measured, and the all-ones branch carries a minus sign."
+            ),
+            mode="state",
+            ops=(
+                ("h", (0,)),
+                ("z", (0,)),
+                ("cnot", (0, 1)),
+                ("cnot", (1, 2)),
+                ("cnot", (2, 3)),
+            ),
+        ),
         skills=(("qiskit-code", 1.0), ("circuit-design", 0.7), ("gate-algebra", 0.3)),
     ),
     Module(
@@ -212,7 +276,28 @@ MODULES: tuple[Module, ...] = (
             "One-Query Oracle",
             "Solve Deutsch–Jozsa in a single oracle call.",
         ),
-        challenge=Challenge("deutsch-jozsa", "One query, whole answer", 3),
+        challenge=Challenge(
+            slug="deutsch-jozsa",
+            title="One query, whole answer",
+            qubits=3,
+            goal=(
+                "Build Deutsch–Jozsa for the balanced function f(x₀, x₁) = x₀ ⊕ x₁, with the "
+                "inputs on q0 and q1 and the output on q2: prepare the output in |−⟩, put both "
+                "inputs into superposition, query the oracle once, then bring the inputs back "
+                "with a Hadamard each. Leave the output as the oracle leaves it."
+            ),
+            mode="operation",
+            ops=(
+                ("h", (0,)),
+                ("h", (1,)),
+                ("x", (2,)),
+                ("h", (2,)),
+                ("cnot", (0, 2)),
+                ("cnot", (1, 2)),
+                ("h", (0,)),
+                ("h", (1,)),
+            ),
+        ),
         skills=(("algorithms", 1.0), ("complexity", 0.6), ("entanglement", 0.3)),
     ),
     Module(
@@ -228,7 +313,40 @@ MODULES: tuple[Module, ...] = (
             "Amplitude Amplifier",
             "Pick the optimal Grover iteration count for N = 1024.",
         ),
-        challenge=Challenge("grovers-search", "Mark |11⟩ without touching it", 2),
+        challenge=Challenge(
+            slug="grovers-search",
+            title="Find the marked item",
+            qubits=2,
+            goal=(
+                "Search four items for |10⟩ (q1 = 1, q0 = 0) with one full Grover iteration: "
+                "Hadamards on both qubits, an oracle that flips the sign of |10⟩ and nothing "
+                "else, then the diffuser. Built right, the register reads |10⟩ on every shot."
+            ),
+            mode="operation",
+            ops=(
+                # the equal superposition
+                ("h", (0,)),
+                ("h", (1,)),
+                # the oracle: a controlled-Z steered onto |10⟩ by X on q0
+                ("x", (0,)),
+                ("h", (1,)),
+                ("cnot", (0, 1)),
+                ("h", (1,)),
+                ("x", (0,)),
+                # the diffuser: a phase flip on |00⟩ between Hadamards
+                ("h", (0,)),
+                ("h", (1,)),
+                ("x", (0,)),
+                ("x", (1,)),
+                ("h", (1,)),
+                ("cnot", (0, 1)),
+                ("h", (1,)),
+                ("x", (0,)),
+                ("x", (1,)),
+                ("h", (0,)),
+                ("h", (1,)),
+            ),
+        ),
         skills=(("algorithms", 1.0), ("complexity", 0.7), ("circuit-design", 0.4)),
     ),
     Module(

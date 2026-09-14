@@ -167,6 +167,10 @@ class Measurement(BaseModel):
 
     targets: list[int] = Field(default_factory=list)
     clbits: list[int] = Field(default_factory=list)
+    #: The time step the measurement sits at, when the client knows it. Left out,
+    #: a measurement is taken to come after every gate — which is how the
+    #: simulators run it, and how most clients only ever send one.
+    step: int | None = Field(default=None, ge=0)
 
     @field_validator("targets", "clbits", mode="before")
     @classmethod

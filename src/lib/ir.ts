@@ -37,6 +37,12 @@ export interface ToIROptions {
    * bar chart plots. The distribution is identical either way.
    */
   withMeasurements?: boolean;
+  /**
+   * Keep each M where it was placed, with its time step. For the grader, which
+   * has to know whether anything acts on a qubit after it was measured — the
+   * statevector cannot tell a Bell pair from an H, a measurement and a CNOT.
+   */
+  measurementSteps?: boolean;
 }
 
 export function toCircuitIR(
@@ -45,16 +51,24 @@ export function toCircuitIR(
   options: ToIROptions = {},
 ): CircuitIR {
   const ordered = [...placements].sort(
-    (a, b) => a.column - b.column || Math.min(...a.wires) - Math.min(...b.wires),
+    (a, b) =>
+      a.column - b.column || Math.min(...a.wires) - Math.min(...b.wires),
   );
 
   const timeline: IRGate[] = [];
   const measured = new Set<number>();
+  const placed: IRMeasurement[] = [];
 
   for (const placement of ordered) {
     if (placement.gate === "m") {
       for (const wire of placement.wires) {
-        if (wire < qubits) measured.add(wire);
+        if (wire >= qubits) continue;
+        measured.add(wire);
+        placed.push({
+          targets: [wire],
+          clbits: [wire],
+          step: placement.column,
+        });
       }
       continue;
     }
@@ -66,7 +80,13 @@ export function toCircuitIR(
     if (gate === "cx") {
       const [control, target] = placement.wires;
       if (control === target) continue;
-      timeline.push({ gate, control, targets: [target], params: [], step: placement.column });
+      timeline.push({
+        gate,
+        control,
+        targets: [target],
+        params: [],
+        step: placement.column,
+      });
     } else {
       timeline.push({
         gate,
@@ -76,6 +96,17 @@ export function toCircuitIR(
         step: placement.column,
       });
     }
+  }
+
+  if (options.measurementSteps) {
+    return {
+      qubits,
+      clbits: placed.length
+        ? Math.max(...placed.map((m) => m.targets[0])) + 1
+        : 0,
+      timeline,
+      measurements: placed,
+    };
   }
 
   const targets = [...measured].sort((a, b) => a - b);
@@ -123,7 +154,11 @@ export function fromCircuitIR(ir: CircuitIR, limits: GridLimits): LoadOutcome {
   }
 
   const unknown = [
-    ...new Set(ir.timeline.filter((gate) => !SANDBOX_GATE[gate.gate]).map((gate) => gate.gate)),
+    ...new Set(
+      ir.timeline
+        .filter((gate) => !SANDBOX_GATE[gate.gate])
+        .map((gate) => gate.gate),
+    ),
   ];
   if (unknown.length) {
     const names = unknown.map((gate) => gate.toUpperCase()).join(", ");
@@ -144,17 +179,25 @@ export function fromCircuitIR(ir: CircuitIR, limits: GridLimits): LoadOutcome {
     }));
 
   const measured = [
-    ...new Set((ir.measurements ?? []).flatMap((measurement) => measurement.targets)),
+    ...new Set(
+      (ir.measurements ?? []).flatMap((measurement) => measurement.targets),
+    ),
   ].sort((a, b) => a - b);
   for (const wire of measured) ops.push({ gate: "m", wires: [wire] });
 
   const qubits = Math.max(limits.minQubits, ir.qubits);
   if (ops.some((op) => op.wires.some((wire) => wire < 0 || wire >= qubits))) {
-    return { ok: false, reason: "a gate lands on a wire the circuit never declared" };
+    return {
+      ok: false,
+      reason: "a gate lands on a wire the circuit never declared",
+    };
   }
 
   const placements = pack(ops, qubits);
-  const columns = placements.reduce((widest, item) => Math.max(widest, item.column + 1), 0);
+  const columns = placements.reduce(
+    (widest, item) => Math.max(widest, item.column + 1),
+    0,
+  );
   if (columns > limits.columns) {
     return {
       ok: false,
