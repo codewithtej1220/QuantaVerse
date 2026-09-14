@@ -485,22 +485,6 @@
   box-shadow: inset 3px 0 0 rgb(255 140 43 / 0.85);
 }
 
-/* The cat's thought cloud.
-   The outline is four hairline drop-shadows rather than a border, because the
-   cloud is a union of shapes — a body and a row of bumps — and a border would
-   draw every seam between them. A shadow outlines only the silhouette the
-   shapes make together, which is the cloud. */
-@utility cloud-outline {
-  filter: drop-shadow(1px 0 0 var(--color-edge-hi)) drop-shadow(-1px 0 0 var(--color-edge-hi))
-    drop-shadow(0 1px 0 var(--color-edge-hi)) drop-shadow(0 -1px 0 var(--color-edge-hi))
-    drop-shadow(0 14px 26px rgb(0 0 0 / 0.5));
-}
-@utility cloud-outline-caution {
-  filter: drop-shadow(1px 0 0 var(--color-filament)) drop-shadow(-1px 0 0 var(--color-filament))
-    drop-shadow(0 1px 0 var(--color-filament)) drop-shadow(0 -1px 0 var(--color-filament))
-    drop-shadow(0 14px 26px rgb(0 0 0 / 0.55));
-}
-
 @utility glow-photon {
   box-shadow: inset 0 0 0 1px var(--color-photon);
 }

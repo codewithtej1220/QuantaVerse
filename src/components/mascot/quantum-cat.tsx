@@ -63,7 +63,11 @@ const CREAM = "#e8f9ff";
 const RIM = "#333a49";
 
 /** A triangle, for ears and the radiation blades that want hard corners. */
-function triangle(a: [number, number], b: [number, number], c: [number, number]) {
+function triangle(
+  a: [number, number],
+  b: [number, number],
+  c: [number, number],
+) {
   const shape = new THREE.Shape();
   shape.moveTo(a[0], a[1]);
   shape.lineTo(b[0], b[1]);
@@ -108,7 +112,10 @@ function Flat({ color, opacity = 1 }: { color: string; opacity?: number }) {
  * between the disc and the blades.
  */
 function RadiationMark({ z }: { z: number }) {
-  const blades = useMemo(() => [0, 1, 2].map((i) => (i * Math.PI * 2) / 3 + Math.PI / 2), []);
+  const blades = useMemo(
+    () => [0, 1, 2].map((i) => (i * Math.PI * 2) / 3 + Math.PI / 2),
+    [],
+  );
   return (
     <group position={[0, 0, z]}>
       <mesh>
@@ -121,7 +128,9 @@ function RadiationMark({ z }: { z: number }) {
       </mesh>
       {blades.map((angle) => (
         <mesh key={angle} position={[0, 0, 0.001]}>
-          <ringGeometry args={[0.115, 0.3, 24, 1, angle - Math.PI / 6, Math.PI / 3]} />
+          <ringGeometry
+            args={[0.115, 0.3, 24, 1, angle - Math.PI / 6, Math.PI / 3]}
+          />
           <Flat color={BLACK} />
         </mesh>
       ))}
@@ -130,7 +139,13 @@ function RadiationMark({ z }: { z: number }) {
 }
 
 /** One eye: a big orange disc, a pupil that chases the cursor, one highlight. */
-function Eye({ x, look }: { x: number; look: React.RefObject<THREE.Group | null> }) {
+function Eye({
+  x,
+  look,
+}: {
+  x: number;
+  look: React.RefObject<THREE.Group | null>;
+}) {
   return (
     <group position={[x, 0.34, 0.06]}>
       <mesh>
@@ -179,7 +194,6 @@ function Stroked({
   );
 }
 
-
 const EAR_L = triangle([-0.52, 0.42], [-0.24, 0.86], [-0.11, 0.4]);
 const EAR_R = triangle([0.52, 0.42], [0.24, 0.86], [0.11, 0.4]);
 const EAR_L_IN = triangle([-0.44, 0.45], [-0.27, 0.72], [-0.18, 0.44]);
@@ -225,7 +239,9 @@ export function QuantumCat({
        its own hit target. It still damps its scale, because appearing is worth
        a beat. */
     const wanted = mascot.visible ? 1 : 0.001;
-    node.scale.setScalar(node.scale.x + (wanted - node.scale.x) * (1 - Math.exp(-step * 5)));
+    node.scale.setScalar(
+      node.scale.x + (wanted - node.scale.x) * (1 - Math.exp(-step * 5)),
+    );
 
     /* ---- the poses ---- */
     const calm = reducedMotion ? 0 : 1;
@@ -287,8 +303,10 @@ export function QuantumCat({
     node.rotation.z += (lean - node.rotation.z) * (1 - Math.exp(-step * 5));
 
     if (body.current) {
-      body.current.position.y += (bob - body.current.position.y) * (1 - Math.exp(-step * 8));
-      body.current.scale.y += (squash - body.current.scale.y) * (1 - Math.exp(-step * 8));
+      body.current.position.y +=
+        (bob - body.current.position.y) * (1 - Math.exp(-step * 8));
+      body.current.scale.y +=
+        (squash - body.current.scale.y) * (1 - Math.exp(-step * 8));
     }
     if (boxGroup.current) {
       boxGroup.current.rotation.z = rattle;
@@ -304,8 +322,16 @@ export function QuantumCat({
        fault is what the cat flew over to point at, so while it is there the
        eyes stay on it rather than drifting after the mouse. */
     const attending = !carrying && mascotAttention.on;
-    const lookX = carrying ? mascotGaze.x : attending ? mascotAttention.x : pointerState.x;
-    const lookY = carrying ? mascotGaze.y : attending ? mascotAttention.y : pointerState.y;
+    const lookX = carrying
+      ? mascotGaze.x
+      : attending
+        ? mascotAttention.x
+        : pointerState.x;
+    const lookY = carrying
+      ? mascotGaze.y
+      : attending
+        ? mascotAttention.y
+        : pointerState.y;
 
     if (pupilL.current && pupilR.current) {
       /* Both are in viewport space, and so is `mascotSeat`, which the stage
@@ -339,44 +365,49 @@ export function QuantumCat({
       blink.current.next = 2.2 + Math.random() * 3.4;
     }
     blink.current.closing = Math.max(0, blink.current.closing - step * 7);
-    const lidDrop = reducedMotion ? 0 : Math.sin(blink.current.closing * Math.PI) * 0.5;
+    const lidDrop = reducedMotion
+      ? 0
+      : Math.sin(blink.current.closing * Math.PI) * 0.5;
     for (const lid of [lidL.current, lidR.current]) {
       if (lid) lid.scale.y = Math.max(0.001, lidDrop);
     }
 
     /* ---- tail ---- */
     if (tail.current) {
-      const swish = pose === "distressed" ? 0.4 : pose === "celebrating" ? 3.4 : 1.3;
+      const swish =
+        pose === "distressed" ? 0.4 : pose === "celebrating" ? 3.4 : 1.3;
       tail.current.rotation.z = Math.sin(time * swish) * 0.3 * calm;
     }
 
     /* ---- head: tilt for character, turn to follow a gate ---- */
     if (head.current) {
-      const tilt = pose === "thinking" ? Math.sin(time * 2.4) * 0.12 : lookX * 0.05;
-      head.current.rotation.z += (tilt - head.current.rotation.z) * (1 - Math.exp(-step * 6));
+      const tilt =
+        pose === "thinking" ? Math.sin(time * 2.4) * 0.12 : lookX * 0.05;
+      head.current.rotation.z +=
+        (tilt - head.current.rotation.z) * (1 - Math.exp(-step * 6));
 
       /* A turn of the head, not just a glance, and only while a gate is
          actually in transit. The shapes are flat, so rotating the group
          foreshortens the face — which is the point: it reads as the cat
          squaring up to what you are doing rather than as a sprite sliding. */
       const turning = carrying || attending;
-      const turn = turning ? THREE.MathUtils.clamp(lookX - mascotSeat.x, -1, 1) * 0.3 : 0;
-      const dip = turning ? THREE.MathUtils.clamp(lookY - mascotSeat.y, -1, 1) * -0.16 : 0;
-      head.current.rotation.y += (turn - head.current.rotation.y) * (1 - Math.exp(-step * 7));
-      head.current.rotation.x += (dip - head.current.rotation.x) * (1 - Math.exp(-step * 7));
+      const turn = turning
+        ? THREE.MathUtils.clamp(lookX - mascotSeat.x, -1, 1) * 0.3
+        : 0;
+      const dip = turning
+        ? THREE.MathUtils.clamp(lookY - mascotSeat.y, -1, 1) * -0.16
+        : 0;
+      head.current.rotation.y +=
+        (turn - head.current.rotation.y) * (1 - Math.exp(-step * 7));
+      head.current.rotation.x +=
+        (dip - head.current.rotation.x) * (1 - Math.exp(-step * 7));
     }
   });
-
-  /* Phones, where a mascot in the corner is a nuisance rather than a companion.
-     Measured against the window, not `size`: `size` is the canvas, and the
-     canvas is now 146px wide by design — checking that hid the cat on every
-     device, because the cat's own box is always smaller than a phone. */
-  const tiny = typeof window !== "undefined" && window.innerWidth < 480;
 
   return (
     /* Named, because the speech bubble finds it by name and projects it. This
        is the node that actually moves, so it is the one worth tracking. */
-    <group ref={root} name="mascot-anchor" visible={!tiny}>
+    <group ref={root} name="mascot-anchor">
       {children}
       <group ref={body}>
         {/* --- the cat, behind the box --- */}
@@ -392,11 +423,25 @@ export function QuantumCat({
             </mesh>
           </group>
 
-          <Stroked geometry={bodyShape} color={BLACK} position={[0, -0.34, -0.02]} />
+          <Stroked
+            geometry={bodyShape}
+            color={BLACK}
+            position={[0, -0.34, -0.02]}
+          />
 
           <group ref={head}>
-            <Stroked geometry={EAR_L} color={BLACK} position={[0, 0, -0.01]} weight={1.11} />
-            <Stroked geometry={EAR_R} color={BLACK} position={[0, 0, -0.01]} weight={1.11} />
+            <Stroked
+              geometry={EAR_L}
+              color={BLACK}
+              position={[0, 0, -0.01]}
+              weight={1.11}
+            />
+            <Stroked
+              geometry={EAR_R}
+              color={BLACK}
+              position={[0, 0, -0.01]}
+              weight={1.11}
+            />
             <mesh geometry={EAR_L_IN} position={[0, 0, 0.005]}>
               <Flat color={AMBER} />
             </mesh>
@@ -404,7 +449,12 @@ export function QuantumCat({
               <Flat color={AMBER} />
             </mesh>
 
-            <Stroked geometry={headShape} color={BLACK} position={[0, 0.26, 0.02]} weight={1.06} />
+            <Stroked
+              geometry={headShape}
+              color={BLACK}
+              position={[0, 0.26, 0.02]}
+              weight={1.06}
+            />
 
             <Eye x={-0.28} look={pupilL} />
             <Eye x={0.28} look={pupilR} />
@@ -437,10 +487,18 @@ export function QuantumCat({
 
         {/* --- the box, in front, so the cat sits inside it --- */}
         <group ref={boxGroup} position={[0, -0.42, 0]}>
-          <mesh geometry={boxSide} position={[-1.02, 0.02, -0.08]} rotation={[0, 0.42, 0]}>
+          <mesh
+            geometry={boxSide}
+            position={[-1.02, 0.02, -0.08]}
+            rotation={[0, 0.42, 0]}
+          >
             <Flat color={CRATE_DARK} />
           </mesh>
-          <mesh geometry={boxSide} position={[1.02, 0.02, -0.08]} rotation={[0, -0.42, 0]}>
+          <mesh
+            geometry={boxSide}
+            position={[1.02, 0.02, -0.08]}
+            rotation={[0, -0.42, 0]}
+          >
             <Flat color={CRATE_DARK} />
           </mesh>
 

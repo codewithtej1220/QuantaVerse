@@ -58,9 +58,12 @@ const GUIDE: Record<string, Line> = {
     eyebrow: "the hub",
     ask: "Who here could help me with quantum algorithms?",
   },
+  /* True signed in or out. It said "your record" to every visitor, and a
+     signed-out visitor is looking at a sample the page itself labels as a
+     learner who does not exist — the cat should not contradict the page. */
   "/dashboard": {
-    text: "These numbers come from circuits that passed, not lessons you opened. Ask me what to practise.",
-    eyebrow: "your record",
+    text: "Nothing here is self-reported: every figure is counted from circuits that passed, not lessons opened. Ask me what to practise next.",
+    eyebrow: "the record",
     ask: "What should I practise next?",
   },
 };

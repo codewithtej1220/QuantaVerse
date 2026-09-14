@@ -172,6 +172,32 @@ export function canDrawMascot() {
 }
 
 /**
+ * Below this width there is no cat.
+ *
+ * A phone has no corner to spare, and the cat was already hidden there — but
+ * only its art. The tutor's launcher pill decides whether to show by asking
+ * whether the cat can be drawn, and "can draw" only asked about WebGL, which a
+ * phone has. So on a phone the pill stood down for a cat that was not there,
+ * and a learner was left with no visible way into the tutor at all: only an
+ * invisible tap target in an empty corner. Presence is now one question, asked
+ * the same way by both of them.
+ */
+const ROOM_QUERY = "(min-width: 480px)";
+
+export function subscribeMascotRoom(notify: Listener) {
+  if (typeof window === "undefined") return () => {};
+  const media = window.matchMedia(ROOM_QUERY);
+  media.addEventListener("change", notify);
+  return () => media.removeEventListener("change", notify);
+}
+
+/** Whether the cat is on screen: drawable, and a screen wide enough to hold it. */
+export function mascotPresent() {
+  if (typeof window === "undefined") return false;
+  return canDrawMascot() && window.matchMedia(ROOM_QUERY).matches;
+}
+
+/**
  * Say something.
  *
  * Passing an empty string closes the bubble. `streaming` keeps the caret

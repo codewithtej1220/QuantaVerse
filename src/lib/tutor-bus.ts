@@ -14,7 +14,21 @@
  * has to fill in themselves.
  */
 
-type Handler = (question?: string) => void;
+type Handler = (question?: string, options?: OpenOptions) => void;
+
+export interface OpenOptions {
+  /**
+   * Ask it, rather than leave it typed in the box.
+   *
+   * A tap on the cat drops the page's suggested question in the box, because
+   * that question is only a suggestion and the reader may well want to change
+   * it. A button that says "Ask the tutor why" is not a suggestion, and the
+   * first version treated it as one: the panel opened with the question sitting
+   * unsent, and a learner who had pressed "ask" sat waiting for an answer that
+   * nothing had requested.
+   */
+  send?: boolean;
+}
 
 let handler: Handler | null = null;
 
@@ -23,9 +37,9 @@ export function receiveTutorOpen(next: Handler | null) {
   handler = next;
 }
 
-/** Open the tutor. Optionally with a question already typed. */
-export function openTutor(question?: string) {
-  handler?.(question);
+/** Open the tutor. Optionally with a question typed — or, with `send`, asked. */
+export function openTutor(question?: string, options?: OpenOptions) {
+  handler?.(question, options);
 }
 
 /** Whether anything is listening — the cat should not offer what cannot open. */

@@ -1,18 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUp, Eye, PanelRightClose, ScanLine, Sparkles, Square } from "lucide-react";
+import {
+  ArrowUp,
+  Eye,
+  PanelRightClose,
+  ScanLine,
+  Sparkles,
+  Square,
+} from "lucide-react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { API_BASE, ApiError, fetchHealth, streamTutor, type HealthResponse } from "@/lib/api";
+import {
+  API_BASE,
+  ApiError,
+  fetchHealth,
+  streamTutor,
+  type HealthResponse,
+} from "@/lib/api";
 import { hush, say, setPose } from "@/lib/mascot";
 import { receiveTutorOpen } from "@/lib/tutor-bus";
-import { canDrawMascot } from "@/lib/mascot";
+import {
+  mascotPresent as catOnScreen,
+  subscribeMascotRoom,
+} from "@/lib/mascot";
 
 /** A store with nothing to subscribe to: the answer cannot change. */
-const neverChanges = () => () => {};
 import { subscribeCircuit, type ScreenCircuit } from "@/lib/circuit-store";
 import { TUTOR_SUGGESTIONS, type ChatTurn } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -52,7 +74,13 @@ function routeLabel(pathname: string) {
   return pathname.replace(/^\//, "") || "QuantaVerse";
 }
 
-function ContextStrip({ pathname, circuit }: { pathname: string; circuit: ScreenCircuit }) {
+function ContextStrip({
+  pathname,
+  circuit,
+}: {
+  pathname: string;
+  circuit: ScreenCircuit;
+}) {
   return (
     <div className="relative overflow-hidden border-b border-edge bg-nebula px-4 py-2.5">
       <div className="relative flex items-center gap-2">
@@ -82,7 +110,8 @@ function CodeDiff({ code }: { code: string }) {
               className={cn(
                 "block whitespace-pre",
                 added && "bg-photon/10 text-photon",
-                removed && "bg-strata text-collapse line-through decoration-collapse/40",
+                removed &&
+                  "bg-strata text-collapse line-through decoration-collapse/40",
                 !added && !removed && "text-frost",
               )}
             >
@@ -95,7 +124,13 @@ function CodeDiff({ code }: { code: string }) {
   );
 }
 
-function Turn({ turn, onChip }: { turn: Message; onChip: (chip: string) => void }) {
+function Turn({
+  turn,
+  onChip,
+}: {
+  turn: Message;
+  onChip: (chip: string) => void;
+}) {
   const isTutor = turn.from === "tutor";
 
   return (
@@ -178,7 +213,11 @@ export function TutorSidebar() {
      server snapshot is false so the pill renders in the HTML, the client
      snapshot is the real capability, and there is no effect writing state and
      no subscription to lose a race with. */
-  const mascotPresent = useSyncExternalStore(neverChanges, canDrawMascot, () => false);
+  const mascotPresent = useSyncExternalStore(
+    subscribeMascotRoom,
+    catOnScreen,
+    () => false,
+  );
   const [draft, setDraft] = useState("");
   const [circuit, setCircuit] = useState<ScreenCircuit>({
     ir: null,
@@ -220,24 +259,15 @@ export function TutorSidebar() {
 
   useEffect(() => () => abort.current?.abort(), []);
 
-  /* The mascot is the same tutor with a face on, so it needs a way in. It
-     hands over an optional question, which lands in the box ready to send
-     rather than opening an empty panel the reader now has to fill in. */
-  useEffect(() => {
-    receiveTutorOpen((question) => {
-      setOpen(true);
-      if (question) setDraft(question);
-    });
-    return () => receiveTutorOpen(null);
-  }, []);
-
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ block: "end" });
   }, [open, messages]);
 
   const shortcut = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl I";
-    return /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent) ? "⌘ I" : "Ctrl I";
+    return /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)
+      ? "⌘ I"
+      : "Ctrl I";
   }, []);
 
   const send = useCallback(
@@ -252,7 +282,10 @@ export function TutorSidebar() {
         .filter((message) => !message.failed && message.body.trim())
         .slice(-6)
         .map((message) => ({
-          role: message.from === "tutor" ? ("assistant" as const) : ("user" as const),
+          role:
+            message.from === "tutor"
+              ? ("assistant" as const)
+              : ("user" as const),
           content: message.body,
         }));
 
@@ -273,7 +306,9 @@ export function TutorSidebar() {
 
       const patch = (change: (message: Message) => Message) =>
         setMessages((current) =>
-          current.map((message) => (message.id === replyId ? change(message) : message)),
+          current.map((message) =>
+            message.id === replyId ? change(message) : message,
+          ),
         );
 
       const controller = new AbortController();
@@ -306,7 +341,10 @@ export function TutorSidebar() {
               /* The panel already carries the whole answer; the bubble carries
                  its opening sentence. Streaming the same paragraph into two
                  places at once is not two features, it is one shown twice. */
-              say(lead(spoken), { eyebrow: "reading your circuit", streaming: true });
+              say(lead(spoken), {
+                eyebrow: "reading your circuit",
+                streaming: true,
+              });
               patch((message) => ({ ...message, body: message.body + chunk }));
             },
             onDone: () => {
@@ -320,7 +358,9 @@ export function TutorSidebar() {
       } catch (error) {
         const aborted = controller.signal.aborted;
         const reason =
-          error instanceof ApiError ? error.message : "the tutor service returned an error";
+          error instanceof ApiError
+            ? error.message
+            : "the tutor service returned an error";
         patch((message) => ({
           ...message,
           streaming: false,
@@ -341,9 +381,35 @@ export function TutorSidebar() {
     [busy, circuit.ir, circuit.lessonId, messages],
   );
 
+  /* The open handler is registered once, so it reads these through a ref:
+     a `send` captured at mount would be asking with the first render's history
+     and the first render's idea of whether an answer is still streaming. */
+  const latest = useRef({ send, busy });
+  useEffect(() => {
+    latest.current = { send, busy };
+  });
+
+  /* The mascot is the same tutor with a face on, so it needs a way in. It
+     hands over an optional question, which lands in the box ready to send
+     rather than opening an empty panel the reader now has to fill in. */
+  useEffect(() => {
+    receiveTutorOpen((question, options) => {
+      setOpen(true);
+      if (!question) return;
+      /* Asked outright when the caller said to — unless an answer is already
+         streaming, in which case sending would be silently dropped, so the
+         question waits in the box instead of vanishing. */
+      const { send: ask, busy: answering } = latest.current;
+      if (options?.send && !answering) void ask(question);
+      else setDraft(question);
+    });
+    return () => receiveTutorOpen(null);
+  }, []);
+
   /* An empty grid is not a circuit — a measurement on its own is. */
   const hasCircuit = Boolean(
-    circuit.ir && (circuit.ir.timeline.length || circuit.ir.measurements?.length),
+    circuit.ir &&
+    (circuit.ir.timeline.length || circuit.ir.measurements?.length),
   );
   const suggestions = hasCircuit ? CIRCUIT_SUGGESTIONS : TUTOR_SUGGESTIONS;
   const live = health?.tutor?.live;
@@ -460,7 +526,9 @@ export function TutorSidebar() {
                       ))}
                     </span>
                     <span className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
-                      {live ? "Thinking about your circuit" : "Measuring your circuit"}
+                      {live
+                        ? "Thinking about your circuit"
+                        : "Measuring your circuit"}
                     </span>
                   </div>
                 )}

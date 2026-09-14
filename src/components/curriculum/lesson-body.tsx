@@ -47,12 +47,18 @@ function Notation({ lines, caption }: { lines: string[]; caption?: string }) {
           Notation
         </p>
         <div className="flex flex-col gap-2.5">
-          {lines.map((line) => (
+          {/* Keyed by position, not by text: notation uses blank lines as
+              spacers, and two of them share the key "" — React then warns it
+              may drop or duplicate a row, which on a page of equations is a
+              line of maths quietly going missing. A blank line is also given
+              a non-breaking space, because an empty paragraph collapses to
+              nothing and takes the spacing it was there to provide with it. */}
+          {lines.map((line, index) => (
             <p
-              key={line}
+              key={index}
               className="font-mono text-[15.5px] leading-snug whitespace-pre text-paper"
             >
-              {line}
+              {line || "\u00a0"}
             </p>
           ))}
         </div>

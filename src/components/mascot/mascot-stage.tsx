@@ -3,6 +3,7 @@
 import {
   Suspense,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -27,10 +28,12 @@ import {
   mascotAttention,
   mascotOffer,
   mascotSeat,
+  mascotPresent,
   mascotSnapshot,
   setAlertOpen,
   subscribeAlert,
   subscribeMascot,
+  subscribeMascotRoom,
   type AlertState,
   type MascotSpeech,
 } from "@/lib/mascot";
@@ -83,6 +86,8 @@ const FLY_SCALE = 0.74;
 const NAV_CLEARANCE = 80;
 const EDGE = 12;
 const GAP = 14;
+/** Close enough to the fault to count as there, in pixels. */
+const ARRIVAL = 18;
 
 type Side = "left" | "right";
 type Level = "above" | "below";
@@ -99,6 +104,14 @@ export function MascotStage() {
     subscribeAlert,
     alertSnapshot,
     () => NO_ALERT,
+  );
+  /* No cat on a phone — and so none of its furniture either. Rendering the
+     box without the art left an invisible tap target in the corner and, now,
+     a notice flying about with nobody attached to it. */
+  const present = useSyncExternalStore(
+    subscribeMascotRoom,
+    mascotPresent,
+    () => false,
   );
 
   useGlobalPointer();
@@ -129,6 +142,12 @@ export function MascotStage() {
   /* Which way the bubble opens, so it never opens off the edge of the window. */
   const [side, setSide] = useState<Side>("right");
   const [level, setLevel] = useState<Level>("above");
+  /* The notice waits for the cat to land. It used to appear the moment the
+     fault was found, with the cat still in its corner — and it opens towards
+     where the cat is going, so for the whole flight it hung off the edge of the
+     window. A cat that crosses the page and then says something is also simply
+     how this should read. */
+  const [arrived, setArrived] = useState(false);
 
   const alertKey = alert?.key ?? null;
   const flying = Boolean(alert);
@@ -151,10 +170,11 @@ export function MascotStage() {
   /* The measuring loop. Cheap when there is nothing to chase: a few numbers
      per frame to keep the cat's seat current for its eyes. */
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !present) return;
     let frame = 0;
     let lastSide: Side = "right";
     let lastLevel: Level = "above";
+    let lastArrived = false;
 
     const tick = () => {
       frame = requestAnimationFrame(tick);
@@ -212,6 +232,18 @@ export function MascotStage() {
         mascotAttention.on = false;
       }
 
+      /* Landed: the spring has caught its target and the hop has come back
+         down. Measured on the settled value, so the arc does not count. */
+      const landed =
+        Boolean(rect) &&
+        Math.hypot(x.get() - targetX.get(), settledY.get() - targetY.get()) <
+          ARRIVAL &&
+        Math.abs(hop.get()) < 4;
+      if (landed !== lastArrived) {
+        lastArrived = landed;
+        setArrived(landed);
+      }
+
       const seatX = homeX + x.get();
       const seatY = homeY + y.get();
       mascotSeat.x = (seatX / window.innerWidth) * 2 - 1;
@@ -232,7 +264,7 @@ export function MascotStage() {
       cancelAnimationFrame(frame);
       mascotAttention.on = false;
     };
-  }, [ready, flying, targetX, targetY, x, y]);
+  }, [ready, present, flying, targetX, targetY, x, y, settledY, hop]);
 
   /* Escape closes an open notice, the way every other popover on the web does. */
   useEffect(() => {
@@ -244,7 +276,7 @@ export function MascotStage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  if (!ready) return null;
+  if (!ready || !present) return null;
 
   const talking = !alert && speech.text.length > 0;
   /* The bubble opens away from whichever edge the cat is nearest. */
@@ -285,7 +317,7 @@ export function MascotStage() {
         className="pointer-events-none fixed right-4 bottom-5 z-30 sm:right-6 sm:bottom-7"
         style={{ x, y, scale, rotate }}
       >
-        {alert && !open && (
+        {alert && arrived && !open && (
           <div
             className={cn(
               "animate-rise pointer-events-auto absolute",
@@ -329,60 +361,61 @@ export function MascotStage() {
           </div>
         )}
 
-        {alert && open && (
+        {alert && arrived && open && (
           <div
             className={cn(
-              "animate-rise pointer-events-auto absolute w-[clamp(15rem,21vw,19rem)]",
+              "animate-rise pointer-events-auto absolute w-[clamp(13.5rem,18vw,17rem)]",
               align,
               vertical,
             )}
             role="dialog"
             aria-label={`${alert.title}, ${alert.where}`}
           >
+            {/* One sentence and one way forward. The fix used to sit under the
+                message as a second paragraph with two buttons below it, which
+                turned a notice into a panel — and a learner who wants the fix
+                explained is better served by the tutor explaining it than by a
+                paragraph that assumes they already follow. The squiggle in the
+                editor still carries the full sentence on hover. */}
             <Cloud tail={tail} caution>
-              <div className="flex items-start justify-between gap-3">
-                <p className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.14em] text-filament uppercase">
+              <div className="flex items-start justify-between gap-2">
+                <p className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.14em] text-filament uppercase">
                   <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
-                  {alert.title} · {alert.where}
+                  {alert.where}
                 </p>
                 <button
                   type="button"
-                  onClick={() => setAlertOpen(false)}
-                  aria-label="Close"
-                  className="-mt-1 -mr-1 grid size-6 shrink-0 place-items-center rounded-full text-dim transition-colors hover:bg-strata hover:text-paper focus-visible:outline-2 focus-visible:outline-filament"
+                  onClick={dismissAlert}
+                  aria-label="Dismiss — send the cat home"
+                  title="Dismiss"
+                  className="-mt-1 -mr-1.5 grid size-6 shrink-0 place-items-center rounded-full text-dim transition-colors hover:bg-strata hover:text-paper focus-visible:outline-2 focus-visible:outline-filament"
                 >
                   <X className="size-3.5" aria-hidden />
                 </button>
               </div>
               <p
-                className="mt-2 text-[13px] leading-relaxed text-paper"
+                className="mt-1.5 text-[13px] leading-relaxed text-paper"
                 role="status"
                 aria-live="polite"
               >
                 {alert.message}
               </p>
-              <p className="mt-2 text-[12.5px] leading-relaxed text-frost">
-                {alert.fix}
-              </p>
-              <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAlertOpen(false);
-                    openTutor(alert.ask);
-                  }}
-                  className="rounded-full bg-filament px-3.5 py-1.5 font-mono text-[10.5px] font-semibold tracking-[0.12em] text-void uppercase transition-colors hover:bg-filament/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-filament"
+              <button
+                type="button"
+                onClick={() => {
+                  setAlertOpen(false);
+                  openTutor(alert.ask, { send: true });
+                }}
+                className="group mt-2.5 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.12em] text-filament uppercase transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-filament"
+              >
+                Ask the tutor why
+                <span
+                  aria-hidden
+                  className="transition-transform group-hover:translate-x-0.5"
                 >
-                  Ask the tutor why
-                </button>
-                <button
-                  type="button"
-                  onClick={dismissAlert}
-                  className="rounded-full border border-edge-hi px-3.5 py-1.5 font-mono text-[10.5px] tracking-[0.12em] text-frost uppercase transition-colors hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-filament"
-                >
-                  Got it
-                </button>
-              </div>
+                  &rarr;
+                </span>
+              </button>
             </Cloud>
           </div>
         )}
@@ -474,31 +507,85 @@ export function MascotStage() {
 
 type Tail = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
-/* The scallops. Centres as a share of the edge, sizes in pixels, so the
-   silhouette stays a cloud at any height the text makes it. */
-const TOP = [
-  { at: 10, size: 34 },
-  { at: 30, size: 46 },
-  { at: 53, size: 40 },
-  { at: 76, size: 48 },
-];
-const BOTTOM = [
-  { at: 18, size: 36 },
-  { at: 44, size: 42 },
-  { at: 70, size: 34 },
-];
+/** How far the line the puffs sit on is drawn inside the box. */
+const PUFF_INSET = 11;
+/** The width a puff aims for; each edge rounds to a whole number of them. */
+const PUFF_WIDTH = 40;
+/** How far every puff bulges past its chord — the same for all of them. */
+const PUFF_RISE = 11;
+/** Where the cat's head is, from the cloud's near edge, for the trail. */
+const CAT_HALF = 73;
 
 /**
- * A thought cloud, rather than a box with a notch in it.
+ * An evenly scalloped outline around a box of any size.
  *
- * Built as a union — a rounded body, a row of circles along the top and bottom,
- * one on each side — all filled with the same colour and outlined together by
- * `cloud-outline`, which traces only the silhouette they make as one shape. A
- * border on each piece would draw every seam between them, and the result would
- * be a pile of circles rather than a cloud.
+ * The line the puffs sit on is walked clockwise, and each edge is split into a
+ * whole number of equal chords, with an arc over each one. The count comes from
+ * the edge's length, so a wider cloud gets more puffs rather than stretched
+ * ones, and every puff rises by the same distance — the radius is solved per
+ * edge from the chord and that fixed rise, which is what makes a short side's
+ * puffs look like a long side's instead of flatter or fatter.
  *
- * The trail of shrinking dots runs to the cat from whichever corner is nearest
- * it, which is the part of a thought bubble that says whose thought it is.
+ * Arcs are swept clockwise throughout (sweep flag 1): walking clockwise, that
+ * always bulges outward, whichever edge it is on.
+ */
+function cloudPath(w: number, h: number) {
+  const x0 = PUFF_INSET;
+  const y0 = PUFF_INSET;
+  const x1 = w - PUFF_INSET;
+  const y1 = h - PUFF_INSET;
+
+  const edge = (length: number) => {
+    const count = Math.max(1, Math.round(length / PUFF_WIDTH));
+    const chord = length / count;
+    const radius = (chord * chord) / 4 / (2 * PUFF_RISE) + PUFF_RISE / 2;
+    return { count, chord, radius };
+  };
+
+  const across = edge(x1 - x0);
+  const down = edge(y1 - y0);
+  const arc = (r: number, x: number, y: number) =>
+    ` A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}`;
+
+  let d = `M ${x0} ${y0}`;
+  for (let i = 1; i <= across.count; i += 1)
+    d += arc(across.radius, x0 + across.chord * i, y0);
+  for (let i = 1; i <= down.count; i += 1)
+    d += arc(down.radius, x1, y0 + down.chord * i);
+  for (let i = 1; i <= across.count; i += 1)
+    d += arc(across.radius, x1 - across.chord * i, y1);
+  for (let i = 1; i <= down.count; i += 1)
+    d += arc(down.radius, x0, y1 - down.chord * i);
+  return `${d} Z`;
+}
+
+/** Three shrinking dots from the cloud's near corner towards the cat's head. */
+function trail(w: number, h: number, tail: Tail) {
+  const right = tail.endsWith("right");
+  const down = tail.startsWith("bottom");
+  const x = (inset: number) => (right ? w - inset : inset);
+  const y = (out: number) => (down ? h + out : -out);
+  return [
+    { r: 6, cx: x(CAT_HALF - 26), cy: y(11) },
+    { r: 4.2, cx: x(CAT_HALF - 14), cy: y(25) },
+    { r: 2.8, cx: x(CAT_HALF - 5), cy: y(36) },
+  ];
+}
+
+/**
+ * A thought cloud: an even ring of puffs, and a trail of dots to the cat.
+ *
+ * The first version stacked a dozen CSS circles of assorted sizes around a
+ * rounded box and outlined the lot with drop-shadows. It read as a cloud from a
+ * distance and as a lumpy one up close — the circles were placed by eye, so the
+ * top row had four different sizes at uneven spacing, and the sides did not
+ * match each other. It is one SVG path now, generated from the box's measured
+ * size, so the puffs are the same size and evenly spaced however much text is
+ * inside, and the outline is a single stroke with no seams to hide.
+ *
+ * Measured in a layout effect, so the outline is in place before the first
+ * paint rather than arriving a frame after the text it surrounds, and observed
+ * for size afterwards, because a streamed answer grows the box a word at a time.
  */
 function Cloud({
   children,
@@ -509,75 +596,65 @@ function Cloud({
   tail: Tail;
   caution?: boolean;
 }) {
-  const down = tail.startsWith("bottom");
-  const right = tail.endsWith("right");
-  const fill = "bg-nebula";
+  const box = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
-  const dots = [
-    { size: 15, out: 13, inset: 26 },
-    { size: 10, out: 26, inset: 14 },
-    { size: 6, out: 35, inset: 5 },
-  ];
+  useLayoutEffect(() => {
+    const node = box.current;
+    if (!node) return;
+    const measure = () => {
+      const w = node.offsetWidth;
+      const h = node.offsetHeight;
+      setSize((previous) =>
+        previous && previous.w === w && previous.h === h ? previous : { w, h },
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const stroke = caution ? "stroke-filament" : "stroke-edge-hi";
 
   return (
-    <div className="relative">
-      <div
+    <div ref={box} className="relative">
+      {/* The shadow is a box-shadow on a plain element behind the outline, not a
+          CSS filter on the SVG. A filtered layer here composites underneath the
+          circuit board's 3D gates — the gates painted straight through the
+          cloud and over its text — while a box-shadow, like the notice pill's,
+          stacks where it is told to. */}
+      <span
         aria-hidden
-        className={cn(
-          "absolute inset-0",
-          caution ? "cloud-outline-caution" : "cloud-outline",
-        )}
-      >
-        <span className={cn("absolute inset-0 rounded-[26px]", fill)} />
-        {TOP.map((bump) => (
-          <span
-            key={`t${bump.at}`}
-            className={cn("absolute rounded-full", fill)}
-            style={{
-              width: bump.size,
-              height: bump.size,
-              left: `calc(${bump.at}% - ${bump.size / 2}px)`,
-              top: -bump.size * 0.36,
-            }}
+        className="pointer-events-none absolute inset-2 rounded-[30px] shadow-[0_16px_36px_rgb(0_0_0/0.5)]"
+      />
+      {size && (
+        <svg
+          aria-hidden
+          width={size.w}
+          height={size.h}
+          viewBox={`0 0 ${size.w} ${size.h}`}
+          className="pointer-events-none absolute inset-0 overflow-visible"
+        >
+          <path
+            d={cloudPath(size.w, size.h)}
+            className={cn("fill-nebula", stroke)}
+            strokeWidth={1.25}
+            strokeLinejoin="round"
           />
-        ))}
-        {BOTTOM.map((bump) => (
-          <span
-            key={`b${bump.at}`}
-            className={cn("absolute rounded-full", fill)}
-            style={{
-              width: bump.size,
-              height: bump.size,
-              left: `calc(${bump.at}% - ${bump.size / 2}px)`,
-              bottom: -bump.size * 0.34,
-            }}
-          />
-        ))}
-        <span
-          className={cn("absolute size-[34px] rounded-full", fill)}
-          style={{ left: -12, top: "34%" }}
-        />
-        <span
-          className={cn("absolute size-[30px] rounded-full", fill)}
-          style={{ right: -10, top: "26%" }}
-        />
-
-        {/* The trail to the cat. */}
-        {dots.map((dot) => (
-          <span
-            key={dot.size}
-            className={cn("absolute rounded-full", fill)}
-            style={{
-              width: dot.size,
-              height: dot.size,
-              [right ? "right" : "left"]: dot.inset,
-              [down ? "bottom" : "top"]: -(dot.out + dot.size),
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative px-4 py-3.5">{children}</div>
+          {trail(size.w, size.h, tail).map((dot) => (
+            <circle
+              key={dot.r}
+              cx={dot.cx}
+              cy={dot.cy}
+              r={dot.r}
+              className={cn("fill-nebula", stroke)}
+              strokeWidth={1.25}
+            />
+          ))}
+        </svg>
+      )}
+      <div className="relative px-5 py-4">{children}</div>
     </div>
   );
 }
