@@ -335,6 +335,7 @@ export function ModuleTrack() {
   return (
     <section>
       <div
+        data-tour="curriculum-modules"
         className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-edge pb-4"
         role="group"
         aria-label="Filter modules by track"

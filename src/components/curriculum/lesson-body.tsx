@@ -102,7 +102,10 @@ export function LessonBodies({
                 Lesson {String(index + 1).padStart(2, "0")} · {lesson.minutes}{" "}
                 min
               </p>
-              <h3 className="mt-2.5 max-w-[22ch] text-[26px] leading-[1.15] font-medium text-balance text-paper sm:text-[30px]">
+              <h3
+                data-tour={index === 0 ? "lesson" : undefined}
+                className="mt-2.5 max-w-[22ch] text-[26px] leading-[1.15] font-medium text-balance text-paper sm:text-[30px]"
+              >
                 {lesson.title}
               </h3>
               {/* The standfirst, which is what it has always been — it was just

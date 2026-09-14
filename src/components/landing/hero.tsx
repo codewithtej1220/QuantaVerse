@@ -60,7 +60,10 @@ export function Hero() {
               Quanta<span className="text-photon">Verse</span>
             </h1>
 
-            <div className="mt-10 flex flex-wrap items-center gap-3">
+            <div
+              data-tour="home"
+              className="mt-10 flex flex-wrap items-center gap-3"
+            >
               <ActionLink href="/curriculum" size="lg">
                 Start learning
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -96,7 +99,9 @@ export function Hero() {
               <dd className="font-display mt-3 text-5xl font-extrabold tracking-[-0.04em] text-paper tabular-nums lg:text-6xl">
                 {stat.value}
               </dd>
-              <dd className="mt-2 font-mono text-[12px] text-dim">{stat.detail}</dd>
+              <dd className="mt-2 font-mono text-[12px] text-dim">
+                {stat.detail}
+              </dd>
             </div>
           ))}
         </dl>

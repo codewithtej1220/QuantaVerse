@@ -1,14 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowRight,
-  Award,
-  Flame,
-  Loader2,
-  Target,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Award, Flame, Loader2, Target, Zap } from "lucide-react";
 
 import { MODULES } from "@/lib/data";
 import { BadgeShelf } from "@/components/curriculum/badge-shelf";
@@ -87,9 +80,16 @@ function Tile({
 export function QuestBoard() {
   const { data, ready, signedIn } = useLiveProgress();
 
+  /* The tour points at the deck by its heading-sized first thing — the level,
+     or the line saying nothing is tracked — rather than the whole deck. The
+     deck is as wide as the page, and a cat parked inside the end of it sat on
+     top of the "start tracking" button. */
   if (!ready) {
     return (
-      <div className="panel flex items-center gap-2 rounded-2xl px-5 py-4 font-mono text-[12.5px] text-frost">
+      <div
+        data-tour="curriculum-deck"
+        className="panel flex items-center gap-2 rounded-2xl px-5 py-4 font-mono text-[12.5px] text-frost"
+      >
         <Loader2 className="size-3.5 animate-spin" />
         reading your record
       </div>
@@ -100,7 +100,7 @@ export function QuestBoard() {
   if (!signedIn || !data) {
     return (
       <div className="panel flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-2xl px-5 py-4">
-        <div>
+        <div data-tour="curriculum-deck">
           <p className="eyebrow">Nothing tracked yet</p>
           <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-frost">
             {TOTAL_LESSONS} lessons across {MODULES.length} modules, and every
@@ -136,7 +136,7 @@ export function QuestBoard() {
           {/* The level was a line of small grey mono next to the title, which
               made the one number the whole panel is named after the least
               visible thing on it. It is a numeral in a chip now. */}
-          <p className="flex items-center gap-3.5">
+          <p data-tour="curriculum-deck" className="flex items-center gap-3.5">
             <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-photon/45 bg-photon/10 font-display text-[1.4rem] leading-none font-extrabold text-photon tabular-nums">
               {mastery.level}
             </span>

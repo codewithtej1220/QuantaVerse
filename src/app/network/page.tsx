@@ -18,13 +18,15 @@ export default function NetworkPage() {
         <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div className="max-w-2xl">
             <p className="eyebrow">Research hub · /network</p>
-            <h1 className="mt-3 display-2">
-              Find someone who has <span className="text-photon">already been stuck here.</span>
+            <h1 data-tour="hub" className="mt-3 display-2">
+              Find someone who has{" "}
+              <span className="text-photon">already been stuck here.</span>
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-frost">
-              A directory of the people on this instance and the connections between them. Search
-              by what someone works on, ask with a sentence about where you are, and the request
-              waits until they answer — nobody is added to your network without agreeing to it.
+              A directory of the people on this instance and the connections
+              between them. Search by what someone works on, ask with a sentence
+              about where you are, and the request waits until they answer —
+              nobody is added to your network without agreeing to it.
             </p>
           </div>
 

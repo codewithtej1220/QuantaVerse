@@ -41,7 +41,11 @@ function seed(): Badge {
   const speed = 2.6 + Math.random() * 1.5;
   return {
     position: new THREE.Vector3(0, -0.2, 0.3 + Math.random() * 0.2),
-    velocity: new THREE.Vector3(-Math.cos(angle) * speed * 0.55, Math.sin(angle) * -speed, 0),
+    velocity: new THREE.Vector3(
+      -Math.cos(angle) * speed * 0.55,
+      Math.sin(angle) * -speed,
+      0,
+    ),
     spin: (Math.random() - 0.5) * 7,
     angle: Math.random() * Math.PI,
     life: 0,
@@ -49,7 +53,11 @@ function seed(): Badge {
   };
 }
 
-export function BadgeBurst({ reducedMotion = false }: { reducedMotion?: boolean }) {
+export function BadgeBurst({
+  reducedMotion = false,
+}: {
+  reducedMotion?: boolean;
+}) {
   const group = useRef<THREE.Group>(null);
   const meshes = useRef<(THREE.Group | null)[]>([]);
   const badges = useRef<Badge[]>([]);
@@ -110,7 +118,10 @@ export function BadgeBurst({ reducedMotion = false }: { reducedMotion?: boolean 
           }}
         >
           <mesh geometry={geometry}>
-            <meshBasicMaterial color={TONES[i % TONES.length]} toneMapped={false} />
+            <meshBasicMaterial
+              color={TONES[i % TONES.length]}
+              toneMapped={false}
+            />
           </mesh>
           <mesh geometry={ring} position={[0, 0, 0.001]}>
             <meshBasicMaterial color="#0c0d11" toneMapped={false} />

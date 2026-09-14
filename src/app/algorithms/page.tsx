@@ -32,13 +32,15 @@ export default function AlgorithmsPage() {
         <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div className="max-w-2xl">
             <p className="eyebrow">Algorithms · /algorithms</p>
-            <h1 className="mt-3 display-2">
-              The circuits that <span className="text-photon">beat the classical one.</span>
+            <h1 data-tour="algorithms" className="mt-3 display-2">
+              The circuits that{" "}
+              <span className="text-photon">beat the classical one.</span>
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-frost">
-              Five algorithms, each one stepped through a gate at a time with the Qiskit beside it
-              and the statevector underneath. Nothing here is an animation of a circuit — it is the
-              circuit, running on the same simulator the sandbox uses, in your browser.
+              Five algorithms, each one stepped through a gate at a time with
+              the Qiskit beside it and the statevector underneath. Nothing here
+              is an animation of a circuit — it is the circuit, running on the
+              same simulator the sandbox uses, in your browser.
             </p>
           </div>
 
@@ -58,7 +60,9 @@ export default function AlgorithmsPage() {
                 className="panel group flex h-full flex-col rounded-xl p-5 transition-colors hover:border-photon/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
               >
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-[17px] font-medium text-paper">{algorithm.name}</h2>
+                  <h2 className="text-[17px] font-medium text-paper">
+                    {algorithm.name}
+                  </h2>
                   <span className="font-mono text-[11px] text-dim whitespace-nowrap">
                     {algorithm.qubits}q
                   </span>
@@ -75,19 +79,26 @@ export default function AlgorithmsPage() {
                     <dt className="font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
                       classical
                     </dt>
-                    <dd className="text-right text-frost">{algorithm.classical}</dd>
+                    <dd className="text-right text-frost">
+                      {algorithm.classical}
+                    </dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
                       this circuit
                     </dt>
-                    <dd className="text-right font-medium text-photon">{algorithm.quantum}</dd>
+                    <dd className="text-right font-medium text-photon">
+                      {algorithm.quantum}
+                    </dd>
                   </div>
                 </dl>
 
                 <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors group-hover:text-photon">
                   step through it
-                  <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  <ArrowRight
+                    className="size-3.5 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
                 </span>
               </Link>
             </li>
@@ -99,11 +110,12 @@ export default function AlgorithmsPage() {
             what is not here
           </span>
           <br />
-          Shor&rsquo;s algorithm needs controlled modular exponentiation across eight or more
-          qubits, and this simulator holds four. The quantum Fourier transform and anything built on
-          a Toffoli need controlled phase rotations and a T&#8224; gate, which the palette does not
-          carry. They are missing rather than faked — every circuit on this page is one you could
-          rebuild yourself in the sandbox.
+          Shor&rsquo;s algorithm needs controlled modular exponentiation across
+          eight or more qubits, and this simulator holds four. The quantum
+          Fourier transform and anything built on a Toffoli need controlled
+          phase rotations and a T&#8224; gate, which the palette does not carry.
+          They are missing rather than faked — every circuit on this page is one
+          you could rebuild yourself in the sandbox.
         </p>
       </div>
     </div>

@@ -15,6 +15,7 @@ import {
   setVisible,
 } from "@/lib/mascot";
 import { guideFor, INVITE } from "@/lib/mascot-lines";
+import { tourIndex, tourSeen } from "@/lib/tour";
 
 /**
  * Where the cat should be, given what the reader is doing.
@@ -70,6 +71,11 @@ export function MascotDirector() {
     mascotOffer.ask = line?.ask ?? null;
 
     const timers: number[] = [];
+    /* Nothing to add while the cat is busy — or while it is showing somebody
+       round, when the tour's own words are the ones on screen. A page passed
+       through on the tour is not marked greeted, so its line is still said the
+       first time the reader comes back to it on their own. */
+    const occupied = () => BUSY.has(mascot.pose) || tourIndex() !== null;
 
     /* The page's own line is said once per session. Marked only once it has
        actually spoken: in development React runs effects twice, and claiming
@@ -78,22 +84,34 @@ export function MascotDirector() {
     if (line && !greeted.has(path)) {
       timers.push(
         window.setTimeout(() => {
-          if (BUSY.has(mascot.pose)) return;
+          if (occupied()) return;
           greeted.add(path);
-          say(line.text, { eyebrow: line.eyebrow, offer: Boolean(line.ask) });
+          say(line.text, {
+            eyebrow: line.eyebrow,
+            offer: Boolean(line.ask),
+            tour: line.tour,
+          });
         }, 1100),
       );
       timers.push(
         window.setTimeout(() => {
-          if (BUSY.has(mascot.pose)) return;
-          say(INVITE.text, { eyebrow: INVITE.eyebrow, offer: true });
+          if (occupied()) return;
+          say(INVITE.text, {
+            eyebrow: INVITE.eyebrow,
+            offer: true,
+            tour: INVITE.tour && !tourSeen(),
+          });
         }, 11_000),
       );
     } else {
       timers.push(
         window.setTimeout(() => {
-          if (BUSY.has(mascot.pose)) return;
-          say(INVITE.text, { eyebrow: INVITE.eyebrow, offer: true });
+          if (occupied()) return;
+          say(INVITE.text, {
+            eyebrow: INVITE.eyebrow,
+            offer: true,
+            tour: INVITE.tour && !tourSeen(),
+          });
         }, 1400),
       );
     }

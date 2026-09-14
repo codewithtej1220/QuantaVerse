@@ -73,6 +73,8 @@ export interface MascotSpeech {
   streaming: boolean;
   /** Show the "tap to ask" affordance. False mid-answer, when it is noise. */
   offer: boolean;
+  /** Offer the guided tour of the site alongside whatever is being said. */
+  tour?: boolean;
 }
 
 interface MascotState {
@@ -210,6 +212,7 @@ export function say(
     eyebrow?: string | null;
     streaming?: boolean;
     offer?: boolean;
+    tour?: boolean;
   } = {},
 ) {
   mascot.speech = {
@@ -217,6 +220,7 @@ export function say(
     eyebrow: options.eyebrow ?? null,
     streaming: options.streaming ?? false,
     offer: options.offer ?? false,
+    tour: options.tour ?? false,
   };
   announce();
 }
@@ -321,6 +325,10 @@ export interface MascotAlert {
   ask: string;
   /** The fault's place on screen right now, or null if it has none. */
   locate: () => DOMRect | null;
+  /** The board cell it is about, for a fault in the circuit. */
+  cell?: { wire: number; column: number };
+  /** The line of Qiskit it is about, when it is about one. */
+  line?: number;
 }
 
 export interface AlertState {
@@ -331,31 +339,45 @@ export interface AlertState {
 
 let alertState: AlertState = { alert: null, open: false };
 
-/* One pending fault per surface, and one cat. When both have something, the
-   surface the reader touched last wins — somebody typing Qiskit wants the
-   cat at the line, not at a cell on the board they have not looked at. */
-const pending: Record<AlertSource, MascotAlert | null> = {
-  circuit: null,
-  code: null,
+/* Every fault on each surface, worst first, and one cat. When both surfaces
+   have something, the one the reader touched last wins — somebody typing
+   Qiskit wants the cat at the line, not at a cell on the board they have not
+   looked at. */
+const pending: Record<AlertSource, MascotAlert[]> = {
+  circuit: [],
+  code: [],
 };
-/* A fault the reader said "got it" to stays quiet until it changes or goes. */
-const dismissed: Record<AlertSource, string | null> = {
-  circuit: null,
-  code: null,
+/* Faults the reader said "got it" to. Each stays quiet for as long as it is
+   still there, and is forgotten once it has gone, so the same mistake made
+   again later is flagged again.
+
+   A set, and the whole list kept above, because one of each was not enough:
+   with only the worst fault reported and one dismissal remembered, dismissing
+   a fault left the cat silent about every other mistake on the board until the
+   first one was fixed — it was still the worst, and it was still dismissed. */
+const dismissed: Record<AlertSource, Set<string>> = {
+  circuit: new Set(),
+  code: new Set(),
 };
 let lastEdited: AlertSource = "circuit";
 
+function firstOpen(source: AlertSource) {
+  return pending[source].find((alert) => !dismissed[source].has(alert.key));
+}
+
 function publishAlert() {
   const other: AlertSource = lastEdited === "code" ? "circuit" : "code";
-  const next = pending[lastEdited] ?? pending[other];
+  const next = firstOpen(lastEdited) ?? firstOpen(other) ?? null;
   if (next === alertState.alert) return;
   const same = Boolean(
     next && alertState.alert && next.key === alertState.alert.key,
   );
   alertState = { alert: next, open: same ? alertState.open : false };
-  if (next) {
+  /* The pose changes with the fault, not with a refresh of the same one — a
+     re-check mid-answer would otherwise knock the cat out of thinking. */
+  if (next && !same) {
     if (mascot.pose !== "celebrating") mascot.pose = "flagging";
-  } else if (mascot.pose === "flagging") {
+  } else if (!next && mascot.pose === "flagging") {
     mascot.pose = "idle";
   }
   announce();
@@ -375,36 +397,35 @@ export function noteEdit(source: AlertSource) {
 }
 
 /**
- * Tell the cat what is wrong on one surface — or, with null, that nothing is.
+ * Tell the cat everything wrong on one surface, worst first — or, with an
+ * empty list, that nothing is.
  *
  * Idempotent on purpose: the watchers call this after every debounced edit
- * whether or not anything changed, and the same fault reported twice is
- * refreshed in place rather than sending the cat home and back again.
+ * whether or not anything changed, and a fault reported again under the same
+ * key is refreshed in place rather than sending the cat home and back again.
  */
-export function reportFault(source: AlertSource, alert: MascotAlert | null) {
-  if (!alert) {
-    dismissed[source] = null;
-    if (!pending[source]) return;
-    pending[source] = null;
-    publishAlert();
-    return;
-  }
-  if (dismissed[source] === alert.key) return;
-  pending[source] = alert;
-  if (alertState.alert && alertState.alert.key === alert.key) {
-    alertState = { alert, open: alertState.open };
-    announce();
-    return;
+export function reportFaults(source: AlertSource, alerts: MascotAlert[]) {
+  pending[source] = alerts;
+  const present = new Set(alerts.map((alert) => alert.key));
+  for (const key of dismissed[source]) {
+    if (!present.has(key)) dismissed[source].delete(key);
   }
   publishAlert();
 }
 
-/** "Got it." The cat goes home and this fault stays quiet until it changes. */
+/** One fault, or with null none — for a surface that only ever has one. */
+export function reportFault(source: AlertSource, alert: MascotAlert | null) {
+  reportFaults(source, alert ? [alert] : []);
+}
+
+/**
+ * "Got it." This fault stays quiet for as long as it is there, and the cat
+ * moves on to the next one — or goes home, if that was the last.
+ */
 export function dismissAlert() {
   const current = alertState.alert;
   if (!current) return;
-  dismissed[current.source] = current.key;
-  pending[current.source] = null;
+  dismissed[current.source].add(current.key);
   publishAlert();
 }
 
@@ -416,9 +437,9 @@ export function setAlertOpen(open: boolean) {
 
 /** Everything off — leaving the page, or turning watching off. */
 export function clearAlerts() {
-  pending.circuit = null;
-  pending.code = null;
-  dismissed.circuit = null;
-  dismissed.code = null;
+  pending.circuit = [];
+  pending.code = [];
+  dismissed.circuit.clear();
+  dismissed.code.clear();
   publishAlert();
 }

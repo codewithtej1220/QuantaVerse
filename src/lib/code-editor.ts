@@ -40,37 +40,48 @@ export function caretLine(): number | null {
 }
 
 /**
- * Mark a fault in the editor itself: the squiggle, and a wash on the line.
+ * Mark every fault in the editor itself, with a squiggle under each.
  *
- * The marker is Monaco's own, so the hover over the squiggle carries the same
- * sentence the cat does — somebody who never looks at the cat still gets it.
+ * The markers are Monaco's own, so the hover over a squiggle carries the same
+ * sentence the cat does — somebody who never looks at the cat still gets it, and
+ * gets it for every line, not only the one the cat happens to be beside.
  */
-export function markCode(issue: CodeIssue | null) {
+export function markCode(issues: CodeIssue[]) {
+  if (!instance) return;
+  const { editor, monaco } = instance;
+  const model = editor.getModel();
+  if (!model) return;
+  const count = model.getLineCount();
+
+  monaco.editor.setModelMarkers(
+    model,
+    OWNER,
+    issues
+      .filter((issue) => issue.line <= count)
+      .map((issue) => ({
+        severity: monaco.MarkerSeverity.Warning,
+        startLineNumber: issue.line,
+        startColumn: issue.startColumn,
+        endLineNumber: issue.line,
+        endColumn: Math.max(issue.endColumn, issue.startColumn + 1),
+        message: `${issue.message}\n${issue.fix}`,
+        source: "QuantaVerse",
+      })),
+  );
+}
+
+/** A wash across the line the cat is pointing at, or across none. */
+export function washLine(line: number | null) {
   if (!instance) return;
   const { editor, monaco, lines } = instance;
   const model = editor.getModel();
-  if (!model) return;
-
-  if (!issue || issue.line > model.getLineCount()) {
-    monaco.editor.setModelMarkers(model, OWNER, []);
+  if (!model || line === null || line < 1 || line > model.getLineCount()) {
     lines.clear();
     return;
   }
-
-  monaco.editor.setModelMarkers(model, OWNER, [
-    {
-      severity: monaco.MarkerSeverity.Warning,
-      startLineNumber: issue.line,
-      startColumn: issue.startColumn,
-      endLineNumber: issue.line,
-      endColumn: Math.max(issue.endColumn, issue.startColumn + 1),
-      message: `${issue.message}\n${issue.fix}`,
-      source: "QuantaVerse",
-    },
-  ]);
   lines.set([
     {
-      range: new monaco.Range(issue.line, 1, issue.line, 1),
+      range: new monaco.Range(line, 1, line, 1),
       options: { isWholeLine: true, className: "qv-fault-line" },
     },
   ]);

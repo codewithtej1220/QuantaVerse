@@ -69,7 +69,14 @@ export function CodePane({
   return (
     <div className="panel flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-edge px-4 py-2.5">
-        <span className="flex items-center gap-2 rounded-md border border-photon bg-photon/10 px-2.5 py-1 font-mono text-[11px] text-photon">
+        {/* What the tour points at. The file tab, not the pane: beside the tab
+            is the line saying which side is in charge, which the cat can cover
+            for a moment, where beside the pane — or the line — would be the
+            build and copy buttons. */}
+        <span
+          data-tour="sandbox-code"
+          className="flex items-center gap-2 rounded-md border border-photon bg-photon/10 px-2.5 py-1 font-mono text-[11px] text-photon"
+        >
           circuit.py
         </span>
         <span
@@ -78,7 +85,9 @@ export function CodePane({
             edited ? "text-collapse" : "text-frost",
           )}
         >
-          {edited ? "edited · diagram follows the code" : "generated from the diagram"}
+          {edited
+            ? "edited · diagram follows the code"
+            : "generated from the diagram"}
         </span>
 
         <div className="ml-auto flex items-center gap-1">
@@ -86,7 +95,11 @@ export function CodePane({
             type="button"
             onClick={onBuild}
             disabled={building || !canBuild}
-            title={canBuild ? undefined : "Running the file needs the QuantaVerse API"}
+            title={
+              canBuild
+                ? undefined
+                : "Running the file needs the QuantaVerse API"
+            }
             className={cn(
               "flex items-center gap-1.5 rounded-md border border-photon bg-photon/10 px-2.5 py-1.5",
               "font-mono text-[11px] tracking-[0.1em] text-photon uppercase transition-colors",
@@ -137,7 +150,9 @@ export function CodePane({
         <div
           className={cn(
             "border-t px-4 py-2.5",
-            note.failed ? "border-edge-hi bg-strata" : "border-photon bg-photon/10",
+            note.failed
+              ? "border-edge-hi bg-strata"
+              : "border-photon bg-photon/10",
           )}
           role="status"
         >
@@ -158,10 +173,11 @@ export function CodePane({
       )}
 
       <p className="border-t border-edge px-4 py-2.5 font-mono text-[11px] leading-relaxed text-frost">
-        Drawn as you type: <span className="text-frost">qc.h/x/y/z/s/t(q)</span> ·{" "}
-        <span className="text-frost">qc.cx(c, t)</span> ·{" "}
-        <span className="text-frost">qc.measure(...)</span>. Anything else — loops, functions,
-        numpy — needs <span className="text-photon">build from code</span>.
+        Drawn as you type: <span className="text-frost">qc.h/x/y/z/s/t(q)</span>{" "}
+        · <span className="text-frost">qc.cx(c, t)</span> ·{" "}
+        <span className="text-frost">qc.measure(...)</span>. Anything else —
+        loops, functions, numpy — needs{" "}
+        <span className="text-photon">build from code</span>.
       </p>
     </div>
   );

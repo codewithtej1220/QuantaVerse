@@ -59,7 +59,9 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
             {/* display-1, not display-2, was clipping: a name is arbitrary-length
                 user data and "Aditi Raghunathan" ran straight off the page. The
                 dominant element here is the next action anyway, not the name. */}
-            <h1 className="display-2 mt-5 break-words">{model.name}</h1>
+            <h1 data-tour="dashboard" className="display-2 mt-5 break-words">
+              {model.name}
+            </h1>
             <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[12.5px] text-frost">
               <span className="text-photon">@{model.handle}</span>
               {model.institution && (
@@ -90,7 +92,10 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
               levels={model.mastery.levels}
             />
             <div className="mt-6 border-t border-edge pt-5">
-              <AmplitudeBar value={model.completion} label="Course completion" />
+              <AmplitudeBar
+                value={model.completion}
+                label="Course completion"
+              />
             </div>
           </div>
         </header>
@@ -106,7 +111,9 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
                 Up next
               </p>
               <h2 className="display-2 mt-4 flex flex-wrap items-baseline gap-x-4 text-paper">
-                <span className="ket text-[0.45em] text-photon">{model.upNext.ket}</span>
+                <span className="ket text-[0.45em] text-photon">
+                  {model.upNext.ket}
+                </span>
                 {model.upNext.title}
               </h2>
               <p className="mt-4 max-w-2xl text-[14px] leading-relaxed text-frost">
@@ -134,7 +141,9 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
               <dd className="font-display mt-2 text-4xl font-extrabold text-paper tabular-nums">
                 {tile.value}
               </dd>
-              <dd className="mt-1.5 font-mono text-[11.5px] text-frost">{tile.detail}</dd>
+              <dd className="mt-1.5 font-mono text-[11.5px] text-frost">
+                {tile.detail}
+              </dd>
             </div>
           ))}
         </Reveal>
@@ -146,7 +155,11 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
         </Reveal>
 
         <Reveal className="mt-16">
-          <CoherenceLog log={model.log} streakDays={model.streakDays} start={model.logStart} />
+          <CoherenceLog
+            log={model.log}
+            streakDays={model.streakDays}
+            start={model.logStart}
+          />
         </Reveal>
 
         <Reveal className="mt-16">

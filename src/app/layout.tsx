@@ -8,6 +8,7 @@ import { MotionPreferences } from "@/components/site/motion-preferences";
 import { SiteNav } from "@/components/site/site-nav";
 import { MascotDirector } from "@/components/mascot/mascot-director";
 import { MascotStage } from "@/components/mascot/mascot-stage";
+import { TourConductor } from "@/components/mascot/tour-conductor";
 import { RouteField } from "@/components/three/route-field";
 import "./globals.css";
 
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               canvas is never torn down and the cat flies between routes. */}
             <MascotStage />
             <MascotDirector />
+            <TourConductor />
           </MotionPreferences>
         </AuthProvider>
       </body>

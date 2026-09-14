@@ -19,19 +19,23 @@ export interface Line {
   eyebrow: string;
   /** Typed into the tutor when the reader takes the offer. */
   ask?: string;
+  /** Offer to walk the reader round the whole site. */
+  tour?: boolean;
 }
 
 /** The standing invitation, so it is obvious the cat is a button. */
 export const INVITE: Line = {
   text: "Stuck? Tap me and I'll read whatever is on your screen before I answer.",
   eyebrow: "your tutor",
+  tour: true,
 };
 
 const GUIDE: Record<string, Line> = {
   "/": {
-    text: "New here? Start with the curriculum — eight modules, and the first needs no maths beyond a coin flip.",
+    text: "New here? I can show you round the whole site in about a minute — or start with the curriculum.",
     eyebrow: "where to start",
     ask: "What should I learn first?",
+    tour: true,
   },
   "/curriculum": {
     text: "Eight modules, indexed like a three-qubit register. The locks are a suggested order, not a paywall — you can open any of them.",

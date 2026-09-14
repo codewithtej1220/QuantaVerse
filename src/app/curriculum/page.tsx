@@ -34,9 +34,9 @@ export default function CurriculumPage() {
         {/* No closing call-to-action card. One sentence and a link is the whole
             thought, and a boxed banner around it would only add a border. */}
         <p className="mt-14 max-w-2xl text-[15px] leading-relaxed text-frost">
-          Reading about a Bell pair is not the same as building one. Each module ends with a
-          circuit to finish, and the simulator marks it by measuring the state you actually
-          produced —{" "}
+          Reading about a Bell pair is not the same as building one. Each module
+          ends with a circuit to finish, and the simulator marks it by measuring
+          the state you actually produced —{" "}
           <Link
             href="/sandbox"
             className="text-photon underline-offset-4 hover:underline focus-visible:underline"

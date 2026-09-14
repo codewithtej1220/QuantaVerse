@@ -27,7 +27,7 @@ import {
   streamTutor,
   type HealthResponse,
 } from "@/lib/api";
-import { hush, say, setPose } from "@/lib/mascot";
+import { alertSnapshot, hush, say, setPose } from "@/lib/mascot";
 import { receiveTutorOpen } from "@/lib/tutor-bus";
 import {
   mascotPresent as catOnScreen,
@@ -225,6 +225,10 @@ export function TutorSidebar() {
     lessonId: null,
   });
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  /* Whether the probe has answered yet. Until it has, the panel does not know
+     the service is missing — and showing "offline" for the second it took to
+     find out told people to start an API that was already running. */
+  const [probed, setProbed] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -253,7 +257,10 @@ export function TutorSidebar() {
     const controller = new AbortController();
     fetchHealth(controller.signal)
       .then(setHealth)
-      .catch(() => setHealth(null));
+      .catch(() => setHealth(null))
+      .finally(() => {
+        if (!controller.signal.aborted) setProbed(true);
+      });
     return () => controller.abort();
   }, [open, health]);
 
@@ -373,7 +380,10 @@ export function TutorSidebar() {
       } finally {
         abort.current = null;
         setBusy(false);
-        setPose("idle");
+        /* Back to pointing at the mistake if it is still there: asking about a
+           fault does not fix it, and a cat gone idle beside a live notice looks
+           as though it has stopped minding it. */
+        setPose(alertSnapshot().alert ? "flagging" : "idle");
         // Long enough to read the opening line, then the cat stops talking.
         window.setTimeout(hush, 9000);
       }
@@ -414,7 +424,9 @@ export function TutorSidebar() {
   const suggestions = hasCircuit ? CIRCUIT_SUGGESTIONS : TUTOR_SUGGESTIONS;
   const live = health?.tutor?.live;
   const status = !health
-    ? "offline · start the API"
+    ? probed
+      ? "offline · start the API"
+      : "connecting…"
     : live
       ? `${health.tutor.model} · streaming`
       : "local read-out · Qiskit";
@@ -459,6 +471,7 @@ export function TutorSidebar() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 34 }}
             transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+            data-tutor-panel
             className="panel fixed inset-x-3 bottom-3 z-40 flex flex-col overflow-hidden rounded-2xl sm:inset-x-auto sm:top-20 sm:right-4 sm:bottom-5 sm:w-[384px]"
             aria-label="AI tutor"
           >
@@ -596,7 +609,9 @@ export function TutorSidebar() {
                   ? live
                     ? "Explanations are generated. Verify anything you plan to submit."
                     : "No model key on the server, so answers are computed from your circuit."
-                  : `No tutor service at ${API_BASE}. The sandbox still works without it.`}
+                  : probed
+                    ? `No tutor service at ${API_BASE}. The sandbox still works without it.`
+                    : "Looking for the tutor service…"}
               </p>
             </div>
           </motion.aside>

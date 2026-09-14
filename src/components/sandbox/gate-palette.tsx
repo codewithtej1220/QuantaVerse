@@ -84,7 +84,9 @@ export function GatePalette({
        the palette is the only thing that puts a card in front of it. */
     <div className="@container relative z-20 w-full">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="eyebrow">Gate palette</p>
+        <p data-tour="sandbox-palette" className="eyebrow">
+          Gate palette
+        </p>
         <p className="font-mono text-[11px] text-frost">
           {armed ? "click a slot to place" : "drag, or click to arm"}
         </p>
@@ -100,7 +102,12 @@ export function GatePalette({
       {/* The tray. No clipping on it: a card near the end is meant to overhang
           its own well, and the reference card has to be able to open past it. */}
       <div className="relative mt-3 rounded-xl bg-void px-6 py-7">
-        <div style={{ perspective: `${TRAY_PERSPECTIVE}px`, perspectiveOrigin: "50% 50%" }}>
+        <div
+          style={{
+            perspective: `${TRAY_PERSPECTIVE}px`,
+            perspectiveOrigin: "50% 50%",
+          }}
+        >
           <div
             className="grid grid-cols-4 gap-3 transform-3d @2xl:grid-cols-8"
             style={{ transform: TILT }}
@@ -128,9 +135,14 @@ export function GatePalette({
                          re-rendered in time for a state change to land. */
                       const stand = ghost.current;
                       if (stand) {
-                        stand.textContent = gate.id === "cnot" ? "CX" : gate.symbol;
+                        stand.textContent =
+                          gate.id === "cnot" ? "CX" : gate.symbol;
                         stand.className = cn(GHOST, tone.border, tone.text);
-                        event.dataTransfer.setDragImage(stand, GHOST_SIZE / 2, GHOST_SIZE / 2);
+                        event.dataTransfer.setDragImage(
+                          stand,
+                          GHOST_SIZE / 2,
+                          GHOST_SIZE / 2,
+                        );
                       }
 
                       onArm(gate.id);
@@ -144,12 +156,16 @@ export function GatePalette({
                     onClick={() => onArm(isArmed ? null : gate.id)}
                     aria-pressed={isArmed}
                     aria-label={
-                      gate.name.toLowerCase().includes("gate") ? gate.name : `${gate.name} gate`
+                      gate.name.toLowerCase().includes("gate")
+                        ? gate.name
+                        : `${gate.name} gate`
                     }
                     /* One height, always. The card sits on the tray whether it
                        is armed or not — being armed is said by the fill, which
                        is unmissable and does not move anything. */
-                    style={{ transform: `translateZ(${CARD_D}px)` } as CSSProperties}
+                    style={
+                      { transform: `translateZ(${CARD_D}px)` } as CSSProperties
+                    }
                     className={cn(
                       "relative flex w-full cursor-grab flex-col items-center gap-1 border py-3",
                       "transform-3d transition-colors duration-150 ease-out",
@@ -172,7 +188,10 @@ export function GatePalette({
                     {isArmed && (
                       <span
                         aria-hidden
-                        className={cn("pointer-events-none absolute inset-0", tone.glow)}
+                        className={cn(
+                          "pointer-events-none absolute inset-0",
+                          tone.glow,
+                        )}
                       />
                     )}
 
@@ -207,7 +226,9 @@ export function GatePalette({
                     role="tooltip"
                   >
                     <p className="flex items-baseline justify-between gap-2">
-                      <span className="text-[13px] font-medium text-paper">{gate.name}</span>
+                      <span className="text-[13px] font-medium text-paper">
+                        {gate.name}
+                      </span>
                       <span className={cn("font-mono text-[11px]", tone.text)}>
                         {gate.id === "cnot" ? "cx" : gate.id}
                       </span>
@@ -223,7 +244,9 @@ export function GatePalette({
                       </span>
                       <span className="text-lg leading-none text-frost">]</span>
                     </div>
-                    <p className="mt-2.5 text-[11.5px] leading-snug text-frost">{gate.blurb}</p>
+                    <p className="mt-2.5 text-[11.5px] leading-snug text-frost">
+                      {gate.blurb}
+                    </p>
                   </div>
                 </div>
               );

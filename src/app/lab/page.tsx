@@ -15,12 +15,15 @@ export default function LabPage() {
         <header className="grid gap-x-16 gap-y-6 border-b border-edge pb-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end">
           <div>
             <p className="eyebrow">Lab · /lab</p>
-            <h1 className="display-1 mt-5 max-w-[9ch]">The lab</h1>
+            <h1 data-tour="lab" className="display-1 mt-5 max-w-[9ch]">
+              The lab
+            </h1>
           </div>
           <p className="lede max-w-lg lg:pb-2">
-            One circuit drives everything here — the gyroscopes, the measurement cloud, the graded
-            checks and the telemetry an instructor sees are all reading the same statevector, so
-            nothing on the page can disagree with anything else on it.
+            One circuit drives everything here — the gyroscopes, the measurement
+            cloud, the graded checks and the telemetry an instructor sees are
+            all reading the same statevector, so nothing on the page can
+            disagree with anything else on it.
           </p>
         </header>
 

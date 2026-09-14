@@ -28,6 +28,7 @@ export function ProactiveToggle({
     <button
       type="button"
       role="switch"
+      data-tour="sandbox-watching"
       aria-checked={on}
       onClick={() => onChange(!on)}
       title={

@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Play, RotateCcw, Trash2 } from "lucide-react";
 
 import {
@@ -44,17 +51,24 @@ import {
   locateEditor,
   locateLine,
   markCode,
+  washLine,
 } from "@/lib/code-editor";
 import {
+  alertSnapshot,
   celebrate,
   clearAlerts,
   hush,
   mascot,
   mascotOffer,
+  mascotSnapshot,
   noteEdit,
   reportFault,
+  reportFaults,
   say,
   setPose,
+  subscribeAlert,
+  type AlertState,
+  type MascotAlert,
 } from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 
@@ -91,6 +105,10 @@ const GRID_LIMITS = {
   maxQubits: QUBIT_OPTIONS[QUBIT_OPTIONS.length - 1],
   columns: COLUMNS,
 };
+/* How the board's tidiness notes are signed, so one can be taken back without
+   silencing anything else the cat is saying. */
+const NOTE_EYEBROW = "one small thing";
+const NO_ALERT: AlertState = { alert: null, open: false };
 
 export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const { user } = useAuth();
@@ -314,29 +332,34 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
      at length is still the tutor's job, and the offer attached to the remark
      is what hands it over. */
   const [proactive, setProactive] = useState(true);
-  const flagged = useRef<string | null>(null);
-  /* The finding the board is currently ringing. State rather than a ref,
-     because unlike `flagged` this one has to be drawn. */
-  const [issue, setIssue] = useState<CircuitIssue | null>(null);
+  /* The tidiness note last made, so it is said once rather than after every
+     edit, and taken back once it stops being true. */
+  const advised = useRef<string | null>(null);
+  /* The note's cell, which the board rings when there is no fault to ring.
+     State rather than a ref, because unlike `advised` this one has to be drawn. */
+  const [note, setNote] = useState<CircuitIssue | null>(null);
+  /* The fault the cat is showing now. The board rings its cell and the editor
+     washes its line, so the mark on the page and the cat beside it are always
+     about the same fault — including after a dismissal moves the cat on to
+     the next one, which a mark kept by this component alone would not follow. */
+  const { alert: shown } = useSyncExternalStore(
+    subscribeAlert,
+    alertSnapshot,
+    () => NO_ALERT,
+  );
 
   useEffect(() => {
     if (!proactive) {
-      /* Turning it off should take the last remark with it, but must not
-         stamp on a pose something else owns — a celebration outlives this. */
-      if (flagged.current) {
-        flagged.current = null;
-        setIssue(null);
-        /* Take the remark with it, not just the pose. Silencing something that
-           leaves its last sentence on screen has not been silenced. Guarded on
-           the pose so this never clears a message another part of the page
-           owns — a celebration outlives the switch. */
-        if (mascot.pose === "flagging") {
-          setPose("idle");
-          hush();
-        }
+      /* Turning it off takes the last remark with it — but only a remark this
+         board made. A celebration, or the tutor mid-answer, outlives the
+         switch. */
+      if (advised.current) {
+        advised.current = null;
+        setNote(null);
+        if (mascotSnapshot().eyebrow === NOTE_EYEBROW) hush();
       }
       clearAlerts();
-      markCode(null);
+      markCode([]);
       return;
     }
 
@@ -345,75 +368,76 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
        reaching for the Hadamard is the definition of unhelpful. */
     const timer = setTimeout(() => {
       const issues = checkCircuit(placements, qubits);
-      /* Advice waits until the learner has actually touched the board. The
-         opening preset is a correct Bell pair on a three-wire register, so the
-         one thing to say about it is that q2 is idle — which, said to somebody
-         who has not yet placed a gate, is a stranger opening with a complaint
-         about work they did not do. Faults speak immediately; they are about a
-         circuit that does not do what it looks like it does. */
-      const worst =
-        issues.find((i) => touched || i.severity === "fault") ?? null;
-      const key = worst ? `${worst.kind}:${worst.wire}:${worst.column}` : null;
-      if (key === flagged.current) return;
-      flagged.current = key;
+      const faults = issues.filter((issue) => issue.severity === "fault");
+      /* When the circuit came from typed Qiskit, a fault is pointed at in the
+         code — the line the reader actually wrote — because that is what they
+         would have to change. The parser numbers each operation in the order
+         `pack` placed it, so a placement's index is its line. */
+      const ops = edited ? parseQiskitOps(code, qubits) : null;
 
-      setIssue(worst);
+      /* A fault is worth the trip: the cat crosses the page to it and waits
+         beside it with a notice, rather than describing it from the corner.
+         Every fault is reported, worst first, so that dismissing one moves the
+         cat on to the next instead of leaving the rest unsaid. */
+      reportFaults(
+        "circuit",
+        faults.map((fault): MascotAlert => {
+          const cell = placements.find(
+            (p) => p.column === fault.column && p.wires.includes(fault.wire),
+          );
+          const index = cell && ops ? /^p(\d+)-/.exec(cell.id) : null;
+          const line = index ? ops?.[Number(index[1])]?.line : undefined;
+          return {
+            key: `circuit:${fault.kind}:${fault.wire}:${fault.column}`,
+            source: "circuit",
+            title: "Circuit fault",
+            where: line
+              ? `line ${line}`
+              : `q${fault.wire} · step ${fault.column + 1}`,
+            message: fault.message,
+            fix: fault.fix,
+            ask: `${fault.message} Why is that a problem, and what should I do instead?`,
+            cell: { wire: fault.wire, column: fault.column },
+            line,
+            locate: line
+              ? () => locateLine(line)
+              : () =>
+                  document
+                    .querySelector('[data-mascot-target="circuit-fault"]')
+                    ?.getBoundingClientRect() ?? null,
+          };
+        }),
+      );
 
-      if (!worst) {
-        /* Fixed. Take the remark down with the pose — a complaint left on
-           screen about a circuit that no longer has anything wrong with it
-           reads as still true, which is worse than having said nothing. */
-        reportFault("circuit", null);
-        if (mascot.pose === "flagging") {
-          setPose("idle");
-          hush();
-        }
+      /* Advice is not worth a flight. An idle wire is a tidiness note, and a
+         cat that crossed the page to deliver one would be noise by the second
+         time — so it is said from the corner, and only when nothing is
+         actually wrong.
+
+         It also waits until the learner has touched the board. The opening
+         preset is a correct Bell pair on a three-wire register, so the one
+         thing to say about it is that q2 is idle — which, said to somebody who
+         has not yet placed a gate, is a stranger opening with a complaint
+         about work they did not do. */
+      const next =
+        touched && !faults.length
+          ? (issues.find((issue) => issue.severity === "advice") ?? null)
+          : null;
+      const key = next ? `${next.kind}:${next.wire}:${next.column}` : null;
+      if (key === advised.current) return;
+      advised.current = key;
+      setNote(next);
+
+      if (!next) {
+        /* Taken down once it no longer applies: a remark left on screen about
+           a circuit that no longer has the problem reads as still true. */
+        if (mascotSnapshot().eyebrow === NOTE_EYEBROW) hush();
         return;
       }
-
-      if (worst.severity === "fault") {
-        /* A fault is worth the trip. The cat crosses the page to it and waits
-           beside it with a notice, rather than describing it from the corner.
-
-           When the circuit came from typed Qiskit, the fault is pointed at in
-           the code — the line the reader actually wrote — because that is
-           what they would have to change. The parser numbers each operation
-           in the order `pack` placed it, so a placement's index is its line. */
-        const cell = placements.find(
-          (p) => p.column === worst.column && p.wires.includes(worst.wire),
-        );
-        const index = cell && edited ? /^p(\d+)-/.exec(cell.id) : null;
-        const line = index
-          ? parseQiskitOps(code, qubits)[Number(index[1])]?.line
-          : undefined;
-
-        reportFault("circuit", {
-          key: `circuit:${key}`,
-          source: "circuit",
-          title: "Circuit fault",
-          where: line
-            ? `line ${line}`
-            : `q${worst.wire} · step ${worst.column + 1}`,
-          message: worst.message,
-          fix: worst.fix,
-          ask: `${worst.message} Why is that a problem, and what should I do instead?`,
-          locate: line
-            ? () => locateLine(line)
-            : () =>
-                document
-                  .querySelector('[data-mascot-target="circuit-fault"]')
-                  ?.getBoundingClientRect() ?? null,
-        });
-        return;
-      }
-
-      /* Advice is not worth a flight. An idle wire is a tidiness note, and a cat
-         that crossed the page to deliver one would be noise by the second time. */
-      reportFault("circuit", null);
       if (mascot.pose === "celebrating") return;
-      mascotOffer.ask = `${worst.message} Why does that matter?`;
-      say(`${worst.message} ${worst.fix}`, {
-        eyebrow: "one small thing",
+      mascotOffer.ask = `${next.message} Why does that matter?`;
+      say(`${next.message} ${next.fix}`, {
+        eyebrow: NOTE_EYEBROW,
         offer: true,
       });
     }, 750);
@@ -438,40 +462,54 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
   useEffect(() => {
     if (!proactive || !edited) {
-      markCode(null);
+      markCode([]);
       if (buildFailedFor.current !== code) reportFault("code", null);
       return;
     }
 
     const timer = setTimeout(() => {
       const issues = checkCode(code, qubits, caretLine());
-      const first = issues[0] ?? null;
-      markCode(first);
+      /* A squiggle under every line with something wrong, the way an editor
+         does; the cat goes to them one at a time. */
+      markCode(issues);
 
-      if (!first) {
+      if (!issues.length) {
         if (buildFailedFor.current !== code) reportFault("code", null);
         return;
       }
 
-      const text = (code.split("\n")[first.line - 1] ?? "").trim();
-      reportFault("code", {
-        /* Keyed on what the line says, not where it is: adding a line above a
-           typo moves it, and the cat should glide down with it rather than go
-           home and fly back out as though it were a new mistake. */
-        key: `code:${first.kind}:${text}`,
-        source: "code",
-        title:
-          first.kind === "not-drawable" ? "Not on the board" : "Code error",
-        where: `line ${first.line}`,
-        message: first.message,
-        fix: first.fix,
-        ask: `Line ${first.line} of my Qiskit is \`${text}\`. ${first.message} Why does that happen, and how do I fix it?`,
-        locate: () => locateLine(first.line),
-      });
+      const lines = code.split("\n");
+      reportFaults(
+        "code",
+        issues.map((issue): MascotAlert => {
+          const text = (lines[issue.line - 1] ?? "").trim();
+          return {
+            /* Keyed on what the line says, not where it is: adding a line
+               above a typo moves it, and the cat should glide down with it
+               rather than go home and fly back out as though it were a new
+               mistake. */
+            key: `code:${issue.kind}:${text}`,
+            source: "code",
+            title:
+              issue.kind === "not-drawable" ? "Not on the board" : "Code error",
+            where: `line ${issue.line}`,
+            message: issue.message,
+            fix: issue.fix,
+            ask: `Line ${issue.line} of my Qiskit is \`${text}\`. ${issue.message} Why does that happen, and how do I fix it?`,
+            line: issue.line,
+            locate: () => locateLine(issue.line),
+          };
+        }),
+      );
     }, 1100);
 
     return () => clearTimeout(timer);
   }, [proactive, code, qubits, edited]);
+
+  /* The line of whatever fault the cat is beside, washed in the editor. */
+  useEffect(() => {
+    washLine(shown?.line ?? null);
+  }, [shown]);
 
   /* Leaving the sandbox takes every alert with it. A cat still pointing at a
      line of code on a page that no longer has an editor would be pointing at
@@ -479,7 +517,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   useEffect(
     () => () => {
       clearAlerts();
-      markCode(null);
+      markCode([]);
+      washLine(null);
     },
     [],
   );
@@ -706,6 +745,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       source: "code",
       title: "Build failed",
       where: line ? `line ${line}` : "your code",
+      line: line ?? undefined,
       message: text,
       fix: line
         ? "Python stopped on that line before it could build a circuit, so the board has not changed. Fix that line and press Build from code again."
@@ -986,7 +1026,9 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               armed={armed}
               onPlace={onPlace}
               onRemove={onRemove}
-              flag={issue}
+              flag={
+                shown?.source === "circuit" && shown.cell ? shown.cell : note
+              }
               expanded={bench}
               onToggleExpand={() => setBench((open) => !open)}
             />
