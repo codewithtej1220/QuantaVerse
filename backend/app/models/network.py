@@ -49,6 +49,9 @@ class PersonCard(BaseModel):
     # Surfaced so the UI can say so on the card — a fixture that looks like a
     # real academic is the one thing this feature must not ship.
     is_demo: bool = False
+    # Where the card's picture lives, if it has one. The client falls back to
+    # initials, so absent is an ordinary state rather than a broken one.
+    avatar_url: str | None = None
     # Seniority in the directory, and the only timestamp a stranger sees.
     joined_at: datetime
     # How the person asking stands with this one, so the card can render its

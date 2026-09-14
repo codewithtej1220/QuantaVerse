@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -61,7 +62,11 @@ const FILTERS: { id: Filter; label: string }[] = [
 function when(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function reasonOf(error: unknown, fallback: string) {
@@ -72,7 +77,13 @@ function reasonOf(error: unknown, fallback: string) {
 /* Pieces                                                              */
 /* ------------------------------------------------------------------ */
 
-function Chip({ children, tone }: { children: React.ReactNode; tone?: "photon" | "warn" }) {
+function Chip({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone?: "photon" | "warn";
+}) {
   return (
     <span
       className={cn(
@@ -88,7 +99,29 @@ function Chip({ children, tone }: { children: React.ReactNode; tone?: "photon" |
 }
 
 function Avatar({ person }: { person: PersonCard }) {
-  /* Initials rather than a photograph. Nobody has uploaded one, and a grid of
+  const ring = person.role === "mentor" ? "ring-photon/45" : "ring-edge-hi";
+
+  /* A picture where there is one. The example mentors carry portraits of people
+     who do not exist — generated faces, not photographs of anybody — because a
+     real person's face on an invented name and invented credentials is the one
+     thing a directory like this must never do. The "example profile" chip beside
+     the name still says so. */
+  if (person.avatar_url) {
+    return (
+      <Image
+        src={person.avatar_url}
+        alt=""
+        width={44}
+        height={44}
+        className={cn(
+          "size-11 shrink-0 rounded-full object-cover ring-1 ring-offset-2 ring-offset-nebula",
+          ring,
+        )}
+      />
+    );
+  }
+
+  /* Initials for everybody else. Nobody has uploaded a picture, and a grid of
      identical placeholder silhouettes reads worse than a grid of letters. */
   const initials = person.display_name
     .split(/\s+/)
@@ -101,10 +134,11 @@ function Avatar({ person }: { person: PersonCard }) {
     <span
       aria-hidden
       className={cn(
-        "grid size-10 shrink-0 place-items-center border font-mono text-[13px]",
+        "grid size-11 shrink-0 place-items-center rounded-full font-mono text-[13px] ring-1 ring-offset-2 ring-offset-nebula",
+        ring,
         person.role === "mentor"
-          ? "border-photon/40 bg-photon/10 text-photon"
-          : "border-edge bg-strata text-frost",
+          ? "bg-photon/10 text-photon"
+          : "bg-strata text-frost",
       )}
     >
       {initials || "?"}
@@ -128,7 +162,9 @@ function Identity({ person }: { person: PersonCard }) {
         </p>
         <p className="mt-0.5 truncate font-mono text-[11.5px] text-dim">
           @{person.handle}
-          {person.institution && <span className="text-frost"> · {person.institution}</span>}
+          {person.institution && (
+            <span className="text-frost"> · {person.institution}</span>
+          )}
         </p>
       </div>
     </div>
@@ -160,26 +196,46 @@ function Interests({ tags }: { tags: string[] }) {
  * which is the difference between a profile that is sparse and one that looks
  * broken.
  */
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+function Detail({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <p className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">{label}</p>
-      <p className="mt-1.5 text-[13.5px] leading-relaxed text-frost">{children}</p>
+      <p className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
+        {label}
+      </p>
+      <p className="mt-1.5 text-[13.5px] leading-relaxed text-frost">
+        {children}
+      </p>
     </div>
   );
 }
 
 function ProfilePanel({ person }: { person: PersonCard }) {
   const anything =
-    person.position || person.education || person.focus || person.mentoring || person.availability;
+    person.position ||
+    person.education ||
+    person.focus ||
+    person.mentoring ||
+    person.availability;
 
   return (
     <div className="mt-4 flex flex-col gap-4 border-t border-edge pt-4">
       {person.position && <Detail label="Position">{person.position}</Detail>}
-      {person.education && <Detail label="Academic background">{person.education}</Detail>}
+      {person.education && (
+        <Detail label="Academic background">{person.education}</Detail>
+      )}
       {person.focus && <Detail label="Research focus">{person.focus}</Detail>}
-      {person.mentoring && <Detail label="Mentoring">{person.mentoring}</Detail>}
-      {person.availability && <Detail label="Availability">{person.availability}</Detail>}
+      {person.mentoring && (
+        <Detail label="Mentoring">{person.mentoring}</Detail>
+      )}
+      {person.availability && (
+        <Detail label="Availability">{person.availability}</Detail>
+      )}
 
       {!anything && (
         <p className="text-[13px] leading-relaxed text-dim">
@@ -191,8 +247,9 @@ function ProfilePanel({ person }: { person: PersonCard }) {
           out of a screenshot and this is the claim that must not travel. */}
       {person.is_demo && (
         <p className="border-l-2 border-collapse pl-3 text-[12.5px] leading-relaxed text-dim">
-          This is an example profile shipped with the instance so the directory has something to
-          show. The person is invented and the account cannot be signed into.
+          This is an example profile shipped with the instance so the directory
+          has something to show. The person is invented and the account cannot
+          be signed into.
         </p>
       )}
     </div>
@@ -217,7 +274,11 @@ function StandingAction({
     "flex shrink-0 items-center gap-1.5 border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:cursor-not-allowed disabled:opacity-50";
 
   if (person.standing === "self") {
-    return <span className="shrink-0 font-mono text-[11.5px] text-dim">this is you</span>;
+    return (
+      <span className="shrink-0 font-mono text-[11.5px] text-dim">
+        this is you
+      </span>
+    );
   }
 
   if (person.standing === "connected") {
@@ -231,8 +292,20 @@ function StandingAction({
 
   if (person.standing === "awaiting_you") {
     return (
-      <button type="button" onClick={onAccept} disabled={busy} className={cn(base, "border-photon bg-photon/10 text-photon hover:bg-photon/20")}>
-        {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+      <button
+        type="button"
+        onClick={onAccept}
+        disabled={busy}
+        className={cn(
+          base,
+          "border-photon bg-photon/10 text-photon hover:bg-photon/20",
+        )}
+      >
+        {busy ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Check className="size-3.5" />
+        )}
         accept
       </button>
     );
@@ -243,16 +316,37 @@ function StandingAction({
        a rebuff. They can withdraw it; they are not handed a rejection notice
        to reread. */
     return (
-      <button type="button" onClick={onWithdraw} disabled={busy} className={cn(base, "border-edge text-frost hover:border-edge-hi hover:text-paper")}>
-        {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Clock className="size-3.5" />}
+      <button
+        type="button"
+        onClick={onWithdraw}
+        disabled={busy}
+        className={cn(
+          base,
+          "border-edge text-frost hover:border-edge-hi hover:text-paper",
+        )}
+      >
+        {busy ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Clock className="size-3.5" />
+        )}
         waiting
       </button>
     );
   }
 
   return (
-    <button type="button" onClick={onConnect} disabled={busy} className={cn(base, "border-photon text-photon hover:bg-photon/10")}>
-      {busy ? <Loader2 className="size-3.5 animate-spin" /> : <UserPlus className="size-3.5" />}
+    <button
+      type="button"
+      onClick={onConnect}
+      disabled={busy}
+      className={cn(base, "border-photon text-photon hover:bg-photon/10")}
+    >
+      {busy ? (
+        <Loader2 className="size-3.5 animate-spin" />
+      ) : (
+        <UserPlus className="size-3.5" />
+      )}
       connect
     </button>
   );
@@ -280,9 +374,19 @@ export function ResearchHub() {
   const [notice, setNotice] = useState<string | null>(null);
 
   /** The person a note is being written to, if any. */
-  /* One row open at a time. Several open at once turns a scannable list into a
-     wall of prose, which is the thing the disclosure exists to prevent. */
-  const [opened, setOpened] = useState<number | null>(null);
+  /* Any number of rows open at once. It used to be one: opening a second
+     profile quietly closed the first, so there was no way to read two
+     professors side by side — which is exactly what somebody choosing between
+     them wants to do. The list still starts closed, so it stays scannable. */
+  const [opened, setOpened] = useState<ReadonlySet<number>>(() => new Set());
+  const toggleOpened = useCallback((id: number) => {
+    setOpened((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   const [composing, setComposing] = useState<PersonCard | null>(null);
   const [note, setNote] = useState("");
   const noteBox = useRef<HTMLTextAreaElement>(null);
@@ -298,7 +402,8 @@ export function ResearchHub() {
   const refreshDirectory = useCallback(async () => {
     const next = await fetchDirectory({
       q: query,
-      role: filter === "mentor" || filter === "student" ? (filter as Role) : null,
+      role:
+        filter === "mentor" || filter === "student" ? (filter as Role) : null,
       mentorsOnly: filter === "open",
     });
     setPeople(next.people);
@@ -390,13 +495,18 @@ export function ResearchHub() {
     if (!composing) return;
     const target = composing;
     setComposing(null);
-    await act(target.id, () => sendRequest(target.handle, note), `Request sent to ${target.display_name}.`);
+    await act(
+      target.id,
+      () => sendRequest(target.handle, note),
+      `Request sent to ${target.display_name}.`,
+    );
     setNote("");
   };
 
   const counts = useMemo(
     () => ({
-      requests: (network?.incoming.length ?? 0) + (network?.outgoing.length ?? 0),
+      requests:
+        (network?.incoming.length ?? 0) + (network?.outgoing.length ?? 0),
       connections: network?.connections.length ?? 0,
       incoming: network?.pending_incoming ?? 0,
     }),
@@ -420,8 +530,9 @@ export function ResearchHub() {
         <p className="eyebrow">Members only</p>
         <h2 className="display-2 mt-3 text-paper">Sign in to reach a mentor</h2>
         <p className="mt-4 text-[15px] leading-relaxed text-frost">
-          The directory lists real people and their institutions, so it is not readable
-          without an account — and a connection request has to come from someone.
+          The directory lists real people and their institutions, so it is not
+          readable without an account — and a connection request has to come
+          from someone.
         </p>
         <p className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -445,7 +556,18 @@ export function ResearchHub() {
     <div className="space-y-5">
       {/* Your own card. It is what everyone else searches on, so it sits at the
           top rather than behind a settings page nobody opens. */}
-      {card && <MyCard card={card} editing={editing} onEdit={setEditing} onSaved={(next) => { setCard(next); setEditing(false); void refreshDirectory(); }} />}
+      {card && (
+        <MyCard
+          card={card}
+          editing={editing}
+          onEdit={setEditing}
+          onSaved={(next) => {
+            setCard(next);
+            setEditing(false);
+            void refreshDirectory();
+          }}
+        />
+      )}
 
       {/* Tabs. */}
       <div className="flex flex-wrap items-center gap-1 border-b border-edge">
@@ -470,9 +592,14 @@ export function ResearchHub() {
             )}
           >
             {label}
-            <span className="font-mono text-[11px] text-dim tabular-nums">{count}</span>
+            <span className="font-mono text-[11px] text-dim tabular-nums">
+              {count}
+            </span>
             {id === "requests" && counts.incoming > 0 && (
-              <span className="size-1.5 rounded-full bg-photon" aria-label="new requests" />
+              <span
+                className="size-1.5 rounded-full bg-photon"
+                aria-label="new requests"
+              />
             )}
           </button>
         ))}
@@ -500,7 +627,10 @@ export function ResearchHub() {
         <>
           <div className="flex flex-wrap items-center gap-3">
             <label className="relative flex min-w-[16rem] flex-1 items-center">
-              <Search className="pointer-events-none absolute left-3 size-3.5 text-dim" aria-hidden />
+              <Search
+                className="pointer-events-none absolute left-3 size-3.5 text-dim"
+                aria-hidden
+              />
               <span className="sr-only">Search the directory</span>
               <input
                 value={query}
@@ -509,7 +639,11 @@ export function ResearchHub() {
                 className="w-full border border-edge bg-strata py-2.5 pr-3 pl-9 font-mono text-[13px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
               />
             </label>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter the directory">
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="group"
+              aria-label="Filter the directory"
+            >
               {FILTERS.map((entry) => (
                 <button
                   key={entry.id}
@@ -532,20 +666,27 @@ export function ResearchHub() {
 
           {people.length === 0 ? (
             <p className="py-10 text-center text-[14px] text-frost">
-              Nobody matches that. Try a broader search — the directory holds {total} member
+              Nobody matches that. Try a broader search — the directory holds{" "}
+              {total} member
               {total === 1 ? "" : "s"}.
             </p>
           ) : (
-            <ul className="grid gap-3 lg:grid-cols-2">
+            <ul className="grid items-start gap-3 lg:grid-cols-2">
+              {/* `items-start`: an open profile makes its card tall, and a grid
+                  row stretches every card in it to match, which left the closed
+                  neighbour hanging over a block of empty panel. */}
               {people.map((person) => (
-                <li key={person.id} className="panel flex flex-col rounded-xl p-4">
+                <li
+                  key={person.id}
+                  className="panel flex flex-col rounded-xl p-4"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <button
                       type="button"
-                      onClick={() => setOpened((prev) => (prev === person.id ? null : person.id))}
-                      aria-expanded={opened === person.id}
+                      onClick={() => toggleOpened(person.id)}
+                      aria-expanded={opened.has(person.id)}
                       aria-label={
-                        opened === person.id
+                        opened.has(person.id)
                           ? `Hide ${person.display_name}'s profile`
                           : `Show ${person.display_name}'s profile`
                       }
@@ -554,7 +695,7 @@ export function ResearchHub() {
                       <ChevronDown
                         className={cn(
                           "size-4 transition-transform duration-200",
-                          opened === person.id && "rotate-180",
+                          opened.has(person.id) && "rotate-180",
                         )}
                         aria-hidden
                       />
@@ -569,29 +710,40 @@ export function ResearchHub() {
                       }}
                       onAccept={() =>
                         person.connection_id &&
-                        act(person.id, () => acceptRequest(person.connection_id!), `Connected with ${person.display_name}.`)
+                        act(
+                          person.id,
+                          () => acceptRequest(person.connection_id!),
+                          `Connected with ${person.display_name}.`,
+                        )
                       }
                       onWithdraw={() =>
                         person.connection_id &&
-                        act(person.id, () => withdrawRequest(person.connection_id!), "Request withdrawn.")
+                        act(
+                          person.id,
+                          () => withdrawRequest(person.connection_id!),
+                          "Request withdrawn.",
+                        )
                       }
                     />
                   </div>
 
                   {person.headline && (
-                    <p className="mt-3 text-[13.5px] leading-relaxed text-frost">{person.headline}</p>
+                    <p className="mt-3 text-[13.5px] leading-relaxed text-frost">
+                      {person.headline}
+                    </p>
                   )}
                   <Interests tags={person.interests} />
 
-                  {opened === person.id && <ProfilePanel person={person} />}
+                  {opened.has(person.id) && <ProfilePanel person={person} />}
 
-                  {person.standing === "connected" && person.modules_completed !== null && (
-                    <p className="mt-3 border-t border-edge pt-2.5 font-mono text-[11.5px] text-dim tabular-nums">
-                      {person.modules_completed} lessons finished
-                      <span className="mx-2">·</span>
-                      {person.badges_earned} badges
-                    </p>
-                  )}
+                  {person.standing === "connected" &&
+                    person.modules_completed !== null && (
+                      <p className="mt-3 border-t border-edge pt-2.5 font-mono text-[11.5px] text-dim tabular-nums">
+                        {person.modules_completed} lessons finished
+                        <span className="mx-2">·</span>
+                        {person.badges_earned} badges
+                      </p>
+                    )}
                 </li>
               ))}
             </ul>
@@ -621,7 +773,9 @@ export function ResearchHub() {
               to {composing.display_name}
             </h2>
             {composing.headline && (
-              <p className="mt-2 text-[13px] leading-relaxed text-frost">{composing.headline}</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-frost">
+                {composing.headline}
+              </p>
             )}
 
             <label className="mt-4 block">
@@ -636,7 +790,8 @@ export function ResearchHub() {
                 onChange={(event) => setNote(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Escape") setComposing(null);
-                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void submitNote();
+                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey))
+                    void submitNote();
                 }}
                 placeholder="I'm on the entanglement module and stuck on why the Bloch vector vanishes…"
                 className="mt-2 w-full resize-none border border-edge bg-strata p-3 text-[13.5px] leading-relaxed text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
@@ -684,7 +839,9 @@ function RequestRow({
     <li className="panel rounded-xl p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <Identity person={record.person} />
-        <div className={cn("flex shrink-0 gap-2", busy && "opacity-50")}>{children}</div>
+        <div className={cn("flex shrink-0 gap-2", busy && "opacity-50")}>
+          {children}
+        </div>
       </div>
       {record.note && (
         <p className="mt-3 border-l-2 border-edge-hi pl-3 text-[13.5px] leading-relaxed text-frost italic">
@@ -692,7 +849,8 @@ function RequestRow({
         </p>
       )}
       <p className="mt-3 font-mono text-[11px] text-dim">
-        {record.outgoing ? "you asked" : "they asked"} · {when(record.created_at)}
+        {record.outgoing ? "you asked" : "they asked"} ·{" "}
+        {when(record.created_at)}
       </p>
     </li>
   );
@@ -708,7 +866,11 @@ function RequestLists({
 }: {
   network: NetworkResponse | null;
   busy: number | null;
-  act: (id: number, work: () => Promise<unknown>, said: string) => Promise<void>;
+  act: (
+    id: number,
+    work: () => Promise<unknown>,
+    said: string,
+  ) => Promise<void>;
 }) {
   const incoming = network?.incoming ?? [];
   const outgoing = network?.outgoing ?? [];
@@ -718,25 +880,47 @@ function RequestLists({
       <section>
         <p className="eyebrow mb-3">Waiting on you · {incoming.length}</p>
         {incoming.length === 0 ? (
-          <p className="text-[14px] text-frost">Nobody has asked to connect yet.</p>
+          <p className="text-[14px] text-frost">
+            Nobody has asked to connect yet.
+          </p>
         ) : (
           <ul className="space-y-3">
             {incoming.map((record) => (
-              <RequestRow key={record.id} record={record} busy={busy === record.person.id}>
+              <RequestRow
+                key={record.id}
+                record={record}
+                busy={busy === record.person.id}
+              >
                 <button
                   type="button"
                   onClick={() =>
-                    act(record.person.id, () => acceptRequest(record.id), `Connected with ${record.person.display_name}.`)
+                    act(
+                      record.person.id,
+                      () => acceptRequest(record.id),
+                      `Connected with ${record.person.display_name}.`,
+                    )
                   }
-                  className={cn(SMALL, "border-photon bg-photon/10 text-photon hover:bg-photon/20")}
+                  className={cn(
+                    SMALL,
+                    "border-photon bg-photon/10 text-photon hover:bg-photon/20",
+                  )}
                 >
                   <Check className="size-3.5" />
                   accept
                 </button>
                 <button
                   type="button"
-                  onClick={() => act(record.person.id, () => declineRequest(record.id), "Request declined.")}
-                  className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+                  onClick={() =>
+                    act(
+                      record.person.id,
+                      () => declineRequest(record.id),
+                      "Request declined.",
+                    )
+                  }
+                  className={cn(
+                    SMALL,
+                    "border-edge text-frost hover:border-paper hover:text-paper",
+                  )}
                 >
                   <X className="size-3.5" />
                   decline
@@ -756,11 +940,24 @@ function RequestLists({
         ) : (
           <ul className="space-y-3">
             {outgoing.map((record) => (
-              <RequestRow key={record.id} record={record} busy={busy === record.person.id}>
+              <RequestRow
+                key={record.id}
+                record={record}
+                busy={busy === record.person.id}
+              >
                 <button
                   type="button"
-                  onClick={() => act(record.person.id, () => withdrawRequest(record.id), "Request withdrawn.")}
-                  className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+                  onClick={() =>
+                    act(
+                      record.person.id,
+                      () => withdrawRequest(record.id),
+                      "Request withdrawn.",
+                    )
+                  }
+                  className={cn(
+                    SMALL,
+                    "border-edge text-frost hover:border-paper hover:text-paper",
+                  )}
                 >
                   <X className="size-3.5" />
                   withdraw
@@ -781,15 +978,20 @@ function ConnectionList({
 }: {
   network: NetworkResponse | null;
   busy: number | null;
-  act: (id: number, work: () => Promise<unknown>, said: string) => Promise<void>;
+  act: (
+    id: number,
+    work: () => Promise<unknown>,
+    said: string,
+  ) => Promise<void>;
 }) {
   const rows = network?.connections ?? [];
 
   if (rows.length === 0) {
     return (
       <p className="py-10 text-center text-[14px] text-frost">
-        No connections yet. Open the directory and ask someone whose work you want to
-        understand — a sentence about where you are stuck goes further than a bare request.
+        No connections yet. Open the directory and ask someone whose work you
+        want to understand — a sentence about where you are stuck goes further
+        than a bare request.
       </p>
     );
   }
@@ -804,9 +1006,16 @@ function ConnectionList({
               type="button"
               disabled={busy === record.person.id}
               onClick={() =>
-                act(record.person.id, () => removeConnection(record.id), "Connection removed.")
+                act(
+                  record.person.id,
+                  () => removeConnection(record.id),
+                  "Connection removed.",
+                )
               }
-              className={cn(SMALL, "border-edge text-dim hover:border-collapse hover:text-collapse")}
+              className={cn(
+                SMALL,
+                "border-edge text-dim hover:border-collapse hover:text-collapse",
+              )}
             >
               remove
             </button>
@@ -878,10 +1087,13 @@ function MyCard({
             <Identity person={card} />
           </div>
           {card.headline ? (
-            <p className="mt-3 text-[13.5px] leading-relaxed text-frost">{card.headline}</p>
+            <p className="mt-3 text-[13.5px] leading-relaxed text-frost">
+              {card.headline}
+            </p>
           ) : (
             <p className="mt-3 text-[13.5px] leading-relaxed text-dim italic">
-              No headline yet — this is the line people read before deciding whether to answer.
+              No headline yet — this is the line people read before deciding
+              whether to answer.
             </p>
           )}
           <Interests tags={card.interests} />
@@ -896,7 +1108,10 @@ function MyCard({
           <button
             type="button"
             onClick={() => onEdit(true)}
-            className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+            className={cn(
+              SMALL,
+              "border-edge text-frost hover:border-paper hover:text-paper",
+            )}
           >
             edit card
           </button>
@@ -909,7 +1124,8 @@ function MyCard({
     <div className="panel rounded-2xl p-5">
       <p className="eyebrow">Your card</p>
       <p className="mt-1.5 text-[13px] leading-relaxed text-frost">
-        This is what the directory searches and what a mentor reads before answering.
+        This is what the directory searches and what a mentor reads before
+        answering.
       </p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -941,7 +1157,11 @@ function MyCard({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex items-center gap-1.5" role="group" aria-label="Your role">
+        <div
+          className="flex items-center gap-1.5"
+          role="group"
+          aria-label="Your role"
+        >
           {(["student", "mentor"] as const).map((option) => (
             <button
               key={option}
@@ -979,7 +1199,10 @@ function MyCard({
         <button
           type="button"
           onClick={() => onEdit(false)}
-          className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+          className={cn(
+            SMALL,
+            "border-edge text-frost hover:border-paper hover:text-paper",
+          )}
         >
           cancel
         </button>
@@ -989,7 +1212,11 @@ function MyCard({
           disabled={saving}
           className="flex items-center gap-2 bg-photon px-4 py-2 font-mono text-[12px] font-semibold tracking-[0.1em] text-void uppercase hover:bg-photon-hi disabled:opacity-50"
         >
-          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Users className="size-3.5" />}
+          {saving ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Users className="size-3.5" />
+          )}
           save card
         </button>
       </div>

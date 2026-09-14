@@ -35,6 +35,8 @@ export interface PersonCard {
   interests: string[];
   open_to_mentoring: boolean;
   is_demo: boolean;
+  /** A profile picture, when there is one. Without it the card shows initials. */
+  avatar_url: string | null;
   /* The expanded profile, revealed when a directory row is opened. Every one
      is optional: a member who has filled in nothing still has a card, and the
      panel renders fewer sections rather than a grid of empty labels. */

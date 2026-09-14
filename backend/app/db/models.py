@@ -46,6 +46,10 @@ class User(Base):
     # than inferred from a name prefix so the directory can label it plainly
     # and nobody mistakes a fixture for a real academic.
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # A profile picture, as a URL. Nullable, and nothing in the product requires
+    # one: a member without a picture gets their initials, which reads better
+    # than a grid of identical placeholder silhouettes.
+    avatar_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
     # --- the expanded profile ----------------------------------------------
     # What the directory row reveals when somebody opens it. All nullable: a

@@ -124,6 +124,7 @@ def card_of(
         mentoring=user.mentoring,
         availability=user.availability,
         is_demo=bool(user.is_demo),
+        avatar_url=user.avatar_url,
         joined_at=user.created_at,
         standing=standing,  # type: ignore[arg-type]
         connection_id=connection_id,

@@ -31,6 +31,7 @@ Delete these rows and the feature works exactly the same with real members.
 DEMO_MENTORS: list[dict[str, object]] = [
     {
         "handle": "h-marsh",
+        "avatar_url": "/avatars/h-marsh.webp",
         "display_name": "Prof. Helena Marsh",
         "institution": "Institute for Quantum Systems",
         "position": "Professor of Physics · Quantum Error Correction Group",
@@ -57,6 +58,7 @@ DEMO_MENTORS: list[dict[str, object]] = [
     },
     {
         "handle": "a-ndukwe",
+        "avatar_url": "/avatars/a-ndukwe.webp",
         "display_name": "Dr. Adaora Ndukwe",
         "institution": "Centre for Quantum Algorithms",
         "position": "Senior Lecturer · Algorithms and Complexity",
@@ -83,6 +85,7 @@ DEMO_MENTORS: list[dict[str, object]] = [
     },
     {
         "handle": "r-duarte",
+        "avatar_url": "/avatars/r-duarte.webp",
         "display_name": "Prof. Rafael Duarte",
         "institution": "Laboratory for Superconducting Devices",
         "position": "Professor · Experimental Quantum Hardware",
@@ -109,6 +112,7 @@ DEMO_MENTORS: list[dict[str, object]] = [
     },
     {
         "handle": "s-bakker",
+        "avatar_url": "/avatars/s-bakker.webp",
         "display_name": "Dr. Sanne Bakker",
         "institution": "Institute for Quantum Systems",
         "position": "Research Fellow · Simulation and Benchmarking",
@@ -169,13 +173,26 @@ def seed_demo_mentors(session: Session) -> int:
                 focus=str(entry["focus"]),
                 mentoring=str(entry["mentoring"]),
                 availability=str(entry["availability"]),
+                avatar_url=str(entry["avatar_url"]),
                 open_to_mentoring=True,
                 is_demo=True,
             )
         )
         added += 1
 
-    if added:
+    # Pictures arrived after these accounts already existed, so rows seeded by an
+    # earlier version would otherwise never get one. Only filled where empty and
+    # only on example profiles: a picture somebody set is never overwritten, and
+    # a real member's row is never touched.
+    pictures = {m["handle"]: m["avatar_url"] for m in DEMO_MENTORS}
+    backfilled = 0
+    for user in session.scalars(
+        select(User).where(User.is_demo, User.handle.in_(list(pictures)), User.avatar_url.is_(None))
+    ):
+        user.avatar_url = str(pictures[user.handle])
+        backfilled += 1
+
+    if added or backfilled:
         session.commit()
     return added
 
