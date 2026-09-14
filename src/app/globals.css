@@ -476,6 +476,31 @@
 
 /* Formerly neon halos. Now a solid ring, which is what they were
    actually being used to mean. */
+/* A faulty line in the editor. Warm and faint: the squiggle under the code is
+   the precise mark, and this only says which row to look along. Set on the
+   light code ground, so it is the mascot's amber at low strength rather than a
+   red that would read as the whole program failing. */
+.qv-fault-line {
+  background: rgb(255 140 43 / 0.14);
+  box-shadow: inset 3px 0 0 rgb(255 140 43 / 0.85);
+}
+
+/* The cat's thought cloud.
+   The outline is four hairline drop-shadows rather than a border, because the
+   cloud is a union of shapes — a body and a row of bumps — and a border would
+   draw every seam between them. A shadow outlines only the silhouette the
+   shapes make together, which is the cloud. */
+@utility cloud-outline {
+  filter: drop-shadow(1px 0 0 var(--color-edge-hi)) drop-shadow(-1px 0 0 var(--color-edge-hi))
+    drop-shadow(0 1px 0 var(--color-edge-hi)) drop-shadow(0 -1px 0 var(--color-edge-hi))
+    drop-shadow(0 14px 26px rgb(0 0 0 / 0.5));
+}
+@utility cloud-outline-caution {
+  filter: drop-shadow(1px 0 0 var(--color-filament)) drop-shadow(-1px 0 0 var(--color-filament))
+    drop-shadow(0 1px 0 var(--color-filament)) drop-shadow(0 -1px 0 var(--color-filament))
+    drop-shadow(0 14px 26px rgb(0 0 0 / 0.55));
+}
+
 @utility glow-photon {
   box-shadow: inset 0 0 0 1px var(--color-photon);
 }

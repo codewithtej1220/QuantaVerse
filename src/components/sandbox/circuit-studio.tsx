@@ -14,23 +14,48 @@ import {
   type SimulationResponse,
 } from "@/lib/api";
 import { ProactiveToggle } from "@/components/sandbox/proactive-toggle";
-import { WorkspaceTabs, type WorkspaceTab } from "@/components/sandbox/workspace-tabs";
+import {
+  WorkspaceTabs,
+  type WorkspaceTab,
+} from "@/components/sandbox/workspace-tabs";
 import { useAuth } from "@/components/auth/auth-provider";
 import { readSession } from "@/lib/auth";
 import { challengeIR, type Challenge } from "@/lib/challenges";
 import { checkCircuit, type CircuitIssue } from "@/lib/circuit-check";
-import { clearCircuit, describeCircuit, publishCircuit } from "@/lib/circuit-store";
+import {
+  clearCircuit,
+  describeCircuit,
+  publishCircuit,
+} from "@/lib/circuit-store";
 import { GATE_BY_ID } from "@/lib/data";
 import { fromCircuitIR, histogramToCounts, toCircuitIR } from "@/lib/ir";
 import { PRESETS, presetPlacements, type Preset } from "@/lib/presets";
 import {
   fromQiskit,
+  parseQiskitOps,
   sampleShots,
   simulateSteps,
   toQiskit,
   type Placement,
 } from "@/lib/quantum";
-import { celebrate, hush, mascot, mascotOffer, say, setPose } from "@/lib/mascot";
+import { checkCode } from "@/lib/code-check";
+import {
+  caretLine,
+  locateEditor,
+  locateLine,
+  markCode,
+} from "@/lib/code-editor";
+import {
+  celebrate,
+  clearAlerts,
+  hush,
+  mascot,
+  mascotOffer,
+  noteEdit,
+  reportFault,
+  say,
+  setPose,
+} from "@/lib/mascot";
 import { cn } from "@/lib/utils";
 
 import { Bench } from "./bench";
@@ -118,7 +143,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const [grading, setGrading] = useState(false);
   const [gradeError, setGradeError] = useState<string | null>(null);
   /** Keyed by the circuit that was graded, so an edit retires the verdict. */
-  const [verdict, setVerdict] = useState<{ key: string; result: GradeResponse } | null>(null);
+  const [verdict, setVerdict] = useState<{
+    key: string;
+    result: GradeResponse;
+  } | null>(null);
 
   /* ---- open circuits -------------------------------------------------
      A workspace is everything that belongs to one circuit: its register
@@ -156,7 +184,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       name: challenge ? "attempt-1" : "circuit-1",
       qubits: challenge?.qubits ?? 3,
       placements: opening ? presetPlacements(opening) : [],
-      code: toQiskit(opening ? presetPlacements(opening) : [], challenge?.qubits ?? 3),
+      code: toQiskit(
+        opening ? presetPlacements(opening) : [],
+        challenge?.qubits ?? 3,
+      ),
       preset: opening,
       edited: false,
       touched: false,
@@ -240,7 +271,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       verdict: null,
       runNote: null,
     };
-    setWorkspaces((all) => [...all.map((item, i) => (i === active ? saved : item)), fresh]);
+    setWorkspaces((all) => [
+      ...all.map((item, i) => (i === active ? saved : item)),
+      fresh,
+    ]);
     setActive(workspaces.length);
     load(fresh);
   };
@@ -251,7 +285,11 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     /* Closing a tab left of the active one shifts it; closing the active one
        falls back to its left neighbour, or to the new first tab. */
     const nextActive =
-      index === active ? Math.max(0, index - 1) : active > index ? active - 1 : active;
+      index === active
+        ? Math.max(0, index - 1)
+        : active > index
+          ? active - 1
+          : active;
     setWorkspaces(remaining);
     setActive(nextActive);
     if (index === active) load(remaining[nextActive]);
@@ -297,6 +335,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
           hush();
         }
       }
+      clearAlerts();
+      markCode(null);
       return;
     }
 
@@ -311,7 +351,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
          who has not yet placed a gate, is a stranger opening with a complaint
          about work they did not do. Faults speak immediately; they are about a
          circuit that does not do what it looks like it does. */
-      const worst = issues.find((i) => touched || i.severity === "fault") ?? null;
+      const worst =
+        issues.find((i) => touched || i.severity === "fault") ?? null;
       const key = worst ? `${worst.kind}:${worst.wire}:${worst.column}` : null;
       if (key === flagged.current) return;
       flagged.current = key;
@@ -322,27 +363,126 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         /* Fixed. Take the remark down with the pose — a complaint left on
            screen about a circuit that no longer has anything wrong with it
            reads as still true, which is worse than having said nothing. */
+        reportFault("circuit", null);
         if (mascot.pose === "flagging") {
           setPose("idle");
           hush();
         }
         return;
       }
-      if (mascot.pose === "celebrating") return;
 
-      setPose("flagging");
-      /* `offer` is the affordance; the question behind it lives in
-         `mascotOffer.ask`, so tapping the bubble opens the tutor already
-         holding the fault rather than a blank prompt. */
-      mascotOffer.ask = `${worst.message} Why is that a problem, and what should I do instead?`;
+      if (worst.severity === "fault") {
+        /* A fault is worth the trip. The cat crosses the page to it and waits
+           beside it with a notice, rather than describing it from the corner.
+
+           When the circuit came from typed Qiskit, the fault is pointed at in
+           the code — the line the reader actually wrote — because that is
+           what they would have to change. The parser numbers each operation
+           in the order `pack` placed it, so a placement's index is its line. */
+        const cell = placements.find(
+          (p) => p.column === worst.column && p.wires.includes(worst.wire),
+        );
+        const index = cell && edited ? /^p(\d+)-/.exec(cell.id) : null;
+        const line = index
+          ? parseQiskitOps(code, qubits)[Number(index[1])]?.line
+          : undefined;
+
+        reportFault("circuit", {
+          key: `circuit:${key}`,
+          source: "circuit",
+          title: "Circuit fault",
+          where: line
+            ? `line ${line}`
+            : `q${worst.wire} · step ${worst.column + 1}`,
+          message: worst.message,
+          fix: worst.fix,
+          ask: `${worst.message} Why is that a problem, and what should I do instead?`,
+          locate: line
+            ? () => locateLine(line)
+            : () =>
+                document
+                  .querySelector('[data-mascot-target="circuit-fault"]')
+                  ?.getBoundingClientRect() ?? null,
+        });
+        return;
+      }
+
+      /* Advice is not worth a flight. An idle wire is a tidiness note, and a cat
+         that crossed the page to deliver one would be noise by the second time. */
+      reportFault("circuit", null);
+      if (mascot.pose === "celebrating") return;
+      mascotOffer.ask = `${worst.message} Why does that matter?`;
       say(`${worst.message} ${worst.fix}`, {
-        eyebrow: worst.severity === "fault" ? "spotted something" : "one small thing",
+        eyebrow: "one small thing",
         offer: true,
       });
     }, 750);
 
     return () => clearTimeout(timer);
-  }, [proactive, placements, qubits, touched]);
+  }, [proactive, placements, qubits, touched, code, edited]);
+
+  /* ---- the code, watched the same way ------------------------------------
+     The parser keeps what it can use and silently drops the rest, so a typo
+     in a gate name, a qubit that does not exist or a CNOT from a wire to itself
+     all simply vanish from the board. This says which line, and why.
+
+     Only while the code is hand-typed: text generated from the board is
+     correct by construction. A longer wait than the board's, because people
+     pause mid-line when typing in a way they do not when dragging gates. */
+  /* The text a build last failed on. A build failure is a fact about exactly
+     that program, and it has to survive the static check below finding nothing
+     wrong with it — typing and pressing Build inside the debounce would
+     otherwise have the check's pending "all clear" arrive a moment later and
+     wipe a failure the interpreter had just proved. */
+  const buildFailedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!proactive || !edited) {
+      markCode(null);
+      if (buildFailedFor.current !== code) reportFault("code", null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const issues = checkCode(code, qubits, caretLine());
+      const first = issues[0] ?? null;
+      markCode(first);
+
+      if (!first) {
+        if (buildFailedFor.current !== code) reportFault("code", null);
+        return;
+      }
+
+      const text = (code.split("\n")[first.line - 1] ?? "").trim();
+      reportFault("code", {
+        /* Keyed on what the line says, not where it is: adding a line above a
+           typo moves it, and the cat should glide down with it rather than go
+           home and fly back out as though it were a new mistake. */
+        key: `code:${first.kind}:${text}`,
+        source: "code",
+        title:
+          first.kind === "not-drawable" ? "Not on the board" : "Code error",
+        where: `line ${first.line}`,
+        message: first.message,
+        fix: first.fix,
+        ask: `Line ${first.line} of my Qiskit is \`${text}\`. ${first.message} Why does that happen, and how do I fix it?`,
+        locate: () => locateLine(first.line),
+      });
+    }, 1100);
+
+    return () => clearTimeout(timer);
+  }, [proactive, code, qubits, edited]);
+
+  /* Leaving the sandbox takes every alert with it. A cat still pointing at a
+     line of code on a page that no longer has an editor would be pointing at
+     nothing. */
+  useEffect(
+    () => () => {
+      clearAlerts();
+      markCode(null);
+    },
+    [],
+  );
 
   const nextId = useRef(100);
   const runCount = useRef(0);
@@ -367,7 +507,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     return () => controller.abort();
   }, []);
 
-  const steps = useMemo(() => simulateSteps(placements, qubits), [placements, qubits]);
+  const steps = useMemo(
+    () => simulateSteps(placements, qubits),
+    [placements, qubits],
+  );
   const stepIndex = Math.min(stepAt, steps.length - 1);
   const scrubbing = stepIndex < steps.length - 1;
 
@@ -386,7 +529,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
    * Measurements are left out: the histogram endpoint then returns the whole
    * register, and the grader compares states before any read-out anyway.
    */
-  const submission = useMemo(() => toCircuitIR(placements, qubits), [placements, qubits]);
+  const submission = useMemo(
+    () => toCircuitIR(placements, qubits),
+    [placements, qubits],
+  );
 
   /* Hand the tutor the circuit that is actually on screen, measurements and all. */
   useEffect(() => {
@@ -396,10 +542,18 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       summary: describeCircuit(ir, finalResult.depth, finalResult.gateCount),
       lessonId: challenge?.slug ?? preset?.id ?? null,
     });
-  }, [placements, qubits, finalResult.depth, finalResult.gateCount, preset, challenge]);
+  }, [
+    placements,
+    qubits,
+    finalResult.depth,
+    finalResult.gateCount,
+    preset,
+    challenge,
+  ]);
 
   /** Circuit is the source: regenerate the code and invalidate the last run. */
   const applyCircuit = (next: Placement[], from: Preset | null = null) => {
+    noteEdit("circuit");
     setPlacements(next);
     // A new circuit is a new take: park the transport at the end and stop.
     setStepAt(Number.POSITIVE_INFINITY);
@@ -415,6 +569,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
 
   /** Code is the source: parse it, but leave the text exactly as typed. */
   const onCodeChange = (next: string) => {
+    noteEdit("code");
     setCode(next);
     setPlacements(fromQiskit(next, qubits));
     setEdited(true);
@@ -468,7 +623,11 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   /** Sample in this tab: deterministic per run, so the noise is reproducible. */
   const runLocally = useCallback(() => {
     const started = performance.now();
-    const sampled = sampleShots(finalResult.probabilities, SHOTS, runCount.current * 7919 + 13);
+    const sampled = sampleShots(
+      finalResult.probabilities,
+      SHOTS,
+      runCount.current * 7919 + 13,
+    );
     /* Timed around the sampling itself, not around the readability delay below
        it: this number is shown beside the frameworks' own, so it has to be the
        same measurement — work done, not time waited. */
@@ -510,7 +669,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         setPose("idle");
       })
       .catch((error: unknown) => {
-        const reason = error instanceof ApiError ? error.message : "the API call failed";
+        const reason =
+          error instanceof ApiError ? error.message : "the API call failed";
         setRunNote(`${reason} — sampled in this tab instead.`);
         runLocally();
       });
@@ -530,6 +690,31 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
    * the sandboxed interpreter and loads the circuit it returns, which is the only
    * way the grid can be trusted to match code it cannot itself read.
    */
+  /* A build that failed is a code error the interpreter proved, which makes it
+     the most certain thing this page can report — so it flies too. A traceback
+     names its line when it has one; without one the cat goes to the top of the
+     program rather than guessing. Network failures do not: those are not a
+     mistake in anything the learner wrote. */
+  const reportBuildFailure = (text: string) => {
+    buildFailedFor.current = code;
+    if (!proactive) return;
+    const found = /line (\d+)/i.exec(text);
+    const line = found ? Number(found[1]) : null;
+    noteEdit("code");
+    reportFault("code", {
+      key: `build:${text}`,
+      source: "code",
+      title: "Build failed",
+      where: line ? `line ${line}` : "your code",
+      message: text,
+      fix: line
+        ? "Python stopped on that line before it could build a circuit, so the board has not changed. Fix that line and press Build from code again."
+        : "Python could not turn this program into a circuit, so the board has not changed. Check the program runs top to bottom and ends with a QuantumCircuit.",
+      ask: `I pressed Build from code and got: "${text}". What does that mean, and how do I fix my code?`,
+      locate: () => (line ? locateLine(line) : null) ?? locateEditor(),
+    });
+  };
+
   const buildFromCode = () => {
     setBuilding(true);
     setBuildNote(null);
@@ -539,17 +724,18 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         const printed = response.stdout.trim() || undefined;
 
         if (!response.ok || !response.circuit) {
-          setBuildNote({
-            text: response.error ?? "the code ran, but no QuantumCircuit came back",
-            failed: true,
-            stdout: printed,
-          });
+          const text =
+            response.error ?? "the code ran, but no QuantumCircuit came back";
+          setBuildNote({ text, failed: true, stdout: printed });
+          reportBuildFailure(text);
           return;
         }
 
         const outcome = fromCircuitIR(response.circuit, GRID_LIMITS);
         if (!outcome.ok) {
-          setBuildNote({ text: `built, but not drawable — ${outcome.reason}`, failed: true, stdout: printed });
+          const text = `built, but not drawable — ${outcome.reason}`;
+          setBuildNote({ text, failed: true, stdout: printed });
+          reportBuildFailure(text);
           return;
         }
 
@@ -569,7 +755,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       })
       .catch((error: unknown) => {
         setBuildNote({
-          text: error instanceof ApiError ? error.message : "the API call failed",
+          text:
+            error instanceof ApiError ? error.message : "the API call failed",
           failed: true,
         });
       })
@@ -612,14 +799,18 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         }
       })
       .catch((error: unknown) => {
-        setGradeError(error instanceof ApiError ? error.message : "the check could not run");
+        setGradeError(
+          error instanceof ApiError ? error.message : "the check could not run",
+        );
       })
       .finally(() => setGrading(false));
   };
 
   /** A verdict only speaks for the circuit it was given. */
   const fresh =
-    verdict && verdict.key === JSON.stringify(submission) ? verdict.result : null;
+    verdict && verdict.key === JSON.stringify(submission)
+      ? verdict.result
+      : null;
 
   const measured = placements.some((p) => p.gate === "m");
 
@@ -777,7 +968,9 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               onClose={closeWorkspace}
               onRename={(index, name) =>
                 setWorkspaces((all) =>
-                  all.map((item, i) => (i === index ? { ...item, name } : item)),
+                  all.map((item, i) =>
+                    i === index ? { ...item, name } : item,
+                  ),
                 )
               }
             />
@@ -812,7 +1005,9 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
                 <dt className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
                   {label}
                 </dt>
-                <dd className="mt-0.5 font-mono text-[13px] text-paper tabular-nums">{value}</dd>
+                <dd className="mt-0.5 font-mono text-[13px] text-paper tabular-nums">
+                  {value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -863,7 +1058,9 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         shotCount={SHOTS}
         /* Named so the read-out cannot be mistaken for the finished circuit
            while the transport is parked mid-way through it. */
-        stepLabel={scrubbing ? `step ${stepIndex} of ${steps.length - 1}` : null}
+        stepLabel={
+          scrubbing ? `step ${stepIndex} of ${steps.length - 1}` : null
+        }
       />
     </div>
   );

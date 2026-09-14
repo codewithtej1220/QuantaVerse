@@ -322,16 +322,39 @@ def _worker(code: str, variable: str | None, channel: Any) -> None:
             }
         )
     except BaseException as error:
+        message = str(error) or error.__class__.__name__
+        line = _user_line(error.__traceback__)
         channel.put(
             {
                 "event": "result",
                 "ok": False,
-                "error": str(error) or error.__class__.__name__,
+                # Same shape as the SyntaxError branch above, so a caller reads
+                # a line number out of one format rather than two.
+                "error": f"line {line}: {message}" if line else message,
                 "error_type": error.__class__.__name__,
                 "stdout": stream.getvalue()[:MAX_STDOUT],
                 "duration_ms": round((time.perf_counter() - started) * 1000, 3),
             }
         )
+
+
+def _user_line(trace: Any) -> int | None:
+    """The deepest line of the learner's own program on a traceback.
+
+    A syntax error carries its line on the exception, and the branch for it
+    always reported one. A runtime error does not: the line lives on the
+    traceback, and returning ``str(error)`` alone threw it away, so a NameError
+    on line 5 arrived as a sentence with no idea where it happened. Walking to
+    the *deepest* frame compiled from the learner's source means an error inside
+    a function they wrote points at the line inside it, and one raised deep in
+    Qiskit points at the line of theirs that called it.
+    """
+    line = None
+    while trace is not None:
+        if trace.tb_frame.f_code.co_filename == "<quantaverse>":
+            line = trace.tb_lineno
+        trace = trace.tb_next
+    return line
 
 
 def _failure(message: str, kind: str, duration_ms: float = 0.0) -> dict[str, Any]:

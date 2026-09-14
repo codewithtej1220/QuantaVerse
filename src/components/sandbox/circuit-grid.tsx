@@ -286,6 +286,11 @@ export function CircuitGrid({
                         {flag && flag.wire === w && flag.column === c && (
                           <span
                             aria-hidden
+                            /* What the cat flies to. The ring is already drawn
+                               exactly on the faulty gate, so it is the one
+                               element on the board that is, by definition,
+                               where the fault is. */
+                            data-mascot-target="circuit-fault"
                             className="pointer-events-none absolute grid place-items-center"
                             style={{
                               width: GATE_W + 12,

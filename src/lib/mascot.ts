@@ -85,7 +85,12 @@ interface MascotState {
   visible: boolean;
 }
 
-const SILENT: MascotSpeech = { text: "", eyebrow: null, streaming: false, offer: false };
+const SILENT: MascotSpeech = {
+  text: "",
+  eyebrow: null,
+  streaming: false,
+  offer: false,
+};
 
 /**
  * The question a tap should carry into the tutor.
@@ -175,7 +180,11 @@ export function canDrawMascot() {
  */
 export function say(
   text: string,
-  options: { eyebrow?: string | null; streaming?: boolean; offer?: boolean } = {},
+  options: {
+    eyebrow?: string | null;
+    streaming?: boolean;
+    offer?: boolean;
+  } = {},
 ) {
   mascot.speech = {
     text,
@@ -240,4 +249,150 @@ export function releaseDrag() {
   document.removeEventListener("dragover", trackDrag);
   document.removeEventListener("drag", trackDrag);
   mascotGaze.held = false;
+}
+
+/* ---------------- where the cat is, and what it is watching ---------------- */
+
+/**
+ * The cat's own position on screen, in pointer space (-1…1, y up).
+ *
+ * The eyes aim along the line from here to whatever they are looking at. It used
+ * to be two constants for the bottom-right corner, which was true for as long as
+ * the cat never left it. It leaves it now, so the stage writes its real centre
+ * here as it moves, and the frame loop reads it like everything else — no
+ * render between the cat moving and its eyes knowing it has.
+ */
+export const mascotSeat = { x: 0.86, y: -0.78 };
+
+/** A point the cat should keep its eyes on — the fault it has flown to. */
+export const mascotAttention = { x: 0, y: 0, on: false };
+
+/* ---------------- faults it flies to ---------------- */
+
+export type AlertSource = "circuit" | "code";
+
+/**
+ * Something wrong on the page, somewhere specific.
+ *
+ * The remark in the corner used to be the whole of it: a sentence about a cell
+ * or a line, delivered from the far side of the window, which left the reader
+ * to go and find what it meant. An alert carries the one thing that remark was
+ * missing — where — as a function rather than a position, because the page
+ * scrolls, the editor scrolls inside it, and a rectangle measured once is
+ * pointing at the wrong place a second later.
+ */
+export interface MascotAlert {
+  /** The same fault found again keeps the same key, so nothing flies twice. */
+  key: string;
+  source: AlertSource;
+  /** "Circuit fault", "Code error" — what kind of trouble, in two words. */
+  title: string;
+  /** Where, briefly: "q2 · step 1", "line 8". */
+  where: string;
+  message: string;
+  fix: string;
+  /** Carried into the tutor if the reader asks. */
+  ask: string;
+  /** The fault's place on screen right now, or null if it has none. */
+  locate: () => DOMRect | null;
+}
+
+export interface AlertState {
+  alert: MascotAlert | null;
+  /** Whether the reader has opened the notification to read it. */
+  open: boolean;
+}
+
+let alertState: AlertState = { alert: null, open: false };
+
+/* One pending fault per surface, and one cat. When both have something, the
+   surface the reader touched last wins — somebody typing Qiskit wants the
+   cat at the line, not at a cell on the board they have not looked at. */
+const pending: Record<AlertSource, MascotAlert | null> = {
+  circuit: null,
+  code: null,
+};
+/* A fault the reader said "got it" to stays quiet until it changes or goes. */
+const dismissed: Record<AlertSource, string | null> = {
+  circuit: null,
+  code: null,
+};
+let lastEdited: AlertSource = "circuit";
+
+function publishAlert() {
+  const other: AlertSource = lastEdited === "code" ? "circuit" : "code";
+  const next = pending[lastEdited] ?? pending[other];
+  if (next === alertState.alert) return;
+  const same = Boolean(
+    next && alertState.alert && next.key === alertState.alert.key,
+  );
+  alertState = { alert: next, open: same ? alertState.open : false };
+  if (next) {
+    if (mascot.pose !== "celebrating") mascot.pose = "flagging";
+  } else if (mascot.pose === "flagging") {
+    mascot.pose = "idle";
+  }
+  announce();
+}
+
+export function subscribeAlert(notify: Listener) {
+  return subscribeMascot(notify);
+}
+
+export function alertSnapshot() {
+  return alertState;
+}
+
+/** Which surface the reader just changed, so a tie goes to the right one. */
+export function noteEdit(source: AlertSource) {
+  lastEdited = source;
+}
+
+/**
+ * Tell the cat what is wrong on one surface — or, with null, that nothing is.
+ *
+ * Idempotent on purpose: the watchers call this after every debounced edit
+ * whether or not anything changed, and the same fault reported twice is
+ * refreshed in place rather than sending the cat home and back again.
+ */
+export function reportFault(source: AlertSource, alert: MascotAlert | null) {
+  if (!alert) {
+    dismissed[source] = null;
+    if (!pending[source]) return;
+    pending[source] = null;
+    publishAlert();
+    return;
+  }
+  if (dismissed[source] === alert.key) return;
+  pending[source] = alert;
+  if (alertState.alert && alertState.alert.key === alert.key) {
+    alertState = { alert, open: alertState.open };
+    announce();
+    return;
+  }
+  publishAlert();
+}
+
+/** "Got it." The cat goes home and this fault stays quiet until it changes. */
+export function dismissAlert() {
+  const current = alertState.alert;
+  if (!current) return;
+  dismissed[current.source] = current.key;
+  pending[current.source] = null;
+  publishAlert();
+}
+
+export function setAlertOpen(open: boolean) {
+  if (!alertState.alert || alertState.open === open) return;
+  alertState = { ...alertState, open };
+  announce();
+}
+
+/** Everything off — leaving the page, or turning watching off. */
+export function clearAlerts() {
+  pending.circuit = null;
+  pending.code = null;
+  dismissed.circuit = null;
+  dismissed.code = null;
+  publishAlert();
 }

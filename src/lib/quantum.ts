@@ -382,50 +382,77 @@ export function pack(
   });
 }
 
-/** Parse the subset of Qiskit the sandbox emits. Unknown lines are ignored. */
-export function fromQiskit(code: string, qubits: number): Placement[] {
-  const ops: { gate: string; wires: number[] }[] = [];
+/** One operation read out of Qiskit source, with the line it came from. */
+export interface ParsedOp {
+  gate: string;
+  wires: number[];
+  /** 1-based, as an editor numbers it. */
+  line: number;
+}
+
+/**
+ * Read the subset of Qiskit the sandbox emits, remembering where each gate was.
+ *
+ * Split out of `fromQiskit` so that anything which needs to point at the code
+ * — a fault found on the board that came from a typed line, say — is reading
+ * the same parse the diagram was built from rather than a second opinion about
+ * it. Two parsers of the same text are two chances to disagree.
+ *
+ * Unknown lines are skipped here exactly as they always were. Saying so is the
+ * job of `code-check`, which reports every line this function quietly drops.
+ */
+export function parseQiskitOps(code: string, qubits: number): ParsedOp[] {
+  const ops: ParsedOp[] = [];
   const valid = (q: number) => q >= 0 && q < qubits;
 
-  for (const raw of code.split("\n")) {
+  code.split("\n").forEach((raw, index) => {
+    const lineNo = index + 1;
     const line = raw.split("#")[0];
-    if (!line.trim()) continue;
+    if (!line.trim()) return;
 
     const one = ONE_QUBIT.exec(line);
     if (one) {
       const q = Number(one[2]);
-      if (valid(q)) ops.push({ gate: one[1], wires: [q] });
-      continue;
+      if (valid(q)) ops.push({ gate: one[1], wires: [q], line: lineNo });
+      return;
     }
 
     const cx = CNOT.exec(line);
     if (cx) {
       const c = Number(cx[1]);
       const t = Number(cx[2]);
-      if (valid(c) && valid(t) && c !== t) ops.push({ gate: "cnot", wires: [c, t] });
-      continue;
+      if (valid(c) && valid(t) && c !== t) ops.push({ gate: "cnot", wires: [c, t], line: lineNo });
+      return;
     }
 
     if (MEASURE_ALL.test(line)) {
-      for (let q = 0; q < qubits; q += 1) ops.push({ gate: "m", wires: [q] });
-      continue;
+      for (let q = 0; q < qubits; q += 1) ops.push({ gate: "m", wires: [q], line: lineNo });
+      return;
     }
 
     const list = MEASURE_LIST.exec(line);
     if (list) {
       for (const part of list[1].split(",")) {
         const q = Number(part.trim());
-        if (part.trim() && valid(q)) ops.push({ gate: "m", wires: [q] });
+        if (part.trim() && valid(q)) ops.push({ gate: "m", wires: [q], line: lineNo });
       }
-      continue;
+      return;
     }
 
     const single = MEASURE_ONE.exec(line);
     if (single) {
       const q = Number(single[1]);
-      if (valid(q)) ops.push({ gate: "m", wires: [q] });
+      if (valid(q)) ops.push({ gate: "m", wires: [q], line: lineNo });
     }
-  }
+  });
 
-  return pack(ops, qubits);
+  return ops;
+}
+
+/** Parse the subset of Qiskit the sandbox emits. Unknown lines are ignored. */
+export function fromQiskit(code: string, qubits: number): Placement[] {
+  return pack(
+    parseQiskitOps(code, qubits).map(({ gate, wires }) => ({ gate, wires })),
+    qubits,
+  );
 }

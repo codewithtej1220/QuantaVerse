@@ -4,7 +4,13 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import { mascot, mascotGaze, type MascotPose } from "@/lib/mascot";
+import {
+  mascot,
+  mascotAttention,
+  mascotGaze,
+  mascotSeat,
+  type MascotPose,
+} from "@/lib/mascot";
 import { pointerState } from "@/lib/pointer";
 
 /**
@@ -173,9 +179,6 @@ function Stroked({
   );
 }
 
-/** Where the corner the cat is pinned to lands in pointer space, -1 to 1. */
-const CORNER_X = 0.86;
-const CORNER_Y = -0.78;
 
 const EAR_L = triangle([-0.52, 0.42], [-0.24, 0.86], [-0.11, 0.4]);
 const EAR_R = triangle([0.52, 0.42], [0.24, 0.86], [0.11, 0.4]);
@@ -297,17 +300,20 @@ export function QuantumCat({
        being carried. A drag suppresses `pointermove` for its whole duration,
        so without this the eyes freeze the moment a gate is picked up. */
     const carrying = mascotGaze.held;
-    const lookX = carrying ? mascotGaze.x : pointerState.x;
-    const lookY = carrying ? mascotGaze.y : pointerState.y;
+    /* A gate in the hand beats a fault on the page beats the pointer. The
+       fault is what the cat flew over to point at, so while it is there the
+       eyes stay on it rather than drifting after the mouse. */
+    const attending = !carrying && mascotAttention.on;
+    const lookX = carrying ? mascotGaze.x : attending ? mascotAttention.x : pointerState.x;
+    const lookY = carrying ? mascotGaze.y : attending ? mascotAttention.y : pointerState.y;
 
     if (pupilL.current && pupilR.current) {
-      /* Both are in viewport space, and the cat's own place in that space is
-         now fixed by CSS rather than computed — it is pinned to the
-         bottom-right corner. These two numbers mirror that placement, so the
-         vector between them is the direction to look, with no raycast and no
-         layout read inside the frame loop. */
-      let dx = lookX - CORNER_X;
-      let dy = lookY - CORNER_Y;
+      /* Both are in viewport space, and so is `mascotSeat`, which the stage
+         keeps at the cat's real centre as it moves — so the vector between
+         them is the direction to look, with no raycast and no layout read
+         inside the frame loop. */
+      let dx = lookX - mascotSeat.x;
+      let dy = lookY - mascotSeat.y;
       const reach = Math.hypot(dx, dy) || 1;
       const gaze = Math.min(1, reach) / reach;
       dx *= gaze * 0.075;
@@ -353,8 +359,9 @@ export function QuantumCat({
          actually in transit. The shapes are flat, so rotating the group
          foreshortens the face — which is the point: it reads as the cat
          squaring up to what you are doing rather than as a sprite sliding. */
-      const turn = carrying ? THREE.MathUtils.clamp(lookX - CORNER_X, -1, 1) * 0.3 : 0;
-      const dip = carrying ? THREE.MathUtils.clamp(lookY - CORNER_Y, -1, 1) * -0.16 : 0;
+      const turning = carrying || attending;
+      const turn = turning ? THREE.MathUtils.clamp(lookX - mascotSeat.x, -1, 1) * 0.3 : 0;
+      const dip = turning ? THREE.MathUtils.clamp(lookY - mascotSeat.y, -1, 1) * -0.16 : 0;
       head.current.rotation.y += (turn - head.current.rotation.y) * (1 - Math.exp(-step * 7));
       head.current.rotation.x += (dip - head.current.rotation.x) * (1 - Math.exp(-step * 7));
     }

@@ -2,6 +2,8 @@
 
 import Editor from "@monaco-editor/react";
 
+import { registerEditor } from "@/lib/code-editor";
+
 /**
  * Monaco, themed to the site rather than to VS Code.
  *
@@ -22,6 +24,9 @@ export default function MonacoInner({
       language="python"
       theme="quantaverse"
       onChange={(next) => onChange(next ?? "")}
+      /* Registered so the studio can mark a faulty line and the cat can find
+         it on screen, without either of them holding a ref into this module. */
+      onMount={(editor, monaco) => registerEditor(editor, monaco)}
       loading={
         <pre className="w-full overflow-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed text-void">
           {value}
@@ -88,6 +93,9 @@ export default function MonacoInner({
         overviewRulerLanes: 0,
         scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
         guides: { indentation: true },
+        /* The squiggle's message on hover, so a reader who never looks at the
+           cat still gets the sentence it would have said. */
+        hover: { enabled: "on", delay: 250 },
       }}
     />
   );

@@ -3,7 +3,17 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { ANCHORS, hush, mascot, mascotOffer, moveTo, say, setPose, setVisible } from "@/lib/mascot";
+import {
+  ANCHORS,
+  clearAlerts,
+  hush,
+  mascot,
+  mascotOffer,
+  moveTo,
+  say,
+  setPose,
+  setVisible,
+} from "@/lib/mascot";
 import { guideFor, INVITE } from "@/lib/mascot-lines";
 
 /**
@@ -28,7 +38,13 @@ const greeted = new Set<string>();
     spotted a fault in the circuit in front of the reader and is pointing at it,
     and a standing invitation to ask a question is a strictly worse thing to
     have on screen than a specific remark about their own work. */
-const BUSY = new Set(["thinking", "resolving", "working", "celebrating", "flagging"]);
+const BUSY = new Set([
+  "thinking",
+  "resolving",
+  "working",
+  "celebrating",
+  "flagging",
+]);
 
 export function MascotDirector() {
   const path = usePathname();
@@ -40,6 +56,9 @@ export function MascotDirector() {
   useEffect(() => {
     moveTo(ANCHORS.home);
     setVisible(true);
+    /* A fault belongs to the page it was found on. Carried to the next route
+       the cat would fly to a rectangle that no longer exists. */
+    clearAlerts();
   }, [path]);
 
   /* The guide speaks on arrival, then falls back to a standing invitation.
