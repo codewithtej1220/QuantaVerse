@@ -101,6 +101,9 @@ class User(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    notes: Mapped[list["ModuleNote"]] = relationship(
+        back_populates="uploader", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class AuthSession(Base):
@@ -230,3 +233,42 @@ class Connection(Base):
     addressee: Mapped[User] = relationship(
         back_populates="received_requests", foreign_keys=[addressee_id]
     )
+
+
+class ModuleNote(Base):
+    """
+    A PDF of notes a professor uploaded for one module.
+
+    The file itself lives on disk under `stored_name`, a random name chosen
+    here: never the uploader's filename, which is kept only to be shown back.
+    A path built from user input is a path somebody will eventually aim at
+    `../../`, and a random hex name leaves nothing to aim.
+
+    `sha256` is what stops the same file being uploaded twice by one person
+    for one module, which is the usual result of a slow connection and an
+    impatient second click.
+    """
+
+    __tablename__ = "module_notes"
+    __table_args__ = (
+        Index("ix_note_module_time", "module_slug", "created_at"),
+        Index("ix_note_uploader_module", "uploader_id", "module_slug"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    module_slug: Mapped[str] = mapped_column(String(64), nullable=False)
+    uploader_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(140), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    original_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    stored_name: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Counted from the file where that is cheap and reliable, and otherwise
+    # left empty rather than guessed.
+    pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+    uploader: Mapped[User] = relationship(back_populates="notes")

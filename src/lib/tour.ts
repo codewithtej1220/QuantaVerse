@@ -61,6 +61,13 @@ export const TOUR: TourStop[] = [
     text: "Watch the video, read the theory, then pass the short checkpoint underneath to tick the lesson off.",
   },
   {
+    route: "/curriculum/qubit-and-superposition",
+    target: "module-notes",
+    title: "Or read the notes",
+    text: "Rather read than watch? Every lesson can show notes instead of its video — the theory and every formula — and your professor can put their own here.",
+    under: true,
+  },
+  {
     route: "/algorithms",
     target: "algorithms",
     title: "Famous algorithms",

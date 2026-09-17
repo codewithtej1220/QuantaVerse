@@ -9,6 +9,10 @@ import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
 import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
 import { LessonBodies } from "@/components/curriculum/lesson-body";
+import {
+  ModuleNotesProvider,
+  NotesShelf,
+} from "@/components/curriculum/module-notes";
 import { ModuleOutline } from "@/components/curriculum/module-outline";
 import { ModuleRail } from "@/components/curriculum/module-rail";
 
@@ -88,7 +92,11 @@ export default async function ModulePage({
         </Link>
 
         <div className="mt-6 grid gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
-          <div>
+          {/* min-w-0: below lg the grid has one automatic column, and a grid
+              item will not shrink below its content. The notation lines are
+              whitespace-pre, so one long equation used to widen the whole
+              column past a phone screen instead of scrolling in its own box. */}
+          <div className="min-w-0">
             <header className="border-b border-edge pb-7">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="ket rounded-lg border border-photon bg-photon/10 px-2.5 py-1 text-[14px] text-photon">
@@ -105,7 +113,13 @@ export default async function ModulePage({
               </p>
             </header>
 
-            <LessonBodies slug={entry.slug} lessons={written} lab={lab} />
+            {/* The notes shelf sits before the first lesson, because what it
+                changes is how every lesson below is presented: watching or
+                reading is picked once, not once per lesson. */}
+            <ModuleNotesProvider slug={entry.slug}>
+              <NotesShelf />
+              <LessonBodies slug={entry.slug} lessons={written} lab={lab} />
+            </ModuleNotesProvider>
 
             {/* The honest bit, while a module still has no bodies to show. */}
             {written.length === 0 && (
@@ -133,7 +147,7 @@ export default async function ModulePage({
           </div>
 
           {/* Side rail. */}
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             <ModuleOutline
               slug={entry.slug}
               lessons={written}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Film } from "lucide-react";
 
 import type { LessonVideo } from "@/lib/lessons";
@@ -63,9 +63,12 @@ function embedSrc(url: string): string | null {
 export function LessonPlayer({
   video,
   title,
+  emptyAction,
 }: {
   video?: LessonVideo;
   title: string;
+  /** Offered in the empty slot, when there is something better to do there. */
+  emptyAction?: ReactNode;
 }) {
   const embed = useMemo(() => (video ? embedSrc(video.url) : null), [video]);
 
@@ -80,6 +83,7 @@ export function LessonPlayer({
           The written lesson below is complete on its own. A video goes here
           when it is recorded.
         </p>
+        {emptyAction}
       </div>
     );
   }

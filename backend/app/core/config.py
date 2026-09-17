@@ -14,6 +14,7 @@ TEAM = "Team Naturalz"
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATABASE_PATH = BACKEND_ROOT / "quantaverse.db"
+DEFAULT_NOTES_DIR = BACKEND_ROOT / "uploads" / "notes"
 
 load_dotenv(BACKEND_ROOT / ".env")
 
@@ -65,6 +66,22 @@ class Settings:
         self.refresh_token_days = int(os.getenv("QUANTAVERSE_REFRESH_TOKEN_DAYS", "30"))
         self.max_sessions_per_user = int(os.getenv("QUANTAVERSE_MAX_SESSIONS", "10"))
         self.registration_open = _flag(os.getenv("QUANTAVERSE_REGISTRATION_OPEN", ""), True)
+
+        # Module notes: PDFs professors upload for a module. Stored on disk, not
+        # in the database, so a 20 MB file is not a 20 MB row. On a host with an
+        # ephemeral filesystem, point this at a mounted volume.
+        self.notes_dir = Path(
+            os.getenv("QUANTAVERSE_NOTES_DIR", "").strip() or DEFAULT_NOTES_DIR
+        ).expanduser()
+        self.notes_max_bytes = int(
+            float(os.getenv("QUANTAVERSE_NOTES_MAX_MB", "20") or "20") * 1024 * 1024
+        )
+        # Who may upload. Anyone can call themselves a mentor on the research
+        # hub, so a deployment that needs uploads limited to named staff lists
+        # their e-mail addresses here; left empty, every mentor account may.
+        self.notes_uploaders = {
+            email.lower() for email in _split(os.getenv("QUANTAVERSE_NOTES_UPLOADERS", ""))
+        }
 
     @property
     def tutor_live(self) -> bool:

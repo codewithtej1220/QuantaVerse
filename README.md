@@ -144,11 +144,29 @@ src/                    the Next.js site (App Router)
   app/                  routes: curriculum, sandbox, dashboard, login, register
   components/           UI, split by area
   lib/                  API client, auth, circuit IR, quantum maths
+scripts/notes/          the example theory notes, and the script that prints them
+public/notes/           the printed PDFs, one per module
 backend/                the FastAPI service
-  app/api/routes/       simulate, grade, tutor, auth, progress
+  app/api/routes/       simulate, grade, tutor, auth, progress, notes
   app/services/         framework adapters, grader, sandbox, accounts, progress
   app/db/               SQLAlchemy models and session
 ```
+
+### Theory notes
+
+Every module has example notes as a PDF — the theory, every formula typeset, and
+a formula sheet — which a lesson can show instead of its video. They are written
+in `scripts/notes/modules/` and printed by a headless Chromium:
+
+```bash
+npm run notes
+```
+
+That rewrites `public/notes/*.pdf` and the page numbers in
+`src/lib/example-notes.json`. Add `--check` to typeset without printing, or a
+module slug to build one. Professors can upload their own notes for a module
+from its page; those live outside the repository, under
+`QUANTAVERSE_NOTES_DIR`.
 
 `backend/README.md` documents every endpoint, the circuit IR and the account
 model in detail.

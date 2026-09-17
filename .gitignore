@@ -62,3 +62,7 @@ backend/__pycache__/
 # A stray nested clone. It was committed as a gitlink with no .gitmodules, so a
 # fresh clone got an empty directory and a warning. Nothing imports it.
 /QuantaVerse/
+
+# Notes professors upload through the API (QUANTAVERSE_NOTES_DIR). Other people's
+# course material, and nothing that belongs in the repository.
+/backend/uploads/

@@ -94,6 +94,9 @@ before they write, which is why the budget above is raised; at 700,
 | `QUANTAVERSE_REFRESH_TOKEN_DAYS` | `30` | Refresh token lifetime. |
 | `QUANTAVERSE_MAX_SESSIONS` | `10` | Live refresh tokens per student. The oldest is retired past the cap. |
 | `QUANTAVERSE_REGISTRATION_OPEN` | `1` | Set `0` to close `/api/auth/register` on a shared instance. |
+| `QUANTAVERSE_NOTES_DIR` | `backend/uploads/notes` | Where uploaded module notes are written. Point it at a mounted volume on a host with an ephemeral disk. |
+| `QUANTAVERSE_NOTES_MAX_MB` | `20` | Largest PDF accepted per upload. |
+| `QUANTAVERSE_NOTES_UPLOADERS` | empty | Comma-separated e-mail addresses allowed to upload. Empty means any account whose role is `mentor`, which people set themselves on the hub. |
 
 ## Endpoints
 
@@ -132,6 +135,19 @@ before they write, which is why the budget above is raised; at 700,
 | GET | `/api/progress/exercises` | Every lab with attempts, best score and success rate. |
 | POST | `/api/progress/exercises` | File a lab attempt scored on the client. |
 | GET | `/api/dashboard` | Everything the dashboard draws, in one call. |
+
+### Module notes
+
+PDFs a professor uploads for a module, shown on its page beside the example
+notes that ship with the site. Every route needs a token: uploads are other
+people's course material, and the listing carries the uploader's name.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/notes/{module_slug}` | The module's uploaded notes, whether the caller may add one, and the size limit. |
+| POST | `/api/notes/{module_slug}` | Upload a PDF. The file is the request body with `Content-Type: application/pdf`; `title`, and optionally `description` and `filename`, are query parameters. Mentors only. |
+| GET | `/api/notes/file/{note_id}` | The PDF itself, inline. |
+| DELETE | `/api/notes/file/{note_id}` | Remove notes. The uploader only. |
 
 ### The circuit IR
 
@@ -280,12 +296,13 @@ app/
     tutor.py                 /tutor/ask /tutor/explain /tutor/status
     auth.py                  /auth/register /login /refresh /logout /me
     progress.py              /catalog /progress /dashboard
+    notes.py                 /notes/{module} /notes/file/{id}
   api/deps.py                bearer parsing, current_user, db session
   core/clock.py              naive-UTC helpers used by every timestamp
   core/curriculum.py         modules, lessons, labs, badges, mastery ladder
   core/security.py           bcrypt, JWT mint and verify, refresh hashing
   db/models.py               users, auth_sessions, lesson_completions,
-                             exercise_attempts, earned_badges
+                             exercise_attempts, earned_badges, module_notes
   db/session.py              engine, session factory, create_all
   models/auth.py             account request and response models
   models/progress.py         progress and dashboard response models

@@ -1,0 +1,143 @@
+{
+  "qubit-and-superposition": {
+    "slug": "qubit-and-superposition",
+    "title": "The Qubit & Superposition — example notes",
+    "href": "/notes/qubit-and-superposition.pdf",
+    "pages": 8,
+    "bytes": 685047,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "sheetPage": 8,
+    "formulas": 15
+  },
+  "measurement-and-probability": {
+    "slug": "measurement-and-probability",
+    "title": "Measurement & Probability — example notes",
+    "href": "/notes/measurement-and-probability.pdf",
+    "pages": 7,
+    "bytes": 599531,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "sheetPage": 7,
+    "formulas": 11
+  },
+  "single-qubit-gates": {
+    "slug": "single-qubit-gates",
+    "title": "Single-Qubit Gates — example notes",
+    "href": "/notes/single-qubit-gates.pdf",
+    "pages": 9,
+    "bytes": 780278,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "sheetPage": 9,
+    "formulas": 17
+  },
+  "quantum-entanglement": {
+    "slug": "quantum-entanglement",
+    "title": "Quantum Entanglement — example notes",
+    "href": "/notes/quantum-entanglement.pdf",
+    "pages": 8,
+    "bytes": 786905,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "sheetPage": 8,
+    "formulas": 16
+  },
+  "circuits-with-qiskit": {
+    "slug": "circuits-with-qiskit",
+    "title": "Circuits with Qiskit — example notes",
+    "href": "/notes/circuits-with-qiskit.pdf",
+    "pages": 10,
+    "bytes": 641891,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "sheetPage": 10,
+    "formulas": 15
+  },
+  "deutsch-jozsa": {
+    "slug": "deutsch-jozsa",
+    "title": "The Deutsch–Jozsa Algorithm — example notes",
+    "href": "/notes/deutsch-jozsa.pdf",
+    "pages": 7,
+    "bytes": 591467,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "sheetPage": 7,
+    "formulas": 12
+  },
+  "grovers-search": {
+    "slug": "grovers-search",
+    "title": "Grover's Search Algorithm — example notes",
+    "href": "/notes/grovers-search.pdf",
+    "pages": 10,
+    "bytes": 779347,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "sheetPage": 9,
+    "formulas": 20
+  },
+  "shors-factoring": {
+    "slug": "shors-factoring",
+    "title": "Shor's Factoring Algorithm — example notes",
+    "href": "/notes/shors-factoring.pdf",
+    "pages": 12,
+    "bytes": 1020635,
+    "lessonPages": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "sheetPage": 11,
+    "formulas": 22
+  }
+}

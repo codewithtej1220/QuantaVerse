@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FlaskConical } from "lucide-react";
 
 import { LessonQuiz } from "@/components/curriculum/lesson-quiz";
-import { LessonPlayer } from "@/components/curriculum/lesson-video";
+import { LessonMedia } from "@/components/curriculum/module-notes";
 import { useLessonToggle } from "@/components/curriculum/use-lesson-toggle";
 import type { Lesson } from "@/lib/lessons";
 import type { GradeMode } from "@/lib/challenges";
@@ -124,7 +124,11 @@ export function LessonBodies({
                 {lesson.summary}
               </p>
 
-              <LessonPlayer video={lesson.video} title={lesson.title} />
+              <LessonMedia
+                video={lesson.video}
+                title={lesson.title}
+                index={index}
+              />
 
               {/* The theory.
 

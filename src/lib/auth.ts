@@ -287,6 +287,46 @@ export async function authed<T>(
   }
 }
 
+/**
+ * A signed-in request whose body or answer is not JSON: a file going up, or a
+ * file coming back.
+ *
+ * Same token handling as `authed` — one refresh on a 401, then give up — but it
+ * hands back the raw response, and it leaves the body alone so a File can be
+ * sent as itself. A Blob can be read twice, so the retry after a refresh sends
+ * the same bytes again.
+ */
+export async function authedResponse(
+  path: string,
+  init: { method?: string; body?: BodyInit; headers?: Record<string, string> } = {},
+): Promise<Response> {
+  const session = readSession();
+  if (!session) throw new ApiError("sign in to use this endpoint", 401);
+
+  const attempt = async (token: string) => {
+    try {
+      return await fetch(`${API_BASE}${path}`, {
+        method: init.method ?? "GET",
+        body: init.body,
+        headers: { ...init.headers, Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+    } catch {
+      throw new ApiError(
+        `cannot reach the QuantaVerse API at ${API_BASE} — is uvicorn running?`,
+      );
+    }
+  };
+
+  let response = await attempt(session.access_token);
+  if (response.status === 401) {
+    const renewed = await refreshSession();
+    response = await attempt(renewed.access_token);
+  }
+  if (!response.ok) throw new ApiError(await readError(response), response.status);
+  return response;
+}
+
 export function register(body: {
   email: string;
   password: string;
