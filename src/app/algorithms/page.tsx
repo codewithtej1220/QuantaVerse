@@ -8,7 +8,7 @@ import { Stage, Zone } from "@/components/three/stage";
 export const metadata: Metadata = {
   title: "Algorithms",
   description:
-    "Step through the quantum algorithms that beat their classical counterparts — Grover, Deutsch–Jozsa, Bernstein–Vazirani, superdense coding and teleportation — one gate at a time, on a real statevector simulation running in your browser.",
+    "Walk through the quantum algorithms that beat their classical counterparts — Grover, Deutsch–Jozsa, Bernstein–Vazirani, superdense coding and teleportation — stage by stage and gate by gate, on a real statevector simulation running in your browser.",
 };
 
 /**
@@ -37,10 +37,12 @@ export default function AlgorithmsPage() {
               <span className="text-photon">beat the classical one.</span>
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-frost">
-              Five algorithms, each one stepped through a gate at a time with
-              the Qiskit beside it and the statevector underneath. Nothing here
-              is an animation of a circuit — it is the circuit, running on the
-              same simulator the sandbox uses, in your browser.
+              Five algorithms, each taken a stage at a time — superposition,
+              oracle, interference, measurement — with a picture of what every
+              stage does to the amplitudes, and the gates, the Qiskit and the
+              statevector underneath. Nothing here is an animation of a circuit:
+              every picture is read off the circuit itself, running on the same
+              simulator the sandbox uses, in your browser.
             </p>
           </div>
 
@@ -72,6 +74,23 @@ export default function AlgorithmsPage() {
                   {algorithm.tagline}
                 </p>
 
+                {/* The stages, in order: the shape of the idea before the gates. */}
+                <ol
+                  aria-label="Stages"
+                  className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[10.5px] tracking-[0.06em] text-dim"
+                >
+                  {algorithm.stages.map((stage, i) => (
+                    <li key={stage.title} className="flex items-center gap-1.5">
+                      {i > 0 && (
+                        <span aria-hidden className="text-edge-hi">
+                          →
+                        </span>
+                      )}
+                      <span className="text-frost">{stage.title}</span>
+                    </li>
+                  ))}
+                </ol>
+
                 {/* The comparison is the reason the algorithm exists, so it is
                     on the card rather than buried on the page behind it. */}
                 <dl className="mt-4 grid gap-2 border-t border-edge pt-4 text-[12px]">
@@ -94,7 +113,7 @@ export default function AlgorithmsPage() {
                 </dl>
 
                 <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors group-hover:text-photon">
-                  step through it
+                  walk the {algorithm.stages.length} stages
                   <ArrowRight
                     className="size-3.5 transition-transform group-hover:translate-x-0.5"
                     aria-hidden

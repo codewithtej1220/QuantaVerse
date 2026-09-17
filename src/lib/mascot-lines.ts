@@ -95,7 +95,7 @@ export function guideFor(path: string): Line | null {
     const found = ALGORITHM_BY_SLUG[path.split("/")[2] ?? ""];
     if (found) {
       return {
-        text: `${found.name}, in ${found.steps.length} steps. Play it through and tap me on whichever one stops making sense.`,
+        text: `${found.name}, in ${found.stages.length} stages. Play them through and tap me on whichever one stops making sense.`,
         eyebrow: "walkthrough",
         ask: `Explain ${found.name} to me simply, in plain language.`,
       };

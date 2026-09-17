@@ -63,8 +63,11 @@ export function CircuitGrid({
   onRemove: (id: string) => void;
   /** The cell the tutor is currently taking issue with, if any. */
   flag?: { wire: number; column: number } | null;
-  /** A time step to light up, for a walkthrough parked on one. */
-  highlight?: number | null;
+  /**
+   * Time steps to light up, for a walkthrough parked on them: one column, or an
+   * inclusive range of them — a whole stage of an algorithm at once.
+   */
+  highlight?: number | readonly [number, number] | null;
   /**
    * Gates the circuit is heading towards but has not placed yet.
    *
@@ -255,7 +258,12 @@ export function CircuitGrid({
                             would have to leave the cell's own transform to do
                             it. Behind the wire, so it reads as the column
                             being lit rather than as something laid over it. */}
-                        {highlight === c && (
+                        {(typeof highlight === "number"
+                          ? highlight === c
+                          : highlight !== null &&
+                            highlight !== undefined &&
+                            c >= highlight[0] &&
+                            c <= highlight[1]) && (
                           <span
                             aria-hidden
                             className="absolute inset-y-0 -left-px -right-px border-x border-photon/25 bg-photon/8"

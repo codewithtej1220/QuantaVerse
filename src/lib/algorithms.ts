@@ -32,18 +32,89 @@ export interface AlgorithmStep {
   watch?: string;
 }
 
+/**
+ * What a stage's picture shows.
+ *
+ * Each is read straight off the simulation — the statevector at the frame
+ * before the stage and at the frame after it — so the animation is the net
+ * effect of the stage's gates, not an illustration of it.
+ */
+export type StageVisual =
+  /** The register before anything runs: one card per qubit. */
+  | { kind: "register" }
+  /** Signed amplitudes over some wires, animated from the stage's start to its end. */
+  | {
+      kind: "amplitudes";
+      /** The wires shown. Others are factored out while they stay unentangled. */
+      register: number[];
+      /**
+       * How the change is drawn. `spread`: Hadamards fanning one bar out into
+       * many. `phase`: signs flipping. `interfere`: every output as the sum of
+       * its signed contributions. `reflect`: inversion about the mean. `bell`:
+       * which of the four Bell states the pair is in. `settle`: the plain
+       * before and after.
+       */
+      effect: "spread" | "phase" | "interfere" | "reflect" | "bell" | "settle";
+      /** Basis states to call out, written q(n−1)…q0. */
+      focus?: string[];
+      /** A Bloch disc per shown wire under the bars. */
+      bloch?: boolean;
+    }
+  /** Bloch discs, for stages where each qubit's own state is the story. */
+  | { kind: "bloch"; wires: number[]; ghost?: StageGhost }
+  /** Shots filling a histogram over some wires. */
+  | {
+      kind: "histogram";
+      register: number[];
+      focus?: string[];
+      ghost?: StageGhost;
+    };
+
+/** A reference arrow: where one qubit was at an earlier frame, drawn on another's disc. */
+export interface StageGhost {
+  /** The wire and frame the reference is taken from. */
+  wire: number;
+  frame: number;
+  /** The disc it is drawn on. */
+  onto: number;
+}
+
+/**
+ * One named part of an algorithm — "Oracle", "Diffusion" — covering a run of
+ * steps.
+ *
+ * The steps are the gates, one time step each; a stage is what those gates are
+ * for. Reading an algorithm as eleven gates asks the learner to find the idea
+ * among them, and reading it as five stages hands them the idea first and the
+ * gates as its implementation.
+ */
+export interface AlgorithmStage {
+  title: string;
+  /** What the stage does and why, in two or three sentences. */
+  summary: string;
+  /** What to look at while its picture plays. */
+  watch: string;
+  /** How many steps it covers, counted on from where the previous stage ended. */
+  steps: number;
+  visual: StageVisual;
+}
+
 export interface Algorithm {
   slug: string;
   name: string;
   /** One line, for the card. */
   tagline: string;
   qubits: number;
+  /** What each wire is for, in wire order. */
+  roles: string[];
   /** What it costs a classical computer, and what it costs this circuit. */
   classical: string;
   quantum: string;
   /** The problem, before any circuit. Two or three sentences. */
   premise: string;
   steps: AlgorithmStep[];
+  /** The steps grouped into named stages, in order; together they cover every step. */
+  stages: AlgorithmStage[];
   /** What the finished state shows, in one sentence. */
   outcome: string;
 }
@@ -56,6 +127,7 @@ export const ALGORITHMS: Algorithm[] = [
     name: "Bernstein–Vazirani",
     tagline: "Pull a hidden bit string out of a black box in a single query.",
     qubits: 3,
+    roles: ["input x₀", "input x₁", "answer"],
     classical: "one query per bit",
     quantum: "one query, total",
     premise:
@@ -104,6 +176,65 @@ export const ALGORITHMS: Algorithm[] = [
         watch: "q0 reads 1 and q1 reads 0. q2 is still in |−⟩ and contributes nothing; ignore it.",
       },
     ],
+    stages: [
+      {
+        title: "Initialization",
+        summary:
+          "Three qubits, all |0⟩. q0 and q1 are the input register the question is asked on; q2 is the answer wire the oracle writes to. The secret, s = 01, is built into the oracle and nowhere else.",
+        watch: "Every arrow points straight up, and all of the amplitude sits on one basis state.",
+        steps: 0,
+        visual: { kind: "register" },
+      },
+      {
+        title: "Superposition",
+        summary:
+          "Hadamards put the input register into an equal superposition of all four inputs, so a single query asks about every x at once. The answer wire goes to |−⟩ first, which is what will turn the oracle's reply into a sign.",
+        watch:
+          "One bar splits into four equal bars of +½ as both input arrows swing down onto the equator.",
+        steps: 2,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "spread",
+          bloch: true,
+        },
+      },
+      {
+        title: "Oracle",
+        summary:
+          "One query. The oracle adds s·x to the answer wire, and because that wire is |−⟩ the reply comes back as a phase: every input with s·x = 1 has its amplitude negated.",
+        watch:
+          "|01⟩ and |11⟩ — the inputs with q0 = 1 — flip below the axis. No probability moves: all four are still 25%.",
+        steps: 1,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "phase",
+          focus: ["01", "11"],
+        },
+      },
+      {
+        title: "Interference",
+        summary:
+          "Hadamards on the inputs again. Each output collects a signed contribution from every input, and the sign pattern the oracle wrote is exactly the one that cancels everywhere except on the secret.",
+        watch: "Three columns sum to zero and one sums to 1.",
+        steps: 1,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "interfere",
+          focus: ["01"],
+        },
+      },
+      {
+        title: "Measurement",
+        summary:
+          "Reading the input register returns the secret with certainty — one query, however long s is.",
+        watch: "Every shot lands on |01⟩: q0 = 1, q1 = 0.",
+        steps: 1,
+        visual: { kind: "histogram", register: [0, 1], focus: ["01"] },
+      },
+    ],
   },
 
   {
@@ -111,6 +242,7 @@ export const ALGORITHMS: Algorithm[] = [
     name: "Deutsch–Jozsa",
     tagline: "Tell a constant function from a balanced one after looking once.",
     qubits: 3,
+    roles: ["input x₀", "input x₁", "output"],
     classical: "up to 2ⁿ⁻¹ + 1 queries",
     quantum: "one query",
     premise:
@@ -163,6 +295,64 @@ export const ALGORITHMS: Algorithm[] = [
         say: "Measure the input register. All zeros means constant; anything else means balanced. One query, one certain answer.",
       },
     ],
+    stages: [
+      {
+        title: "Initialization",
+        summary:
+          "Two input qubits and an output qubit, all |0⟩. The oracle hides a function f(x₀, x₁), and the only promise is that it is constant or balanced.",
+        watch: "Every arrow points up; all the amplitude is on one basis state.",
+        steps: 0,
+        visual: { kind: "register" },
+      },
+      {
+        title: "Superposition",
+        summary:
+          "Hadamards spread the inputs over all four values of x, and the output qubit is prepared in |−⟩ so that f(x) will arrive as a sign rather than as a bit.",
+        watch: "One bar becomes four equal amplitudes of +½.",
+        steps: 2,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "spread",
+          bloch: true,
+        },
+      },
+      {
+        title: "Oracle",
+        summary:
+          "One query, built here as two CNOTs computing f(x) = x₀ ⊕ x₁. Through phase kickback each input picks up a factor of (−1)^f(x).",
+        watch:
+          "|01⟩ and |10⟩, where f is 1, flip negative. Half the signs have flipped — that is what balanced looks like, with every probability still at 25%.",
+        steps: 2,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "phase",
+          focus: ["01", "10"],
+        },
+      },
+      {
+        title: "Interference",
+        summary:
+          "Hadamards on the inputs. The amplitude arriving at |00⟩ is the average of all four signs, so a constant function would pile everything onto |00⟩ — and a balanced one cancels it to exactly zero.",
+        watch: "|00⟩ sums to zero. Here all of the amplitude lands on |11⟩.",
+        steps: 1,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "interfere",
+          focus: ["00", "11"],
+        },
+      },
+      {
+        title: "Measurement",
+        summary:
+          "Measure the inputs. Anything but 00 proves the function is balanced, decided with certainty after a single query.",
+        watch: "|11⟩ on every shot, and |00⟩ never.",
+        steps: 1,
+        visual: { kind: "histogram", register: [0, 1], focus: ["11"] },
+      },
+    ],
   },
 
   {
@@ -170,6 +360,7 @@ export const ALGORITHMS: Algorithm[] = [
     name: "Grover's search",
     tagline: "Find the marked item in an unsorted set by amplifying it.",
     qubits: 2,
+    roles: ["index bit 0", "index bit 1"],
     classical: "2.5 looks on average, 4 worst case",
     quantum: "one iteration, then certainty",
     premise:
@@ -250,6 +441,74 @@ export const ALGORITHMS: Algorithm[] = [
         say: "Final Hadamards close the diffuser and the reflection lands. The marked amplitude has grown at the expense of the other three.",
         watch: "|11⟩ goes to 100% and the other three drop to zero. On four items one iteration is exact — run a second one and it would start going back down.",
       },
+      {
+        ops: [
+          { gate: "m", wires: [0] },
+          { gate: "m", wires: [1] },
+        ],
+        phase: "read",
+        say: "Measure both qubits. After one iteration there is nothing left to amplify, so every shot lands on the marked item.",
+        watch:
+          "A single bar at 100% on |11⟩. A second iteration before measuring would have started shrinking it again.",
+      },
+    ],
+    stages: [
+      {
+        title: "Initialization",
+        summary:
+          "Two qubits index four items, |00⟩ to |11⟩, and both start at |0⟩. The oracle knows the marked item is |11⟩; the rest of the circuit does not.",
+        watch: "Both arrows point up and all the amplitude sits on |00⟩.",
+        steps: 0,
+        visual: { kind: "register" },
+      },
+      {
+        title: "Superposition",
+        summary:
+          "A Hadamard on each qubit gives every item the same amplitude, ½. The search starts knowing nothing: each item is a 25% guess.",
+        watch: "One bar fans out into four equal ones as both arrows swing onto the equator.",
+        steps: 1,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "spread",
+          bloch: true,
+        },
+      },
+      {
+        title: "Oracle",
+        summary:
+          "The oracle flips the sign of the marked item and nothing else. It is a controlled-Z, built from a Hadamard, a CNOT and a Hadamard on q1.",
+        watch:
+          "|11⟩ drops to −½ while its probability stays at 25% — a sign on its own is invisible to a measurement.",
+        steps: 3,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "phase",
+          focus: ["11"],
+        },
+      },
+      {
+        title: "Diffusion",
+        summary:
+          "The diffuser reflects every amplitude about their mean. The mean is +¼: the three unmarked items sit just above it and land on 0, while the marked item, far below at −½, is thrown up to +1.",
+        watch: "The dashed line is the mean. Each bar jumps to its mirror image across it.",
+        steps: 7,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "reflect",
+          focus: ["11"],
+        },
+      },
+      {
+        title: "Measurement",
+        summary:
+          "Measuring now finds the marked item every time. On four items one iteration is exact; a search over N items needs about (π/4)√N of them.",
+        watch: "Every shot lands on |11⟩.",
+        steps: 1,
+        visual: { kind: "histogram", register: [0, 1], focus: ["11"] },
+      },
     ],
   },
 
@@ -258,6 +517,7 @@ export const ALGORITHMS: Algorithm[] = [
     name: "Superdense coding",
     tagline: "Send two classical bits by touching one qubit.",
     qubits: 2,
+    roles: ["Alice", "Bob"],
     classical: "two bits down the wire",
     quantum: "one qubit down the wire",
     premise:
@@ -307,6 +567,62 @@ export const ALGORITHMS: Algorithm[] = [
         say: "Both bits, read off with certainty. One qubit crossed the gap.",
       },
     ],
+    stages: [
+      {
+        title: "Initialization",
+        summary:
+          "Two qubits at |0⟩. q0 will be Alice's and q1 will be Bob's. Alice wants to send the two bits 11.",
+        watch: "Both arrows point up; nothing is shared yet.",
+        steps: 0,
+        visual: { kind: "register" },
+      },
+      {
+        title: "Shared entanglement",
+        summary:
+          "A Hadamard and a CNOT make the Bell pair |Φ+⟩ = (|00⟩ + |11⟩)/√2. One half goes to each of them before Alice knows what she will say.",
+        watch:
+          "Amplitude only on |00⟩ and |11⟩ — and both arrows shrink to nothing, because neither qubit has a state of its own.",
+        steps: 2,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "settle",
+          bloch: true,
+          focus: ["00", "11"],
+        },
+      },
+      {
+        title: "Encoding",
+        summary:
+          "Alice touches only her own qubit: a Z, then an X. Each two-bit message selects a different one of the four Bell states, and 11 selects |Ψ−⟩.",
+        watch:
+          "The pair moves from Φ+ to Φ− after the Z, and to Ψ− after the X. Bob's qubit is never touched.",
+        steps: 2,
+        visual: { kind: "amplitudes", register: [0, 1], effect: "bell" },
+      },
+      {
+        title: "Decoding",
+        summary:
+          "Bob holds both qubits now. A CNOT and a Hadamard undo the Bell basis, turning each of the four Bell states into a different two-bit string.",
+        watch: "The arrows grow back to full length as all the amplitude gathers on |11⟩.",
+        steps: 2,
+        visual: {
+          kind: "amplitudes",
+          register: [0, 1],
+          effect: "settle",
+          bloch: true,
+          focus: ["11"],
+        },
+      },
+      {
+        title: "Measurement",
+        summary:
+          "Bob measures and reads 11 with certainty: two classical bits, recovered from the one qubit that travelled.",
+        watch: "Every shot lands on |11⟩.",
+        steps: 1,
+        visual: { kind: "histogram", register: [0, 1], focus: ["11"] },
+      },
+    ],
   },
 
   {
@@ -314,6 +630,7 @@ export const ALGORITHMS: Algorithm[] = [
     name: "Quantum teleportation",
     tagline: "Move an unknown state onto another qubit without moving the qubit.",
     qubits: 3,
+    roles: ["payload", "Alice's half", "Bob's half"],
     classical: "impossible without measuring, which destroys it",
     quantum: "one shared pair, two classical bits",
     premise:
@@ -370,6 +687,68 @@ export const ALGORITHMS: Algorithm[] = [
         say: "And closed. The correction is applied and the payload has arrived.",
         watch: "q2's Bloch vector is now exactly where q0's was at step 2 — same equator, same 45°. q0 is not holding it any more.",
       },
+      {
+        ops: [
+          { gate: "m", wires: [0] },
+          { gate: "m", wires: [1] },
+        ],
+        phase: "read",
+        say: "Measure Alice's two qubits. With the corrections already applied as controlled gates, her bits come out completely random — each of the four pairs a quarter of the time — and q2 holds the payload whichever pair appears.",
+        watch:
+          "A flat histogram over q0 and q1. The state was never in those bits: they only said which correction to apply, and that has already happened.",
+      },
+    ],
+    stages: [
+      {
+        title: "Initialization",
+        summary:
+          "Three qubits at |0⟩. q0 will carry the payload Alice wants to send, q1 is her half of a shared pair, and q2 is Bob's half, far away.",
+        watch: "All three arrows point up.",
+        steps: 0,
+        visual: { kind: "register" },
+      },
+      {
+        title: "Payload and shared pair",
+        summary:
+          "Alice makes the payload on q0 — a Hadamard then a T, which leaves it on the equator at 45° — while q1 and q2 become an entangled Bell pair.",
+        watch:
+          "q0's arrow points between X and Y. q1 and q2 shrink to nothing: they are entangled with each other.",
+        steps: 2,
+        visual: { kind: "bloch", wires: [0, 1, 2] },
+      },
+      {
+        title: "Bell measurement",
+        summary:
+          "A CNOT from q0 to q1 and a Hadamard on q0 rotate Alice's two qubits into the Bell basis. The payload leaves q0 and is spread across the correlations between all three.",
+        watch: "All three arrows sit at the origin — for now, no single qubit holds the state.",
+        steps: 2,
+        visual: { kind: "bloch", wires: [0, 1, 2] },
+      },
+      {
+        title: "Correction",
+        summary:
+          "The corrections depend on Alice's two bits: an X on q2 controlled by q1, then a Z controlled by q0, built as a Hadamard, a CNOT and a Hadamard. Running them as controlled gates is the same thing with the measurement deferred to the end.",
+        watch:
+          "Bob's arrow swings out to exactly where the payload started — the faint arrow on his disc.",
+        steps: 4,
+        visual: {
+          kind: "bloch",
+          wires: [0, 2],
+          ghost: { wire: 0, frame: 2, onto: 2 },
+        },
+      },
+      {
+        title: "Measurement",
+        summary:
+          "Measuring Alice's qubits now gives two random bits. Bob's qubit keeps the payload whatever they say — it was moved, not copied, and q0 no longer has it.",
+        watch: "A flat histogram over Alice's two bits, and Bob's arrow still on the payload.",
+        steps: 1,
+        visual: {
+          kind: "histogram",
+          register: [0, 1],
+          ghost: { wire: 0, frame: 2, onto: 2 },
+        },
+      },
     ],
   },
 ];
@@ -377,6 +756,37 @@ export const ALGORITHMS: Algorithm[] = [
 export const ALGORITHM_BY_SLUG = Object.fromEntries(
   ALGORITHMS.map((a) => [a.slug, a]),
 ) as Record<string, Algorithm>;
+
+/** A stage located on the transport: the frame before it runs, and the frame after. */
+export interface StageSpan {
+  stage: AlgorithmStage;
+  index: number;
+  /** Frame the stage starts from — the state before its first gate. */
+  from: number;
+  /** Frame the stage ends on — the state after its last gate. */
+  to: number;
+}
+
+/**
+ * Where each stage sits among the frames.
+ *
+ * Frame 0 is the register before anything runs, and frame n is the state after
+ * step n, so a stage covering steps a…b runs from frame a to frame b + 1. The
+ * opening stage covers no steps and sits on frame 0 alone.
+ */
+export function stageSpans(algorithm: Algorithm): StageSpan[] {
+  let at = 0;
+  return algorithm.stages.map((stage, index) => {
+    const from = at;
+    at += stage.steps;
+    return { stage, index, from, to: at };
+  });
+}
+
+/** The stage a frame belongs to: the first whose span reaches it. */
+export function stageAt(spans: StageSpan[], frame: number): StageSpan {
+  return spans.find((span) => frame <= span.to) ?? spans[spans.length - 1];
+}
 
 /**
  * One column per narrated step, rather than packing gates as tightly as they
