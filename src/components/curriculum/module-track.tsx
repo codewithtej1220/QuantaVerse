@@ -13,6 +13,7 @@ import {
 } from "@/lib/data";
 import type { ModuleProgress } from "@/lib/auth";
 import { bySlug, moduleXp, useLiveProgress } from "@/lib/quest";
+import { ModuleByline } from "@/components/curriculum/module-byline";
 import { Reveal } from "@/components/site/reveal";
 import { cn } from "@/lib/utils";
 
@@ -199,7 +200,9 @@ function ModuleRow({
             </span>
           </span>
 
-          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-frost">
+          <ModuleByline slug={entry.slug} className="mt-2.5" />
+
+          <p className="mt-2.5 max-w-2xl text-[14px] leading-relaxed text-frost">
             {entry.summary}
           </p>
 

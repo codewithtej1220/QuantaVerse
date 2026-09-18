@@ -14,6 +14,12 @@ export const lessons: Lesson[] = [
     code: "from qiskit import QuantumCircuit\n\nqc = QuantumCircuit(3, 3)   # 3 qubits, 3 classical bits\nqc = QuantumCircuit(3)      # statevector work — no measurements",
     practice:
       "Change the qubit count in the sandbox toolbar and watch the generated code's first line change with it.",
+    video: {
+      url: "https://www.youtube.com/watch?v=Jx7IuJMYtJM",
+      minutes: 6,
+      caption:
+        "“How to program a quantum computer using Qiskit” by IBM Technology — a first circuit, from the import to the result.",
+    },
   },
   {
     title: "Adding gates",
@@ -27,6 +33,12 @@ export const lessons: Lesson[] = [
     code: "qc.h(0)                 # Hadamard on q0\nqc.x(1)                 # NOT on q1\nqc.cx(0, 1)             # control q0, target q1\nqc.rz(3.14159 / 4, 0)   # parameter first, then the wire\nqc.measure([0, 1], [0, 1])",
     practice:
       "Place a CNOT in the sandbox, read the generated qc.cx line, then drag the control to the other wire and watch the argument order swap.",
+    video: {
+      url: "https://www.youtube.com/watch?v=93-zLTppFZw",
+      minutes: 26,
+      caption:
+        "“Hello World | Coding with Qiskit 1.x” by Qiskit — a Bell circuit built call by call, with the h, cx and measure methods this lesson is about.",
+    },
   },
   {
     title: "Running it",
@@ -40,6 +52,12 @@ export const lessons: Lesson[] = [
     code: "from qiskit_aer import AerSimulator\n\nsim = AerSimulator()\nresult = sim.run(qc, shots=1024).result()\nprint(result.get_counts())   # {'00': 511, '11': 513}",
     practice:
       "Switch the sandbox engine from Browser to Qiskit and run the same circuit. The note under the board names the version and the shot count it actually used.",
+    video: {
+      url: "https://www.youtube.com/watch?v=NTplT4WnNbk",
+      minutes: 27,
+      caption:
+        "“Run Quantum Circuits with Qiskit Primitives” by Qiskit — the Sampler and the Estimator, and getting results back out.",
+    },
   },
   {
     title: "The statevector simulator",
@@ -56,6 +74,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build H then Z then H and compare the histogram with the state vector line. The histogram shows a certainty; the state vector shows you why.",
+    video: {
+      url: "https://www.youtube.com/watch?v=GuppGy50dQ4",
+      minutes: 2,
+      caption:
+        "“How can I Simulate Statevectors in Qiskit? 1 Minute Qiskit” by Qiskit — exact amplitudes from a circuit, no shots involved.",
+    },
   },
   {
     title: "Basis gates",
@@ -75,6 +99,12 @@ export const lessons: Lesson[] = [
       ],
       caption: "One instruction becomes three. Universal, but not free.",
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=2Bf2-k7G82M",
+      minutes: 17,
+      caption:
+        "“Universal Quantum Gates” by Jaideep Mulherkar — why a short list of gates is enough to build every other one.",
+    },
   },
   {
     title: "Transpilation",
@@ -88,6 +118,12 @@ export const lessons: Lesson[] = [
     code: "from qiskit import transpile\n\nrun_me = transpile(qc, backend=device, optimization_level=3)\nprint(run_me.depth(), run_me.count_ops())",
     practice:
       "Compare the depth the sandbox reports with what a transpiled version would need. The sandbox counts your circuit; hardware counts the rewritten one.",
+    video: {
+      url: "https://www.youtube.com/watch?v=TmXlUUFMUgI",
+      minutes: 53,
+      caption:
+        "“Intro to Transpilation” by Qiskit — a Qiskit Developer Conference talk on the passes between the circuit you wrote and the one that runs.",
+    },
   },
   {
     title: "Depth and width",
@@ -108,6 +144,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Place two gates on different wires in the same column and watch the depth stay at one. Then move one along a column and watch it become two.",
+    video: {
+      url: "https://www.youtube.com/watch?v=igsuIuI_HAQ",
+      minutes: 13,
+      caption:
+        "“Understanding Quantum Mechanics #5: Decoherence” by Sabine Hossenfelder — decoherence itself, the clock a deep circuit is racing.",
+    },
   },
   {
     title: "Reading a circuit back",
@@ -121,6 +163,12 @@ export const lessons: Lesson[] = [
     code: "print(qc.draw())         # an ASCII diagram\nprint(qc.depth())        # sequential layers\nprint(qc.count_ops())    # {'h': 1, 'cx': 1, 'measure': 2}\nfor instruction in qc.data:\n    print(instruction.operation.name, instruction.qubits)",
     practice:
       "Write a circuit in the sandbox code pane using a for loop, then press Build from code. The diagram catches up with something the live parser could not follow.",
+    video: {
+      url: "https://www.youtube.com/watch?v=wG94YHKDIxc",
+      minutes: 2,
+      caption:
+        "“How can I convert a quantum circuit to and from QASM? 1 Minute Qiskit” by Qiskit — a circuit written out as text and read back in, because a circuit is data.",
+    },
   },
 ];
 

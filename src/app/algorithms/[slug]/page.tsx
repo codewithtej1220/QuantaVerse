@@ -41,7 +41,7 @@ export default async function AlgorithmPage({ params }: PageProps<"/algorithms/[
 
         <header className="mt-5 grid gap-x-10 gap-y-7 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-end">
           <div className="max-w-3xl">
-            <p className="eyebrow">Algorithms · /{algorithm.slug}</p>
+            <p className="eyebrow">Algorithms</p>
             <h1 className="mt-3 display-2">{algorithm.name}</h1>
             <p className="mt-4 text-[15px] leading-relaxed text-frost">{algorithm.premise}</p>
           </div>

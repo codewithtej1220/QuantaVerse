@@ -14,7 +14,7 @@ export default function LabPage() {
       <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
         <header className="grid gap-x-16 gap-y-6 border-b border-edge pb-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-end">
           <div>
-            <p className="eyebrow">Lab · /lab</p>
+            <p className="eyebrow">Lab</p>
             <h1 data-tour="lab" className="display-1 mt-5 max-w-[9ch]">
               The lab
             </h1>

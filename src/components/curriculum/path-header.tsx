@@ -71,7 +71,7 @@ export function PathHeader() {
   return (
     <header className="grid gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-end">
       <div>
-        <p className="eyebrow">Curriculum · /curriculum</p>
+        <p className="eyebrow">Curriculum</p>
         <h1 className="display-1 mt-5 max-w-[11ch]">Your path</h1>
         <p className="ket mt-4 text-[clamp(1.5rem,3.6vw,2.75rem)] leading-none text-photon">
           |000⟩ &rarr; |111⟩

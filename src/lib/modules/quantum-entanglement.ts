@@ -21,6 +21,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Set the sandbox to two qubits and read the state panel with an empty circuit: one amplitude at 1 on |00⟩, three at zero.",
+    video: {
+      url: "https://www.youtube.com/watch?v=ETkBuBdl3wc",
+      minutes: 10,
+      caption:
+        "“2-Qubit Computational Basis States, Tensor Products, Orthonormality, 4D Hilbert Space” by Elucyda — the four basis states and the tensor product that builds them.",
+    },
   },
   {
     title: "CNOT",
@@ -41,6 +47,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Place a CNOT with no H in front of it. Nothing happens — the control is |0⟩, so there is nothing to control.",
+    video: {
+      url: "https://www.youtube.com/watch?v=1PJonQOi5M8",
+      minutes: 6,
+      caption:
+        "“IQIS Lecture 3.3 — Controlled-NOT” by Artur Ekert — the controlled-NOT gate, from what it does to its matrix.",
+    },
   },
   {
     title: "Making a Bell pair",
@@ -63,6 +75,12 @@ export const lessons: Lesson[] = [
     code: "qc = QuantumCircuit(2, 2)\nqc.h(0)\nqc.cx(0, 1)",
     practice:
       "Build it in the sandbox and watch the second Bloch arrow shrink to nothing as you place the CNOT. That collapse is the whole module in one animation.",
+    video: {
+      url: "https://www.youtube.com/watch?v=I0jH1_H3x1o",
+      minutes: 23,
+      caption:
+        "“Bell States from 2-Qubit Computational Basis States via Quantum Circuit (Hadamard and CNOT Gates)” by Elucyda — H then CNOT, worked through for all four Bell states.",
+    },
   },
   {
     title: "No state of your own",
@@ -84,6 +102,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build a Bell pair, then check q0, q1 and q2 in turn. Two arrows at the origin, and the untouched third still at full length on the north pole.",
+    video: {
+      url: "https://www.youtube.com/watch?v=L5HXMlpWAE8",
+      minutes: 5,
+      caption:
+        "“IQIS Lecture 4.4 — Partial trace” by Artur Ekert — the operation that describes one half of a pair on its own.",
+    },
   },
   {
     title: "Measuring one half",
@@ -103,6 +127,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "In the lab, build the pair and press Measure repeatedly. The outcome alternates unpredictably, the concurrence drops to 0.00 every time, and P(|0⟩) snaps to a certainty.",
+    video: {
+      url: "https://www.youtube.com/watch?v=fkAAbXPEAtU",
+      minutes: 10,
+      caption:
+        "“Quantum Entanglement: Explained in REALLY SIMPLE Words” by Science ABC — what measuring one particle of a pair tells you about the other.",
+    },
   },
   {
     title: "Correlation is not communication",
@@ -121,6 +151,12 @@ export const lessons: Lesson[] = [
         "and yet: P(other half = 0) = 0.5, whatever you do to yours",
       ],
       caption: "Stronger than classical correlation, and still not a channel.",
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=9oBiS_Yb9Ac",
+      minutes: 4,
+      caption:
+        "“Why Quantum Entanglement Can’t Break the Speed of Light” by Qiskit — the same argument as this lesson, in under four minutes.",
     },
   },
 ];

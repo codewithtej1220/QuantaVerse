@@ -19,6 +19,12 @@ export const lessons: Lesson[] = [
         "Grover:     ~(π/4)√N queries",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=_cDIzwycANg",
+      minutes: 6,
+      caption:
+        "“What is Grover’s Algorithm?” by quantumfy — the search problem and the √N claim, in six minutes.",
+    },
   },
   {
     title: "Marking the answer",
@@ -39,6 +45,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "A Z gate on one wire is the simplest possible marker. Build H, Z, H on a single qubit to see a sign flip turn into a certain outcome.",
+    video: {
+      url: "https://www.youtube.com/watch?v=Dlsa9EBKDGI",
+      minutes: 16,
+      caption:
+        "“Where my explanation of Grover’s algorithm failed” by 3Blue1Brown — what the oracle really is: a check you can run, not a lookup of the answer.",
+    },
   },
   {
     title: "Amplitude amplification",
@@ -58,6 +70,12 @@ export const lessons: Lesson[] = [
         "together = a rotation towards |marked⟩",
       ],
       caption: "Two reflections about different axes are a rotation by twice the angle between them.",
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=RQWpF2Gb-gU",
+      minutes: 37,
+      caption:
+        "“But what is quantum computing? (Grover’s Algorithm)” by 3Blue1Brown — the two reflections that make a rotation, drawn properly.",
     },
   },
   {
@@ -79,6 +97,12 @@ export const lessons: Lesson[] = [
       ],
     },
     code: "# the diffuser, for a 3-qubit register\nqc.h([0, 1, 2])\nqc.x([0, 1, 2])\nqc.h(2); qc.ccx(0, 1, 2); qc.h(2)   # phase flip on |000>\nqc.x([0, 1, 2])\nqc.h([0, 1, 2])",
+    video: {
+      url: "https://www.youtube.com/watch?v=DnxJQwdlrRM",
+      minutes: 10,
+      caption:
+        "“Inversion About Mean” by Jaideep Mulherkar — the diffuser as a reflection about the average amplitude.",
+    },
   },
   {
     title: "One iteration",
@@ -99,6 +123,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Before the lab, build just the oracle for |11⟩ in the sandbox: H on q1, a CNOT from q0, then H on q1 again. Put Hadamards on both qubits in front of it and the histogram stays flat — the mark is there, and only the diffuser turns it into an answer.",
+    video: {
+      url: "https://www.youtube.com/watch?v=0RPFWZj7Jm0",
+      minutes: 19,
+      caption:
+        "“Grover’s Algorithm — Coding with Qiskit S2E3” by Qiskit — the oracle and the diffuser built in Qiskit and put together into an iteration.",
+    },
   },
   {
     title: "How many iterations",
@@ -120,6 +150,12 @@ export const lessons: Lesson[] = [
         "past the optimum, success probability falls again",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=hnpjC8WQVrQ",
+      minutes: 55,
+      caption:
+        "“Grover’s Algorithm | Understanding Quantum Information & Computation | Lesson 08” by Qiskit — the full lecture, including how many iterations to run.",
+    },
   },
   {
     title: "What a quadratic speed-up buys",
@@ -135,6 +171,12 @@ export const lessons: Lesson[] = [
         "Grover:  quadratic   N -> √N        double the key length, problem solved",
         "Shor:    exponential                the assumption itself fails",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=CIArKQjiblc",
+      minutes: 18,
+      caption:
+        "“Grover’s Algorithm: Quadratic Speedup in Searching (Derivation, Proof of Optimality)” by VarPi — including why √N is the best any quantum algorithm can do.",
     },
   },
 ];

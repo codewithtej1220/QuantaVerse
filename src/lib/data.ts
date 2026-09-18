@@ -431,13 +431,6 @@ export const TUTOR_SUGGESTIONS = [
 /* Landing page                                                        */
 /* ------------------------------------------------------------------ */
 
-export const PLATFORM_STATS = [
-  { value: "8", label: "Modules", detail: "|000⟩ → |111⟩" },
-  { value: "53", label: "Lessons", detail: "Every one free" },
-  { value: "0", label: "Rupees", detail: "No paywall, ever" },
-  { value: "MIT", label: "Licence", detail: "Fork the whole thing" },
-];
-
 export const STARTER_CIRCUIT = `from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 

@@ -9,6 +9,7 @@ import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
 import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
 import { LessonBodies } from "@/components/curriculum/lesson-body";
+import { ModuleByline } from "@/components/curriculum/module-byline";
 import { ModuleClassesPanel } from "@/components/curriculum/module-classes";
 import {
   ModuleNotesProvider,
@@ -112,6 +113,7 @@ export default async function ModulePage({
               <p className="mt-4 max-w-2xl text-[15.5px] leading-relaxed text-frost">
                 {entry.summary}
               </p>
+              <ModuleByline slug={entry.slug} size="md" className="mt-5" />
             </header>
 
             {/* Before the first lesson: the class a student can join, then

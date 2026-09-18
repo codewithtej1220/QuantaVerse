@@ -31,7 +31,7 @@ export default function AlgorithmsPage() {
 
         <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div className="max-w-2xl">
-            <p className="eyebrow">Algorithms · /algorithms</p>
+            <p className="eyebrow">Algorithms</p>
             <h1 data-tour="algorithms" className="mt-3 display-2">
               The circuits that{" "}
               <span className="text-photon">beat the classical one.</span>

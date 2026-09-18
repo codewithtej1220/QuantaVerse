@@ -55,7 +55,7 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
 
         <header className="grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div>
-            <p className="eyebrow">Dashboard · /dashboard</p>
+            <p className="eyebrow">Dashboard</p>
             {/* display-1, not display-2, was clipping: a name is arbitrary-length
                 user data and "Aditi Raghunathan" ran straight off the page. The
                 dominant element here is the next action anyway, not the name. */}

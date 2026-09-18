@@ -1,9 +1,9 @@
 import { Film } from "@/components/landing/film";
 import { Hero } from "@/components/landing/hero";
 import { OpenSource } from "@/components/landing/open-source";
-import { RegisterPreview } from "@/components/landing/register-preview";
 import { Surfaces } from "@/components/landing/surfaces";
 import { Workflow } from "@/components/landing/workflow";
+import { YourModules } from "@/components/landing/your-modules";
 import { BootScreen } from "@/components/site/boot-screen";
 import { StageMount } from "@/components/three/stage-mount";
 
@@ -27,7 +27,7 @@ export default function Home() {
       <Film />
       <Workflow />
       <Surfaces />
-      <RegisterPreview />
+      <YourModules />
       <OpenSource />
     </>
   );

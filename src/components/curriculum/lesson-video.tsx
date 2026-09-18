@@ -96,6 +96,10 @@ export function LessonPlayer({
             src={embed}
             title={title}
             loading="lazy"
+            /* YouTube refuses to play an embed that arrives without a
+               referrer (its "error 153"), so this states the policy it relies
+               on instead of inheriting whatever the page is later given. */
+            referrerPolicy="strict-origin-when-cross-origin"
             allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
             className="size-full"

@@ -97,7 +97,7 @@ export function ProfessorView() {
   if (!user) {
     return (
       <Frame>
-        <p className="eyebrow">Teaching · /professor</p>
+        <p className="eyebrow">Teaching</p>
         <h1 className="mt-3 display-2">For professors</h1>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-frost">
           Sign in to your teaching account to answer students asking to join your classes, see who
@@ -196,7 +196,7 @@ function ClaimRole() {
 
   return (
     <Frame>
-      <p className="eyebrow">Teaching · /professor</p>
+      <p className="eyebrow">Teaching</p>
       <h1 className="mt-3 display-2">This is a student account</h1>
       <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-frost">
         You are signed in as {user?.display_name} (@{user?.handle}). If you teach on QuantaVerse,
@@ -304,7 +304,7 @@ function Dashboard() {
   if (!data) {
     return (
       <Frame>
-        <p className="eyebrow">Teaching · /professor</p>
+        <p className="eyebrow">Teaching</p>
         {loadError ? (
           <p className="mt-4 text-[14px] text-collapse">{loadError}</p>
         ) : (
@@ -323,7 +323,7 @@ function Dashboard() {
     <Frame>
       <header className="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7">
         <div className="max-w-2xl">
-          <p className="eyebrow">Teaching · /professor</p>
+          <p className="eyebrow">Teaching</p>
           <h1 className="mt-3 display-2">{professor.display_name}</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-frost">
             {professor.institution ? `${professor.institution} · ` : ""}@{professor.handle}

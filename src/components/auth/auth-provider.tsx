@@ -26,7 +26,8 @@ import { clearProgress } from "@/lib/progress-store";
 interface AuthState {
   user: StudentProfile | null;
   ready: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  /* Both hand back the profile, so a caller can send each role to its own home. */
+  signIn: (email: string, password: string) => Promise<StudentProfile>;
   signUp: (input: {
     email: string;
     password: string;
@@ -34,7 +35,7 @@ interface AuthState {
     institution?: string | null;
     professor_code?: string | null;
     teaches?: string[];
-  }) => Promise<void>;
+  }) => Promise<StudentProfile>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = await loginRequest({ email, password });
     writeSession(payload.tokens);
     setUser(payload.user);
+    return payload.user;
   }, []);
 
   const signUp = useCallback(
@@ -90,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const payload = await registerRequest(input);
       writeSession(payload.tokens);
       setUser(payload.user);
+      return payload.user;
     },
     [],
   );

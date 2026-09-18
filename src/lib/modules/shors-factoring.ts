@@ -20,6 +20,12 @@ export const lessons: Lesson[] = [
         "Shor:            polynomial",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=wXB-V_Keiu8",
+      minutes: 17,
+      caption:
+        "“Public Key Cryptography: RSA Encryption” by Art of the Problem — how RSA works, and why it rests on factoring being hard.",
+    },
   },
   {
     title: "Factoring as period finding",
@@ -39,6 +45,12 @@ export const lessons: Lesson[] = [
       ],
       caption: "Classical number theory. The quantum part is only the search for r.",
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=lvTqbM5Dq4Q",
+      minutes: 18,
+      caption:
+        "“How Quantum Computers Break Encryption | Shor’s Algorithm Explained” by minutephysics — the reduction from factoring to finding a period.",
+    },
   },
   {
     title: "Modular exponentiation",
@@ -55,6 +67,12 @@ export const lessons: Lesson[] = [
         "",
         "cost:  dominates the circuit — most of the qubits, most of the depth",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=EdJ7RoWcU48",
+      minutes: 16,
+      caption:
+        "“Shor’s Algorithm — Coding with Qiskit S2E7” by Qiskit — Shor’s algorithm built in Qiskit, controlled modular multiplications included.",
     },
   },
   {
@@ -74,6 +92,12 @@ export const lessons: Lesson[] = [
         "but: you cannot read the spectrum, only sample from it",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=ha5Fs6l-vGk",
+      minutes: 18,
+      caption:
+        "“The Quantum Fourier Transform Explained with Music” by Qiskit — the transform on amplitudes, heard as well as seen.",
+    },
   },
   {
     title: "Reading a period",
@@ -91,6 +115,12 @@ export const lessons: Lesson[] = [
         "so   m / 2ⁿ  ≈  k / r",
       ],
       caption: "A fraction whose denominator is the answer, known only approximately.",
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=vOvCIU7U0vU",
+      minutes: 29,
+      caption:
+        "“Quantum Period-Finding Algorithm, Order-Finding, Phase Estimation, Modular Exponentiation” by Elucyda — what the measurement gives you, and how the period comes out of it.",
     },
   },
   {
@@ -111,6 +141,12 @@ export const lessons: Lesson[] = [
         "  no   ->  run the quantum part again",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=R5HhNmFPLPQ",
+      minutes: 7,
+      caption:
+        "“Continued Fractions 1: Introduction and Basic Examples” by CrystalMath — the classical tool on its own, before it is pointed at s/r.",
+    },
   },
   {
     title: "The whole algorithm",
@@ -129,6 +165,12 @@ export const lessons: Lesson[] = [
         "4. verify  a^r ≡ 1 (mod N)               classical",
         "5. gcd(a^(r/2) ± 1, N)  ->  factors      classical",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=FRZQ-efABeQ",
+      minutes: 6,
+      caption:
+        "“How Shor’s Algorithm Factors 314191” by minutephysics — every step, run on one real number.",
     },
   },
   {
@@ -149,6 +191,12 @@ export const lessons: Lesson[] = [
         "RSA-2048  ->  thousands of logical  ->  around a million physical, or more",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=9be41egAbes",
+      minutes: 10,
+      caption:
+        "“Every Qubit Is Broken. Here’s the Fix.” by Qiskit — noisy physical qubits, and the error correction that turns many of them into one good one.",
+    },
   },
   {
     title: "What this means for cryptography",
@@ -165,6 +213,12 @@ export const lessons: Lesson[] = [
         "weakened by Grover: symmetric ciphers, hashes  ->  double the key",
         "unaffected so far:  lattice- and code-based schemes",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=_MoRcYLN-7U",
+      minutes: 13,
+      caption:
+        "“Post Quantum Cryptography” by Computerphile — the replacement schemes, and why the switch is happening before the machines exist.",
     },
   },
 ];

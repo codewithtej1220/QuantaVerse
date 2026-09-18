@@ -26,24 +26,24 @@ type Audience = "student" | "professor";
 const COPY = {
   student: {
     login: {
-      eyebrow: "Sign in · /login",
+      eyebrow: "Sign in",
       title: "Welcome back",
       lede: "Sign in to pick up your streak, your badges and the module you left open.",
     },
     register: {
-      eyebrow: "Register · /register",
+      eyebrow: "Register",
       title: "Start a student record",
       lede: "An account stores the lessons you finish and every graded circuit you submit, so the dashboard counts your work instead of a demo learner's.",
     },
   },
   professor: {
     login: {
-      eyebrow: "Professor sign in · /professor/login",
+      eyebrow: "Professor sign in",
       title: "Your classes are waiting",
       lede: "Sign in to answer students asking to join your classes, see who is furthest ahead on each of your modules, and upload notes.",
     },
     register: {
-      eyebrow: "Professor · /professor/register",
+      eyebrow: "Professor registration",
       title: "Set up a teaching account",
       lede: "Register with the invite code your site's administrator gave you and pick the modules you teach. Students then ask to join your class on each one, and you decide who is in.",
     },
@@ -99,38 +99,70 @@ export function AuthPanel({
     setBusy(true);
     setError(null);
     try {
-      if (registering) {
-        await signUp({
-          email,
-          password,
-          display_name: displayName,
-          institution: institution.trim() || null,
-          ...(professor ? { professor_code: code.trim(), teaches } : {}),
-        });
-      } else {
-        await signIn(email, password);
-      }
-      /* A new student lands on the track, where the two starting-point
-         questions are waiting in a box over it. Asking there rather than on a
-         route of their own means the thing the answers are about is on screen
-         while they are being given — and means an account that predates the
-         questions gets asked too, which a post-registration redirect cannot.
-         A professor lands on their classes, and an account that turns out not
-         to be a professor's is offered the invite code there. */
-      router.push(professor ? "/professor" : registering ? "/curriculum" : "/dashboard");
+      const profile = registering
+        ? await signUp({
+            email,
+            password,
+            display_name: displayName,
+            institution: institution.trim() || null,
+            ...(professor ? { professor_code: code.trim(), teaches } : {}),
+          })
+        : await signIn(email, password);
+      /* Where to land goes by what the account is, not by which tab was used:
+         a professor who signs in on the student tab still lands on their
+         classes. A new student lands on the track, where the two
+         starting-point questions are waiting in a box over it. Someone on the
+         professor tab whose account is not a professor's lands on /professor
+         too, where the invite code is asked for. */
+      router.push(
+        profile.role === "professor" || professor
+          ? "/professor"
+          : registering
+            ? "/curriculum"
+            : "/dashboard",
+      );
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "something went wrong — try again");
       setBusy(false);
     }
   };
 
-  const otherLogin = professor ? "/login" : "/professor/login";
-
   return (
     <div className="min-h-screen pt-32 pb-24">
       <div
         className={cn("mx-auto px-5", professor && registering ? "max-w-[640px]" : "max-w-[520px]")}
       >
+        {/* Student or professor, said before anything else on the page: the
+            header's one "Sign in" link lands here for both. */}
+        <nav
+          aria-label="Account type"
+          className="mb-7 inline-flex rounded-lg border border-edge bg-void/60 p-0.5"
+        >
+          {(
+            [
+              ["student", registering ? "/register" : "/login", "Student"],
+              ["professor", registering ? "/professor/register" : "/professor/login", "Professor"],
+            ] as const
+          ).map(([id, href, label]) => {
+            const on = audience === id;
+            return (
+              <Link
+                key={id}
+                href={href}
+                aria-current={on ? "page" : undefined}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-4 py-2 font-mono text-[12px] tracking-[0.12em] uppercase transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
+                  on ? "bg-photon text-void" : "text-frost hover:text-paper",
+                )}
+              >
+                {id === "professor" && <GraduationCap className="size-3.5" aria-hidden />}
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
         <p className="eyebrow">{copy.eyebrow}</p>
         <h1 className="mt-3 display-2">{copy.title}</h1>
         <p className="mt-3 text-[14.5px] leading-relaxed text-frost">{copy.lede}</p>
@@ -334,15 +366,7 @@ export function AuthPanel({
           </p>
         </form>
 
-        <p className="mt-5 flex flex-wrap items-center gap-x-2 text-[12.5px] text-frost">
-          <GraduationCap className="size-3.5 text-photon" aria-hidden />
-          {professor ? "Not a professor?" : "Teaching a module?"}
-          <Link href={otherLogin} className="text-photon underline-offset-4 hover:underline">
-            {professor ? "Student sign in" : "Professor sign in"}
-          </Link>
-        </p>
-
-        <p className="mt-4 text-[12px] leading-relaxed text-frost">
+        <p className="mt-5 text-[12px] leading-relaxed text-frost">
           Your password is hashed with bcrypt and never leaves the server. The curriculum, the
           sandbox and the tutor all work without an account — signing in only adds the record.
         </p>

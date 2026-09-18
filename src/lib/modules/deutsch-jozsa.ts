@@ -19,6 +19,12 @@ export const lessons: Lesson[] = [
         "quantum:                1 query",
       ],
     },
+    video: {
+      url: "https://www.youtube.com/watch?v=47FxvVZA4GM",
+      minutes: 5,
+      caption:
+        "“The Deutsch-Jozsa Algorithm (Simple Version)” by PSPACE — the constant-or-balanced question, animated.",
+    },
   },
   {
     title: "Oracles",
@@ -36,6 +42,12 @@ export const lessons: Lesson[] = [
         "input register untouched, answer XORed onto the ancilla",
         "U_f · U_f = I      so it is reversible for any f",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=7MdEHsRZxvo",
+      minutes: 10,
+      caption:
+        "“Deutsch’s Algorithm: An Introduction to Quantum Computing Oracles” by Quantum Soar — how a function becomes a gate you can put in a circuit.",
     },
   },
   {
@@ -58,6 +70,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build H then Z then H on one qubit. The Z is a one-qubit stand-in for a kicked-back phase, and the final H is what converts it into a certain |1⟩.",
+    video: {
+      url: "https://www.youtube.com/watch?v=iLcQ-X6QzvU",
+      minutes: 3,
+      caption:
+        "“Phase kickback” by QuTech Academy — how a phase applied to the target ends up on the control.",
+    },
   },
   {
     title: "Interference",
@@ -79,6 +97,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Open the lab for this module and build the three-qubit version. The read-out never shows all zeros for the balanced oracle — not rarely, never.",
+    video: {
+      url: "https://www.youtube.com/watch?v=pC2XRXInHnc",
+      minutes: 9,
+      caption:
+        "“3.4 Deutsch-Jozsa Algorithm” by Quantum Soar — the whole circuit, down to the last layer of Hadamards and the all-zeros answer.",
+    },
   },
   {
     title: "Query complexity",
@@ -95,6 +119,12 @@ export const lessons: Lesson[] = [
         "randomised classical:     a few, with high confidence",
         "quantum:                  1, with certainty",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=QcK0GK7DUh8",
+      minutes: 19,
+      caption:
+        "“Quantum vs Classical: Deutsch & Deutsch-Jozsa Algorithms Explained” by Qiskit — how many queries each side needs, and what the comparison shows.",
     },
   },
 ];

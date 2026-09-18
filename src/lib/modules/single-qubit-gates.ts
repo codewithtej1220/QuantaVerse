@@ -21,6 +21,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Place a Z on q0 alone and watch the Bloch sphere: nothing moves, because |0⟩ is already on the Z axis. Now put an H in front of it.",
+    video: {
+      url: "https://www.youtube.com/watch?v=Iw8diJmnhDk",
+      minutes: 8,
+      caption:
+        "“Single-Qubit Quantum Gates | Pauli X, Y, Z Gates (Qiskit)” by QBite — X, Y and Z as matrices, as turns of the Bloch sphere, and in code.",
+    },
   },
   {
     title: "Why gates must be unitary",
@@ -34,6 +40,12 @@ export const lessons: Lesson[] = [
     notation: {
       lines: ["U†U = UU† = I", "", "so   U|ψ⟩  has the same length as  |ψ⟩", "and  U†  undoes  U,  exactly"],
       caption: "Length preserved means probabilities still sum to one. Invertible means no information is lost.",
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=egbvHi6v08M",
+      minutes: 12,
+      caption:
+        "“Quantum Gates & Unitary Operations” by Diego Emilio Serrano — the unitarity condition, checked in Python.",
     },
   },
   {
@@ -54,6 +66,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build H, then X, then H on q0 and watch where the arrow lands. Two reflections about crossed axes compose into a rotation — the result is a Z.",
+    video: {
+      url: "https://www.youtube.com/watch?v=ZBaXPY_0TNI",
+      minutes: 8,
+      caption:
+        "“Logic Gates Rotate Qubits” by Josh’s Channel — single-qubit gates as rotations of the Bloch sphere.",
+    },
   },
   {
     title: "S and T — the phase gates",
@@ -74,6 +92,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build H then S on q0. The arrow moves a quarter-turn round the equator, from the X axis to the Y axis — the sandbox read-out will show ⟨ΣY⟩ = 1.",
+    video: {
+      url: "https://www.youtube.com/watch?v=P0IuxwZxSTk",
+      minutes: 1,
+      caption:
+        "“1.7 The Phase Gates (S and T gates)” by Quantum Soar — the quarter-turn and the eighth-turn, in about a minute.",
+    },
   },
   {
     title: "Continuous rotations",
@@ -89,6 +113,12 @@ export const lessons: Lesson[] = [
       caption: "Equal up to global phase, which is why the labs compare that way.",
     },
     code: "import numpy as np\nqc.rz(np.pi / 4, 0)   # the same rotation a T gate performs",
+    video: {
+      url: "https://www.youtube.com/watch?v=qrNxFzLsqro",
+      minutes: 10,
+      caption:
+        "“Rotation Gates in Quantum Computing | Rx, Ry, Rz (Qiskit)” by QBite — rotations by any angle, and the Qiskit calls that make them.",
+    },
   },
   {
     title: "Order matters",
@@ -110,6 +140,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build H then Z, note the Bloch vector, then clear and build Z then H. The second circuit leaves the arrow somewhere else entirely.",
+    video: {
+      url: "https://www.youtube.com/watch?v=7uzQQvDXPk0",
+      minutes: 6,
+      caption:
+        "“IQIS Lecture 1.5 — Circuit diagrams and matrix multiplication” by Artur Ekert — a circuit read left to right, and the matrices multiplied the other way round.",
+    },
   },
   {
     title: "T-depth, and what a gate costs",
@@ -125,6 +161,12 @@ export const lessons: Lesson[] = [
         "Clifford  H, S, CNOT, X, Y, Z     cheap, classically simulable",
         "non-Clifford  T                   expensive, and where the hardness lives",
       ],
+    },
+    video: {
+      url: "https://www.youtube.com/watch?v=WN7sJpsX_G0",
+      minutes: 6,
+      caption:
+        "“IQIS Lecture 2.4 — Pauli gates, Clifford gates, and the T-gate” by Artur Ekert — where T sits beside the Clifford gates, which is why it is counted on its own.",
     },
   },
 ];

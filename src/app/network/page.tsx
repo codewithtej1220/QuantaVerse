@@ -17,7 +17,7 @@ export default function NetworkPage() {
 
         <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div className="max-w-2xl">
-            <p className="eyebrow">Research hub · /network</p>
+            <p className="eyebrow">Research hub</p>
             <h1 data-tour="hub" className="mt-3 display-2">
               Find someone who has{" "}
               <span className="text-photon">already been stuck here.</span>

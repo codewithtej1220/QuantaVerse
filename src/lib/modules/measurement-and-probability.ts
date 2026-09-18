@@ -17,6 +17,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build a single H in the sandbox and read the probability panel: 50/50 exactly, because both amplitudes are 1/√2 and squaring gives one half.",
+    video: {
+      url: "https://www.youtube.com/watch?v=kk4gd4TIokw",
+      minutes: 3,
+      caption:
+        "“The Born Rule” by QuTech Academy — the rule in three minutes: squared magnitudes in, probabilities out.",
+    },
   },
   {
     title: "Measuring changes the state",
@@ -37,6 +43,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "In the lab, build a Bell pair and press Measure. Watch the concurrence drop from 1.00 to 0.00 and P(|0⟩) snap to 1.000 or 0.000 — the state has genuinely changed, not just been read.",
+    video: {
+      url: "https://www.youtube.com/watch?v=AoSA0yLh9ac",
+      minutes: 3,
+      caption:
+        "“Quantum Explained – Quantum Measurement” by SandboxAQ — what a measurement does to the state it reads.",
+    },
   },
   {
     title: "Shot noise",
@@ -53,6 +65,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Run the same single-H circuit three times in the sandbox and compare the histograms. Then compare each to the exact percentages beside them.",
+    video: {
+      url: "https://www.youtube.com/watch?v=TLfvMatkIWI",
+      minutes: 6,
+      caption:
+        "“Measure the qubit and plot the histogram of results using qiskit” by Dr. Rahul’s Quantum World — many shots of one circuit, and the histogram they make.",
+    },
   },
   {
     title: "Changing the basis",
@@ -71,6 +89,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Build H, then Z, then H, then measure. The Z is invisible on its own; the second H converts it into a certain |1⟩.",
+    video: {
+      url: "https://www.youtube.com/watch?v=G9d0QWM82sU",
+      minutes: 2,
+      caption:
+        "“1.6 The Hadamard Gate and the +, -, i and -i States” by Quantum Soar — the states you rotate into before a measurement can tell them apart.",
+    },
   },
   {
     title: "Classical registers",
@@ -88,6 +112,12 @@ export const lessons: Lesson[] = [
     },
     practice:
       "Place an M on two different wires in the sandbox and check which position each one moves in the histogram labels.",
+    video: {
+      url: "https://www.youtube.com/watch?v=IvhqbvsSrjU",
+      minutes: 2,
+      caption:
+        "“What are registers? 1 Minute Qiskit” by Qiskit — quantum and classical registers, and where a measurement result is written.",
+    },
   },
 ];
 

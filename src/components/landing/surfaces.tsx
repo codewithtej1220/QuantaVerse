@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  *
  * Each card carries a working miniature of the thing it links to rather than an
  * icon, so the grid doubles as a table of contents you can read at a glance.
- * The route path sits in the eyebrow because that is the honest label.
+ * The eyebrow names the part of the site the card opens.
  *
  * Hover changes the border and the arrow and nothing else. A card that lifts,
  * glows and casts a coloured shadow is four announcements for one event.
@@ -169,7 +169,7 @@ function DashboardMini() {
 const SURFACES = [
   {
     href: "/sandbox",
-    route: "/sandbox",
+    route: "Sandbox",
     title: "Circuit sandbox",
     body: "Drag gates onto a three-qubit register and watch the Qiskit pane rewrite itself as you go. Edit either side — the diagram and the code stay the same circuit.",
     footnote: "8 gates · statevector + histogram · runs in your browser",
@@ -178,7 +178,7 @@ const SURFACES = [
   },
   {
     href: "/sandbox",
-    route: "AI tutor · ⌘I anywhere",
+    route: "AI tutor",
     title: "A tutor that reads the screen",
     body: "It sees the circuit you built, the histogram you got, and the lesson you are on — then explains the gap and offers the diff.",
     footnote: "Explains, suggests, and cites the state it is looking at",
@@ -187,7 +187,7 @@ const SURFACES = [
   },
   {
     href: "/curriculum",
-    route: "/curriculum",
+    route: "Curriculum",
     title: "Eight modules, |000⟩ → |111⟩",
     body: "A prerequisite chain from one qubit to Shor. Modules unlock as you master the one before, and nothing is ever behind a payment.",
     footnote: "53 lessons · 9.6 hours · 8 badges",
@@ -196,7 +196,7 @@ const SURFACES = [
   },
   {
     href: "/dashboard",
-    route: "/dashboard",
+    route: "Dashboard",
     title: "Proficiency you can argue with",
     body: "A skill graph across eight quantum topics with the cohort median drawn behind your shape, so progress is a comparison and not a compliment.",
     footnote: "Mastery level · badge shelf · twelve-week practice log",

@@ -18,7 +18,7 @@ export default function SandboxPage() {
 
         <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
           <div className="max-w-2xl">
-            <p className="eyebrow">Sandbox · /sandbox</p>
+            <p className="eyebrow">Sandbox</p>
             <h1 className="mt-3 display-2">
               Build the circuit. <span className="text-photon">Watch the state move.</span>
             </h1>
