@@ -25,6 +25,11 @@ export interface StudentProfile {
      asked and said they are starting from nothing. */
   math_level: number | null;
   code_level: number | null;
+  /* Which home to show. The server decides what each role may do; this only
+     decides where the account menu points. */
+  role: "student" | "mentor" | "professor";
+  /** The modules a professor teaches, in curriculum order. Empty otherwise. */
+  teaches: string[];
 }
 
 export interface AuthResponse {
@@ -332,6 +337,9 @@ export function register(body: {
   password: string;
   display_name: string;
   institution?: string | null;
+  /* A professor registers with the site's invite code and what they teach. */
+  professor_code?: string | null;
+  teaches?: string[];
 }) {
   return send<AuthResponse>("/api/auth/register", jsonInit("POST", body));
 }

@@ -32,7 +32,7 @@ def module_notes(module_slug: str, session: DatabaseSession, user: CurrentUser) 
         notes = service.list_notes(session, module_slug)
     except service.NotesError as error:
         raise _fail(error) from error
-    allowed, hint = service.upload_permission(user)
+    allowed, hint = service.upload_permission(session, user, module_slug)
     return NotesResponse(
         module_slug=module_slug,
         notes=[service.record(note, user) for note in notes],

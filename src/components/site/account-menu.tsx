@@ -41,9 +41,9 @@ export function AccountMenu({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center", className)}>
       <Link
-        href="/dashboard"
+        href={user.role === "professor" ? "/professor" : "/dashboard"}
         className="inline-flex h-10 items-center gap-2.5 border border-edge px-3 transition-colors hover:border-photon"
-        title={user.email}
+        title={user.role === "professor" ? `${user.email} · professor` : user.email}
       >
         <span className="grid size-6 place-items-center bg-photon font-mono text-[12px] font-semibold text-void uppercase">
           {user.display_name.slice(0, 1)}

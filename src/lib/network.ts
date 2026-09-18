@@ -8,7 +8,9 @@ import { authed } from "@/lib/auth";
  * so there is no anonymous path here to fall back to.
  */
 
-export type Role = "student" | "mentor";
+/* "professor" comes with the site's invite code; a card can only choose the other two. */
+export type Role = "student" | "mentor" | "professor";
+export type SelfRole = Exclude<Role, "professor">;
 export type ConnectionStatus = "pending" | "accepted" | "declined";
 
 /**
@@ -123,7 +125,7 @@ export function fetchMyCard() {
 }
 
 export function updateMyCard(body: {
-  role?: Role;
+  role?: SelfRole;
   headline?: string | null;
   interests?: string | null;
   open_to_mentoring?: boolean;

@@ -9,6 +9,7 @@ import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
 import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
 import { LessonBodies } from "@/components/curriculum/lesson-body";
+import { ModuleClassesPanel } from "@/components/curriculum/module-classes";
 import {
   ModuleNotesProvider,
   NotesShelf,
@@ -113,9 +114,11 @@ export default async function ModulePage({
               </p>
             </header>
 
-            {/* The notes shelf sits before the first lesson, because what it
-                changes is how every lesson below is presented: watching or
-                reading is picked once, not once per lesson. */}
+            {/* Before the first lesson: the class a student can join, then
+                the notes shelf, because what the shelf changes is how every
+                lesson below is presented — watching or reading is picked once,
+                not once per lesson. */}
+            <ModuleClassesPanel slug={entry.slug} title={entry.title} />
             <ModuleNotesProvider slug={entry.slug}>
               <NotesShelf />
               <LessonBodies slug={entry.slug} lessons={written} lab={lab} />

@@ -168,6 +168,14 @@ module slug to build one. Professors can upload their own notes for a module
 from its page; those live outside the repository, under
 `QUANTAVERSE_NOTES_DIR`.
 
+### Professors
+
+Professors sign in at `/professor/login` and register at `/professor/register`
+with the invite code set in `QUANTAVERSE_PROFESSOR_CODE` on the API; without one,
+professor sign-up is off. A professor picks the modules they teach, accepts or
+declines students who ask to join their class from a module's page, sees the
+accepted students ranked on each module at `/professor`, and uploads notes there.
+
 `backend/README.md` documents every endpoint, the circuit IR and the account
 model in detail.
 

@@ -14,7 +14,9 @@ and never an email address — a hub where browsing people hands out their inbox
 is a spam list, not a directory.
 """
 
-Role = Literal["student", "mentor"]
+Role = Literal["student", "mentor", "professor"]
+# What a member can call themselves. "professor" is granted, never chosen.
+SelfRole = Literal["student", "mentor"]
 Status = Literal["pending", "accepted", "declined"]
 """How the viewer stands with a person, from the viewer's side of the row."""
 Standing = Literal["none", "self", "connected", "awaiting_them", "awaiting_you", "declined"]
@@ -113,7 +115,7 @@ class ProfileCard(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    role: Role | None = None
+    role: SelfRole | None = None
     headline: str | None = Field(default=None, max_length=140)
     interests: str | None = Field(default=None, max_length=240)
     open_to_mentoring: bool | None = None

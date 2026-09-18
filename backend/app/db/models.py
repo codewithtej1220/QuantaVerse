@@ -35,8 +35,10 @@ class User(Base):
 
     # --- the directory card -------------------------------------------------
     # What the research hub lists a person under. `role` is deliberately a
-    # plain string rather than an enum: it is displayed, filtered on, and will
-    # grow a third value ("alum", "lab") before it grows any behaviour.
+    # plain string rather than an enum: it is displayed and filtered on.
+    # "student" and "mentor" are self-described on the hub card. "professor" is
+    # not: it is granted with the site's invite code, because a professor can
+    # read the progress of the students they accept and can publish notes.
     role: Mapped[str] = mapped_column(String(16), nullable=False, default="student")
     headline: Mapped[str | None] = mapped_column(String(140), nullable=True)
     # Free text, comma separated. Searched, and shown as chips.
@@ -103,6 +105,9 @@ class User(Base):
     )
     notes: Mapped[list["ModuleNote"]] = relationship(
         back_populates="uploader", cascade="all, delete-orphan", passive_deletes=True
+    )
+    teaching: Mapped[list["TeachingAssignment"]] = relationship(
+        back_populates="professor", cascade="all, delete-orphan", passive_deletes=True
     )
 
 
@@ -272,3 +277,64 @@ class ModuleNote(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
 
     uploader: Mapped[User] = relationship(back_populates="notes")
+
+
+class TeachingAssignment(Base):
+    """A module a professor teaches: where their notes go and whose class a
+    student can ask to join."""
+
+    __tablename__ = "teaching_assignments"
+    __table_args__ = (
+        UniqueConstraint("professor_id", "module_slug", name="uq_teaches_once"),
+        Index("ix_teaching_module", "module_slug"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    professor_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    module_slug: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+    professor: Mapped[User] = relationship(back_populates="teaching")
+
+
+class ClassMembership(Base):
+    """
+    A student's place in one professor's class for one module.
+
+    It starts as the student's request and becomes membership when the
+    professor accepts it, which is also the student's consent: accepting is
+    what lets the professor see that student's progress on the module. Nothing
+    before acceptance is visible to the professor beyond the request itself.
+
+    One row per student, professor and module. A declined request keeps its row
+    so asking again reopens it rather than piling up duplicates.
+    """
+
+    __tablename__ = "class_memberships"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id", "professor_id", "module_slug", name="uq_membership_once"
+        ),
+        CheckConstraint("student_id <> professor_id", name="ck_membership_not_self"),
+        Index("ix_membership_professor_status", "professor_id", "status"),
+        Index("ix_membership_student", "student_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    professor_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    module_slug: Mapped[str] = mapped_column(String(64), nullable=False)
+    # "pending" | "accepted" | "declined"
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    student: Mapped[User] = relationship(foreign_keys=[student_id])
+    professor: Mapped[User] = relationship(foreign_keys=[professor_id])

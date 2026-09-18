@@ -34,7 +34,7 @@ def browse(
     session: DatabaseSession,
     user: CurrentUser,
     q: str | None = Query(default=None, max_length=80),
-    role: str | None = Query(default=None, pattern="^(student|mentor)$"),
+    role: str | None = Query(default=None, pattern="^(student|mentor|professor)$"),
     mentors_only: bool = Query(default=False),
 ) -> DirectoryResponse:
     people, total = service.directory(

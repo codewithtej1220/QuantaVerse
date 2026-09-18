@@ -64,6 +64,14 @@ class Snapshot:
     fresh_badges: list[BadgeState]
 
 
+def taught_modules(user: User) -> list[str]:
+    """The modules a professor teaches, in curriculum order."""
+    if user.role != "professor":
+        return []
+    slugs = {row.module_slug for row in user.teaching}
+    return [module.slug for module in MODULES if module.slug in slugs]
+
+
 def profile_of(user: User) -> StudentProfile:
     return StudentProfile(
         id=user.id,
@@ -76,6 +84,8 @@ def profile_of(user: User) -> StudentProfile:
         last_login_at=as_utc(user.last_login_at),
         math_level=user.math_level,
         code_level=user.code_level,
+        role=user.role or "student",
+        teaches=taught_modules(user),
     )
 
 

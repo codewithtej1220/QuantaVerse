@@ -50,12 +50,13 @@ import { cn } from "@/lib/utils";
  */
 
 type Tab = "directory" | "requests" | "connections";
-type Filter = "all" | "mentor" | "student" | "open";
+type Filter = "all" | "mentor" | "professor" | "student" | "open";
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "Everyone" },
   { id: "open", label: "Open to mentoring" },
   { id: "mentor", label: "Mentors" },
+  { id: "professor", label: "Professors" },
   { id: "student", label: "Students" },
 ];
 
@@ -99,7 +100,7 @@ function Chip({
 }
 
 function Avatar({ person }: { person: PersonCard }) {
-  const ring = person.role === "mentor" ? "ring-photon/45" : "ring-edge-hi";
+  const ring = person.role === "student" ? "ring-edge-hi" : "ring-photon/45";
 
   /* A picture where there is one. The example mentors carry portraits of people
      who do not exist — generated faces, not photographs of anybody — because a
@@ -136,9 +137,9 @@ function Avatar({ person }: { person: PersonCard }) {
       className={cn(
         "grid size-11 shrink-0 place-items-center rounded-full font-mono text-[13px] ring-1 ring-offset-2 ring-offset-nebula",
         ring,
-        person.role === "mentor"
-          ? "bg-photon/10 text-photon"
-          : "bg-strata text-frost",
+        person.role === "student"
+          ? "bg-strata text-frost"
+          : "bg-photon/10 text-photon",
       )}
     >
       {initials || "?"}
@@ -156,6 +157,7 @@ function Identity({ person }: { person: PersonCard }) {
             {person.display_name}
           </span>
           {person.role === "mentor" && <Chip tone="photon">mentor</Chip>}
+          {person.role === "professor" && <Chip tone="photon">professor</Chip>}
           {/* Said plainly on the card. A seeded fixture that looks like a real
               academic is the one thing this directory must not do. */}
           {person.is_demo && <Chip tone="warn">example profile</Chip>}
@@ -403,7 +405,9 @@ export function ResearchHub() {
     const next = await fetchDirectory({
       q: query,
       role:
-        filter === "mentor" || filter === "student" ? (filter as Role) : null,
+        filter === "mentor" || filter === "student" || filter === "professor"
+          ? (filter as Role)
+          : null,
       mentorsOnly: filter === "open",
     });
     setPeople(next.people);
@@ -1065,7 +1069,8 @@ function MyCard({
     try {
       onSaved(
         await updateMyCard({
-          role,
+          /* A professor's role is not the card's to change, so it is not sent. */
+          ...(role === "professor" ? {} : { role }),
           headline: headline.trim() || null,
           interests: interests.trim() || null,
           open_to_mentoring: mentoring,
@@ -1157,28 +1162,35 @@ function MyCard({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div
-          className="flex items-center gap-1.5"
-          role="group"
-          aria-label="Your role"
-        >
-          {(["student", "mentor"] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setRole(option)}
-              aria-pressed={role === option}
-              className={cn(
-                "border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors",
-                role === option
-                  ? "border-photon bg-photon/10 text-photon"
-                  : "border-edge text-frost hover:border-edge-hi hover:text-paper",
-              )}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+        {role === "professor" ? (
+          <p className="flex items-center gap-2 text-[12.5px] text-frost">
+            <Chip tone="photon">professor</Chip>
+            set by your invite code
+          </p>
+        ) : (
+          <div
+            className="flex items-center gap-1.5"
+            role="group"
+            aria-label="Your role"
+          >
+            {(["student", "mentor"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setRole(option)}
+                aria-pressed={role === option}
+                className={cn(
+                  "border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors",
+                  role === option
+                    ? "border-photon bg-photon/10 text-photon"
+                    : "border-edge text-frost hover:border-edge-hi hover:text-paper",
+                )}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
 
         <label className="flex cursor-pointer items-center gap-2 font-mono text-[12px] text-frost">
           <input

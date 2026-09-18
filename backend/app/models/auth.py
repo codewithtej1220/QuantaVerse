@@ -12,6 +12,10 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=10, max_length=72)
     display_name: str = Field(min_length=2, max_length=80)
     institution: str | None = Field(default=None, max_length=160)
+    # A professor registers with the site's invite code and the modules they
+    # teach. Without a code the account is an ordinary student's.
+    professor_code: str | None = Field(default=None, max_length=120)
+    teaches: list[str] = Field(default_factory=list, max_length=16)
 
     @field_validator("display_name", "institution")
     @classmethod
@@ -85,6 +89,11 @@ class StudentProfile(BaseModel):
     # to decide whether to ask; it must not treat it as "answered zero".
     math_level: int | None = None
     code_level: int | None = None
+    # "student", "mentor" or "professor". The client uses it to decide which
+    # home to show, never to decide what is allowed: the server checks that.
+    role: str = "student"
+    # The modules a professor teaches, in curriculum order. Empty for everyone else.
+    teaches: list[str] = Field(default_factory=list)
 
 
 class OnboardingRequest(BaseModel):

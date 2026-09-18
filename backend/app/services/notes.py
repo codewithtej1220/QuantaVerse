@@ -13,16 +13,17 @@ from app.core.config import get_settings
 from app.core.curriculum import MODULE_BY_SLUG
 from app.db.models import ModuleNote, User
 from app.models.notes import NoteRecord, NoteUploader
+from app.services import teaching
 
 """
 Module notes: PDFs a professor uploads for students to read instead of, or as
 well as, the lesson videos.
 
-Uploading is limited to mentor accounts, and optionally to a named list of
-e-mail addresses (QUANTAVERSE_NOTES_UPLOADERS). Reading needs any account. A
-directory of uploads with names and institutions on it is no more public than
-the research hub it borrows those from, and a course site should not become an
-open file host.
+Uploading is limited to professors, into the modules they teach, and
+optionally to a named list of e-mail addresses (QUANTAVERSE_NOTES_UPLOADERS).
+Reading needs any account. A directory of uploads with names and institutions
+on it is no more public than the research hub it borrows those from, and a
+course site should not become an open file host.
 
 A file has to look like a PDF to be kept: it must start with the PDF header and
 end with the end-of-file marker. That is not a guarantee of a well-formed PDF,
@@ -63,11 +64,13 @@ def _module(slug: str) -> None:
         raise NotesError("there is no module with that name", status=404)
 
 
-def upload_permission(user: User) -> tuple[bool, str | None]:
-    """Whether `user` may upload notes, and if not, why — in their terms."""
+def upload_permission(session: Session, user: User, module_slug: str) -> tuple[bool, str | None]:
+    """Whether `user` may upload notes to a module, and if not, why — in their terms."""
     settings = get_settings()
-    if user.role != "mentor":
-        return False, "Notes are uploaded by professors and mentors."
+    if user.role != "professor":
+        return False, "Notes are uploaded by the professors who teach this module."
+    if not teaching.teaches(session, user, module_slug):
+        return False, "Add this module to the ones you teach to upload notes for it."
     if settings.notes_uploaders and user.email.lower() not in settings.notes_uploaders:
         return False, "This site only accepts notes from its listed teaching staff."
     return True, None
@@ -135,7 +138,7 @@ def save_note(
     settings = get_settings()
     _module(module_slug)
 
-    allowed, reason = upload_permission(uploader)
+    allowed, reason = upload_permission(session, uploader, module_slug)
     if not allowed:
         raise NotesError(reason or "you cannot upload notes", status=403)
 

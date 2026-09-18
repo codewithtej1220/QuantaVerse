@@ -83,6 +83,16 @@ class Settings:
             email.lower() for email in _split(os.getenv("QUANTAVERSE_NOTES_UPLOADERS", ""))
         }
 
+        # The invite code a professor enters to register, or to turn an existing
+        # account into a professor's. A professor reads the progress of every
+        # student they accept, so the role is never self-service: left empty,
+        # professor sign-up is simply switched off.
+        self.professor_code = os.getenv("QUANTAVERSE_PROFESSOR_CODE", "").strip()
+
+    @property
+    def professor_signup_open(self) -> bool:
+        return bool(self.professor_code)
+
     @property
     def tutor_live(self) -> bool:
         return bool(self.openai_api_key)

@@ -113,7 +113,7 @@ def card_of(
         id=user.id,
         handle=user.handle,
         display_name=user.display_name,
-        role=user.role if user.role in {"student", "mentor"} else "student",
+        role=user.role if user.role in {"student", "mentor", "professor"} else "student",
         institution=user.institution,
         headline=user.headline,
         interests=split_interests(user.interests),
@@ -144,7 +144,7 @@ def directory(
 ) -> tuple[list[PersonCard], int]:
     statement = select(User).where(User.is_active.is_(True))
 
-    if role in {"student", "mentor"}:
+    if role in {"student", "mentor", "professor"}:
         statement = statement.where(User.role == role)
     if mentors_only:
         statement = statement.where(User.open_to_mentoring.is_(True))
@@ -367,8 +367,13 @@ def update_card(session: Session, viewer: User, **fields: object) -> User:
         value = fields.get(name)
         if value is None:
             continue
-        if name == "role" and value not in {"student", "mentor"}:
-            raise NetworkError("role must be student or mentor")
+        if name == "role":
+            # A professor's role comes with the invite code, and editing the
+            # hub card must not quietly take it away again.
+            if viewer.role == "professor":
+                continue
+            if value not in {"student", "mentor"}:
+                raise NetworkError("role must be student or mentor")
         setattr(viewer, name, value)
 
     session.commit()

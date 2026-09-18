@@ -71,8 +71,13 @@ export function StartingPointDialog() {
   const [error, setError] = useState<string | null>(null);
 
   /* Null and zero are different: null is nobody asked, zero is they were asked
-     and said they are starting from nothing. Only the first opens this. */
-  const unanswered = Boolean(user) && user!.math_level === null && user!.code_level === null;
+     and said they are starting from nothing. Only the first opens this. A
+     professor is not asked at all: the questions set where a learner starts. */
+  const unanswered =
+    Boolean(user) &&
+    user!.role !== "professor" &&
+    user!.math_level === null &&
+    user!.code_level === null;
   const open = unanswered && !dismissed;
 
   useEffect(() => {

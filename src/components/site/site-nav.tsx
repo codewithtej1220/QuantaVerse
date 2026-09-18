@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { AccountMenu } from "@/components/site/account-menu";
 import { ActionLink } from "@/components/site/action";
 import { QuantaMark, Wordmark } from "@/components/site/mark";
@@ -31,8 +32,13 @@ const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
+/* Only for professors: the one link a student would never use. */
+const TEACHING = { href: "/professor", label: "Teaching" };
+
 export function SiteNav() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const links = user?.role === "professor" ? [...LINKS, TEACHING] : LINKS;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [route, setRoute] = useState(pathname);
@@ -65,7 +71,7 @@ export function SiteNav() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {LINKS.map((link) => {
+          {links.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
@@ -104,7 +110,7 @@ export function SiteNav() {
       {open && (
         <div className="border-t border-edge bg-void px-5 pb-6 md:hidden">
           <nav className="flex flex-col">
-            {LINKS.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

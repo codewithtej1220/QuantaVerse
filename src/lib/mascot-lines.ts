@@ -71,6 +71,11 @@ const GUIDE: Record<string, Line> = {
     eyebrow: "the record",
     ask: "What should I practise next?",
   },
+  "/professor": {
+    text: "Your classes. Students only appear in a ranking once you accept them — accepting is them agreeing to be seen. Ask me how to help whoever is stuck.",
+    eyebrow: "teaching",
+    ask: "How can I help a student who is stuck on this module's lab?",
+  },
 };
 
 export function guideFor(path: string): Line | null {

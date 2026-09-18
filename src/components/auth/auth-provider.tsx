@@ -32,6 +32,8 @@ interface AuthState {
     password: string;
     display_name: string;
     institution?: string | null;
+    professor_code?: string | null;
+    teaches?: string[];
   }) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -82,6 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
       display_name: string;
       institution?: string | null;
+      professor_code?: string | null;
+      teaches?: string[];
     }) => {
       const payload = await registerRequest(input);
       writeSession(payload.tokens);

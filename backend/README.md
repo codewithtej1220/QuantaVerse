@@ -96,7 +96,8 @@ before they write, which is why the budget above is raised; at 700,
 | `QUANTAVERSE_REGISTRATION_OPEN` | `1` | Set `0` to close `/api/auth/register` on a shared instance. |
 | `QUANTAVERSE_NOTES_DIR` | `backend/uploads/notes` | Where uploaded module notes are written. Point it at a mounted volume on a host with an ephemeral disk. |
 | `QUANTAVERSE_NOTES_MAX_MB` | `20` | Largest PDF accepted per upload. |
-| `QUANTAVERSE_NOTES_UPLOADERS` | empty | Comma-separated e-mail addresses allowed to upload. Empty means any account whose role is `mentor`, which people set themselves on the hub. |
+| `QUANTAVERSE_NOTES_UPLOADERS` | empty | Comma-separated e-mail addresses allowed to upload. Empty means any professor, into the modules they teach. |
+| `QUANTAVERSE_PROFESSOR_CODE` | empty | The invite code a professor enters to register, or to turn an existing account into a professor's. Empty switches professor sign-up off. |
 
 ## Endpoints
 
@@ -145,9 +146,34 @@ people's course material, and the listing carries the uploader's name.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/notes/{module_slug}` | The module's uploaded notes, whether the caller may add one, and the size limit. |
-| POST | `/api/notes/{module_slug}` | Upload a PDF. The file is the request body with `Content-Type: application/pdf`; `title`, and optionally `description` and `filename`, are query parameters. Mentors only. |
+| POST | `/api/notes/{module_slug}` | Upload a PDF. The file is the request body with `Content-Type: application/pdf`; `title`, and optionally `description` and `filename`, are query parameters. Professors, into modules they teach. |
 | GET | `/api/notes/file/{note_id}` | The PDF itself, inline. |
 | DELETE | `/api/notes/file/{note_id}` | Remove notes. The uploader only. |
+
+### Professors and classes
+
+A class is one professor and one module. A student asks to join and the professor
+accepts or declines; accepting is what lets the professor see that student's
+progress on the module, and nothing else of it. The professor role comes with
+`QUANTAVERSE_PROFESSOR_CODE` — at registration (`professor_code` and `teaches` on
+`/api/auth/register`) or later with `/api/professor/claim` — and never from the
+hub card, because it carries that view of other people's work.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/professor/signup` | Whether professor sign-up is switched on. No token needed. |
+| GET | `/api/professor` | The professor's dashboard: requests waiting, and each taught module's students ranked. |
+| POST | `/api/professor/claim` | Turn the signed-in account into a professor's, with the invite code and the modules taught. |
+| PUT | `/api/professor/modules` | Set the modules taught. Classes on dropped modules are hidden, not deleted. |
+| POST | `/api/professor/requests/{id}/accept` | Accept a student into a class. |
+| POST | `/api/professor/requests/{id}/decline` | Decline a request. The student may ask again. |
+| DELETE | `/api/professor/students/{id}` | Remove a student from a class. |
+| GET | `/api/classes/{module_slug}` | Who teaches a module, and the caller's request or place with each. |
+| POST | `/api/classes/{module_slug}` | Ask to join a professor's class: `{professor_id, note}`. |
+| DELETE | `/api/classes/membership/{id}` | Withdraw a request, or leave a class. |
+
+Each professor action answers with the whole dashboard, and each student action
+with the module's classes, so a client never has to guess what changed.
 
 ### The circuit IR
 
@@ -297,12 +323,14 @@ app/
     auth.py                  /auth/register /login /refresh /logout /me
     progress.py              /catalog /progress /dashboard
     notes.py                 /notes/{module} /notes/file/{id}
+    teaching.py              /professor/* /classes/*
   api/deps.py                bearer parsing, current_user, db session
   core/clock.py              naive-UTC helpers used by every timestamp
   core/curriculum.py         modules, lessons, labs, badges, mastery ladder
   core/security.py           bcrypt, JWT mint and verify, refresh hashing
   db/models.py               users, auth_sessions, lesson_completions,
-                             exercise_attempts, earned_badges, module_notes
+                             exercise_attempts, earned_badges, module_notes,
+                             teaching_assignments, class_memberships
   db/session.py              engine, session factory, create_all
   models/auth.py             account request and response models
   models/progress.py         progress and dashboard response models
