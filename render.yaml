@@ -28,6 +28,14 @@ services:
         sync: false
       - key: QUANTAVERSE_REGISTRATION_OPEN
         value: "1"
+      # The invite code for teaching accounts. Professor sign-up stays closed
+      # until it is set; hand it only to people who should see students'
+      # progress.
+      - key: QUANTAVERSE_PROFESSOR_CODE
+        sync: false
+      # Professors' uploaded PDFs are written to disk, and the free plan's
+      # disk is wiped on every redeploy. On a paid instance, add a disk
+      # (mountPath /var/data) and set QUANTAVERSE_NOTES_DIR=/var/data/notes.
       # Optional. Without it the tutor falls back to its deterministic
       # Qiskit read-out, which is fully functional.
       #

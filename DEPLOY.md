@@ -46,9 +46,10 @@ It is read at build time, so redeploy after changing it.
 
 **The site works without the API.** The landing page, the curriculum, the
 sandbox and the whole of `/lab` run entirely in the browser on the TypeScript
-statevector simulator. Only four things need the API: sign-in, the dashboard's
-live record, Qiskit-backed grading, and the AI tutor. Without it those show an
-honest "cannot reach the API" state rather than breaking.
+statevector simulator. Only the account-backed parts need the API: sign-in, the
+dashboard's live record, professors' classes and uploaded notes, Qiskit-backed
+grading, and the AI tutor. Without it those show an honest "cannot reach the
+API" state rather than breaking.
 
 If you deploy the site alone, everything a judge is likely to click still works.
 
@@ -67,6 +68,14 @@ close to it. If the service restarts under load, either move up an instance
 size or remove `cirq` and `pennylane` from `requirements.txt` — `/api/health`
 reports whichever backends are installed and the engine picker follows it, so
 removing them degrades cleanly instead of erroring.
+
+Uploaded notes are the other thing to plan for. A professor's PDFs are written
+to `QUANTAVERSE_NOTES_DIR` on the API's own disk, and a container's disk is
+wiped on every redeploy — Render's free web service cannot attach a persistent
+disk at all. The example notes in `public/notes/` ship with the site and are
+unaffected; it is only professors' own uploads that would vanish. Attach a disk
+(Render's paid instances, a Railway volume or a Fly volume), mount it at, say,
+`/var/data`, and set `QUANTAVERSE_NOTES_DIR=/var/data/notes`.
 
 ## 3. Point them at each other
 
@@ -92,7 +101,9 @@ origin call the API with a bearer token.
 | Name | Required | Notes |
 | --- | --- | --- |
 | `QUANTAVERSE_JWT_SECRET` | yes | Generate a fresh one. Do not reuse the local value in `backend/.env` |
-| `QUANTAVERSE_DATABASE_URL` | yes | Postgres. SQLite on a container is wiped on every redeploy |
+| `QUANTAVERSE_DATABASE_URL` | yes | Postgres, pasted as the host gives it — a `postgres://` or `postgresql://` URL is pointed at the installed psycopg 3 driver automatically. SQLite on a container is wiped on every redeploy |
+| `QUANTAVERSE_PROFESSOR_CODE` | for teaching accounts | The invite code a professor enters to register. Professor sign-up stays closed until it is set. Generate a fresh one; do not reuse the local value in `backend/.env` |
+| `QUANTAVERSE_NOTES_DIR` | for uploads to survive | Where professors' PDFs are written. Point it at a persistent disk — see section 2 |
 | `QUANTAVERSE_ALLOWED_ORIGINS` | yes | The Vercel URL |
 | `OPENAI_API_KEY` | no | Without it the tutor uses its deterministic Qiskit read-out. Any OpenAI-compatible key works |
 | `OPENAI_BASE_URL` | no | Pinned in `render.yaml` to Groq, which is free. Empty means OpenAI itself |

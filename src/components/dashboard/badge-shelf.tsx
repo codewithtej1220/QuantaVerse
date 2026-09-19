@@ -38,8 +38,8 @@ export function BadgeShelf({ badges = BADGES }: { badges?: BadgeItem[] }) {
             <li
               key={badge.id}
               className={cn(
-                "flex gap-3.5 border border-edge p-4 transition-colors",
-                badge.earned ? "bg-strata" : "bg-transparent",
+                "flex gap-3.5 p-4 transition-colors",
+                badge.earned ? "panel" : "panel-quiet",
               )}
             >
               <span

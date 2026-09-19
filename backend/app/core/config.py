@@ -36,6 +36,17 @@ def _signing_key(secret: str) -> str:
     return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
 
+def _database_url(raw: str) -> str:
+    # Hosts hand Postgres out as postgres:// or postgresql://. SQLAlchemy
+    # rejects the first outright and reads the second as psycopg2, which is
+    # not installed — requirements.txt carries psycopg 3 — so either would
+    # stop the API at startup on its first deploy. Name the driver instead.
+    for scheme in ("postgres://", "postgresql://"):
+        if raw.startswith(scheme):
+            return "postgresql+psycopg://" + raw[len(scheme) :]
+    return raw
+
+
 class Settings:
     def __init__(self) -> None:
         self.app_name = APP_NAME
@@ -53,7 +64,7 @@ class Settings:
         self.openai_temperature = float(os.getenv("QUANTAVERSE_TUTOR_TEMPERATURE", "0.3"))
         self.openai_max_tokens = int(os.getenv("QUANTAVERSE_TUTOR_MAX_TOKENS", "700"))
 
-        self.database_url = (
+        self.database_url = _database_url(
             os.getenv("QUANTAVERSE_DATABASE_URL", "").strip()
             or f"sqlite:///{DEFAULT_DATABASE_PATH.as_posix()}"
         )

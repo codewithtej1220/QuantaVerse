@@ -53,7 +53,7 @@ export default async function AlgorithmPage({ params }: PageProps<"/algorithms/[
               </dt>
               <dd className="mt-1 text-[14px] text-frost">{algorithm.classical}</dd>
             </div>
-            <div className="panel rounded-lg border-photon/40 px-4 py-3">
+            <div className="panel rounded-lg border-photon/40! px-4 py-3">
               <dt className="font-mono text-[10.5px] tracking-[0.16em] text-frost uppercase">
                 this circuit
               </dt>

@@ -36,10 +36,13 @@ const DAY_MS = 86_400_000;
 
 /* A heatmap needs its steps to be tellable apart, so this is the one place
    on the site with a ramp. It is still one colour — cyan at four strengths
-   over black — rather than a hue shift. */
+   over black — rather than a hue shift. An empty day is the panel colour, not
+   a well's: the wells are lit steel now, and a quarter-strength cyan over
+   black landed on nearly the same value, so a quiet day and a busy one read
+   alike. */
 const LEVEL = [
-  "bg-strata",
-  "bg-photon/25",
+  "bg-nebula",
+  "bg-photon/30",
   "bg-photon/50",
   "bg-photon/75",
   "bg-photon",

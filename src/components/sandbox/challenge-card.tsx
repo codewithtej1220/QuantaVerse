@@ -60,7 +60,9 @@ export function ChallengeCard({
     <section
       className={cn(
         "panel rounded-2xl p-4 lg:p-5",
-        verdict?.passed && "border-photon",
+        /* Important: `panel` sets its own edges and is emitted after the
+           colour utilities, so a plain border class loses to it. */
+        verdict?.passed && "border-photon!",
       )}
       aria-label="Circuit challenge"
     >

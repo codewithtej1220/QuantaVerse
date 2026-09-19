@@ -32,26 +32,32 @@
      which is below what the eye resolves on a normal screen in a lit room. The
      result was one flat black sheet with hairlines drawn on it, and no amount
      of accent colour fixes that because the problem is value, not hue.
-     These step about five points each, which reads as depth.
+     Above the page they step about five points each, which reads as depth.
 
-     The cast is a deep black-teal rather than neutral grey: it gives the cyan
+     The cast is a deep steel blue rather than neutral grey: it gives the cyan
      somewhere to sit instead of halating against pure black, and it stops the
-     page reading as an absence.
+     page reading as an absence. It used to be a black-teal at L* 8, and a
+     teal that dark and that desaturated reads as grey — the boxes looked like
+     dull grey slabs laid over a blue sky. The hue is now the sky's own (about
+     208°) at roughly twice the saturation, and the panel stands a clear
+     eleven points off the page, so a box reads as a lit object sitting on the
+     night rather than a patch cut out of it.
 
      Code does not live on this ladder at all. See `sheet` below. */
-  --color-void: #050c0c; /* the page       — L* 2.9 */
-  --color-nebula: #0d1a19; /* a panel raised off it  — L* 8.1 */
-  --color-strata: #142523; /* a well sunk into a panel — L* 13.2 */
-  --color-edge: #22322f; /* hairline */
-  --color-edge-hi: #364844; /* hairline, hovered or focused */
+  --color-void: #040a10; /* the page       — L* 2.5 */
+  --color-nebula: #0f2438; /* a panel raised off it  — L* 13.5 */
+  --color-strata: #142e46; /* a well sunk into a panel — L* 18.1 */
+  --color-edge: #213d57; /* hairline — L* 24.8 */
+  --color-edge-low: #0c1e2f; /* the edge facing away from the light */
+  --color-edge-hi: #34597a; /* hairline, hovered or focused */
 
   /* --- ink ---
      Warm, against the cool ground. This is a page people read for an hour at
      a time, and a warm ivory on a cool dark surface is easier to sit with than
      the neutral off-white it replaces. */
-  --color-paper: #f4efe6; /* body text — 16.9:1 on the page */
-  --color-frost: #c9c2b4; /* secondary text — 10.9:1 */
-  --color-dim: #8e887c; /* tertiary text — 5.5:1, still AA */
+  --color-paper: #f4efe6; /* body text — 17.4:1 on the page */
+  --color-frost: #c9c2b4; /* secondary text — 11.2:1 */
+  --color-dim: #9a9487; /* tertiary text — 6.6:1 on the page, 4.6:1 in a well */
 
   /* --- meaning --- */
   --color-photon: #2fe4ff; /* laser cyan — 13.7:1 on black */
@@ -361,13 +367,38 @@
 /**
  * A panel.
  *
- * Solid black-grey with one hairline. No blur, no inner highlight,
- * no drop shadow — depth comes from the border and the gap around
- * it, the way it does on a machined faceplate.
+ * A machined part rather than a flat slab — the same language as the
+ * sandbox's gates: dark steel with a cyan edge and a black shadow. Four
+ * things make it read as a made object, and none of them is a glow:
+ *
+ *   - the top edge is lit, in the accent, and faintly: the one edge that
+ *     faces the light, with a one-pixel bevel just inside it;
+ *   - the bottom edge is darker than the sides, because it faces away;
+ *   - a sheen falls off down the face over a fixed 220px, so a tall panel
+ *     and a short one are lit the same way;
+ *   - a black contact shadow lifts it off the sky. Black and tight, never
+ *     a coloured halo.
+ *
+ * Still no blur and no gradient of hue — one colour, shaded. The sheen is
+ * translucent, so a component that sets its own background colour on a
+ * panel (a selected state, say) still shows through it, and a component
+ * that sets a border colour (a hover in the accent) replaces all four
+ * edges, which is what a state should do.
  */
 @utility panel {
   background-color: var(--color-nebula);
+  background-image: linear-gradient(
+    180deg,
+    rgb(150 215 255 / 0.07) 0,
+    rgb(150 215 255 / 0) 220px
+  );
   border: 1px solid var(--color-edge);
+  border-top-color: rgb(47 228 255 / 0.35);
+  border-bottom-color: var(--color-edge-low);
+  box-shadow:
+    inset 0 1px 0 0 rgb(47 228 255 / 0.1),
+    0 1px 0 0 rgb(0 0 0 / 0.55),
+    0 28px 56px -30px rgb(0 0 0 / 0.95);
 }
 
 @utility panel-quiet {
@@ -375,17 +406,30 @@
   border: 1px solid var(--color-edge);
 }
 
-/* A well: the recessed area a control or a read-out sits in. */
+/* A well: the recessed area a control or a read-out sits in. Shaded from
+   the top edge down, the way light falls into something cut into a plate. */
 @utility well {
   background-color: var(--color-strata);
   border: 1px solid var(--color-edge);
+  box-shadow: inset 0 1px 3px 0 rgb(0 0 0 / 0.45);
 }
 
-/* Aliases kept so components not yet touched still render flat.
-   These used to be frosted glass; they are now plain panels. */
+/* Aliases kept so components not yet touched render as panels.
+   These used to be frosted glass; they are now the panel above. */
 @utility glass {
   background-color: var(--color-nebula);
+  background-image: linear-gradient(
+    180deg,
+    rgb(150 215 255 / 0.07) 0,
+    rgb(150 215 255 / 0) 220px
+  );
   border: 1px solid var(--color-edge);
+  border-top-color: rgb(47 228 255 / 0.35);
+  border-bottom-color: var(--color-edge-low);
+  box-shadow:
+    inset 0 1px 0 0 rgb(47 228 255 / 0.1),
+    0 1px 0 0 rgb(0 0 0 / 0.55),
+    0 28px 56px -30px rgb(0 0 0 / 0.95);
 }
 
 @utility glass-quiet {
