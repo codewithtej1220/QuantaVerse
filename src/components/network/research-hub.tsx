@@ -1165,7 +1165,7 @@ function MyCard({
         {role === "professor" ? (
           <p className="flex items-center gap-2 text-[12.5px] text-frost">
             <Chip tone="photon">professor</Chip>
-            set by your invite code
+            set by your teaching account
           </p>
         ) : (
           <div

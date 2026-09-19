@@ -368,8 +368,8 @@ def update_card(session: Session, viewer: User, **fields: object) -> User:
         if value is None:
             continue
         if name == "role":
-            # A professor's role comes with the invite code, and editing the
-            # hub card must not quietly take it away again.
+            # A professor's role comes with their teaching account, and editing
+            # the hub card must not quietly take it away again.
             if viewer.role == "professor":
                 continue
             if value not in {"student", "mentor"}:

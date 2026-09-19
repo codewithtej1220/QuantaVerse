@@ -29,7 +29,7 @@ def _fail(error: service.NotesError) -> HTTPException:
 @router.get("/{module_slug}", response_model=NotesResponse)
 def module_notes(module_slug: str, session: DatabaseSession, user: CurrentUser) -> NotesResponse:
     try:
-        notes = service.list_notes(session, module_slug)
+        notes = service.list_notes(session, module_slug, user)
     except service.NotesError as error:
         raise _fail(error) from error
     allowed, hint = service.upload_permission(session, user, module_slug)
@@ -99,7 +99,7 @@ async def upload_note(
 @router.get("/file/{note_id}", response_class=FileResponse)
 def note_file(note_id: int, session: DatabaseSession, user: CurrentUser) -> FileResponse:
     try:
-        note, path = service.get_note(session, note_id)
+        note, path = service.get_note(session, note_id, user)
     except service.NotesError as error:
         raise _fail(error) from error
     name = f"{note.title}.pdf"

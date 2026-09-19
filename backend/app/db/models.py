@@ -37,8 +37,9 @@ class User(Base):
     # What the research hub lists a person under. `role` is deliberately a
     # plain string rather than an enum: it is displayed and filtered on.
     # "student" and "mentor" are self-described on the hub card. "professor" is
-    # not: it is granted with the site's invite code, because a professor can
-    # read the progress of the students they accept and can publish notes.
+    # not: it is chosen at registration, on the Professor tab, and cannot be
+    # set from the hub card — a professor reads the progress of the students
+    # they accept and publishes notes to them.
     role: Mapped[str] = mapped_column(String(16), nullable=False, default="student")
     headline: Mapped[str | None] = mapped_column(String(140), nullable=True)
     # Free text, comma separated. Searched, and shown as chips.

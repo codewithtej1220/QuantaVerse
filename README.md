@@ -170,11 +170,12 @@ from its page; those live outside the repository, under
 
 ### Professors
 
-Professors sign in at `/professor/login` and register at `/professor/register`
-with the invite code set in `QUANTAVERSE_PROFESSOR_CODE` on the API; without one,
-professor sign-up is off. A professor picks the modules they teach, accepts or
-declines students who ask to join their class from a module's page, sees the
-accepted students ranked on each module at `/professor`, and uploads notes there.
+Professors register at `/professor/register` and sign in at `/professor/login`
+exactly as students do — the Professor tab on either page. Once in, a professor
+picks the modules they teach, accepts or declines students who ask to join their
+class from a module's page, sees the accepted students ranked on each module at
+`/professor`, and uploads notes there. A professor's notes are shown only to the
+students accepted into their class on that module.
 
 `backend/README.md` documents every endpoint, the circuit IR and the account
 model in detail.

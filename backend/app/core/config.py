@@ -87,22 +87,14 @@ class Settings:
         self.notes_max_bytes = int(
             float(os.getenv("QUANTAVERSE_NOTES_MAX_MB", "20") or "20") * 1024 * 1024
         )
-        # Who may upload. Anyone can call themselves a mentor on the research
-        # hub, so a deployment that needs uploads limited to named staff lists
-        # their e-mail addresses here; left empty, every mentor account may.
+        # Who may upload. Anyone can sign up as a professor, and a professor's
+        # uploads only ever reach the students in their own classes; a
+        # deployment that still wants uploading limited to named staff lists
+        # their e-mail addresses here. Left empty, every professor may upload
+        # into the modules they teach.
         self.notes_uploaders = {
             email.lower() for email in _split(os.getenv("QUANTAVERSE_NOTES_UPLOADERS", ""))
         }
-
-        # The invite code a professor enters to register, or to turn an existing
-        # account into a professor's. A professor reads the progress of every
-        # student they accept, so the role is never self-service: left empty,
-        # professor sign-up is simply switched off.
-        self.professor_code = os.getenv("QUANTAVERSE_PROFESSOR_CODE", "").strip()
-
-    @property
-    def professor_signup_open(self) -> bool:
-        return bool(self.professor_code)
 
     @property
     def tutor_live(self) -> bool:

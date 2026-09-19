@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -28,7 +29,6 @@ import {
 } from "@/lib/notes";
 import {
   answerRequest,
-  claimProfessor,
   fetchProfessorDashboard,
   initialsOf,
   removeStudent,
@@ -39,7 +39,6 @@ import {
   type ProfessorDashboard,
   type TaughtModule,
 } from "@/lib/professor";
-import { MODULES } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 /**
@@ -107,14 +106,14 @@ export function ProfessorView() {
         <div className="mt-7 flex flex-wrap gap-3">
           <ActionLink href="/professor/login">Professor sign in</ActionLink>
           <ActionLink href="/professor/register" variant="outline">
-            Register with an invite code
+            Create a teaching account
           </ActionLink>
         </div>
       </Frame>
     );
   }
 
-  if (user.role !== "professor") return <ClaimRole />;
+  if (user.role !== "professor") return <StudentAccount />;
 
   return <Dashboard />;
 }
@@ -128,7 +127,54 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* An account that is not a professor's yet                            */
+/* A student's account, on the teaching page                           */
+
+/* A teaching account is made on the Professor tab at sign-up, the way a
+   student's is made on the Student tab; an existing account does not change
+   role. So a student who lands here is told so, and offered the way to a
+   teaching account, rather than shown a dashboard that could only refuse. */
+function StudentAccount() {
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const switchAccount = async () => {
+    setBusy(true);
+    try {
+      await signOut();
+    } finally {
+      router.push("/professor/register");
+    }
+  };
+
+  return (
+    <Frame>
+      <p className="eyebrow">Teaching</p>
+      <h1 className="mt-3 display-2">This is a student account</h1>
+      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-frost">
+        You are signed in as {user?.display_name} (@{user?.handle}). Teaching accounts are made on
+        the Professor tab when you sign up. Sign out and create one — this account keeps its lessons
+        and badges as they are.
+      </p>
+      <div className="mt-7 flex flex-wrap gap-3">
+        <ActionButton type="button" disabled={busy} onClick={switchAccount}>
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <GraduationCap className="size-4" aria-hidden />
+          )}
+          Sign out and create a teaching account
+        </ActionButton>
+        <ActionLink href="/dashboard" variant="outline">
+          Back to your dashboard
+        </ActionLink>
+      </div>
+    </Frame>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Choosing modules                                                    */
 
 function ModulePicker({
   catalogue,
@@ -166,95 +212,6 @@ function ModulePicker({
         );
       })}
     </div>
-  );
-}
-
-function ClaimRole() {
-  const { user, refreshUser } = useAuth();
-  const [code, setCode] = useState("");
-  const [chosen, setChosen] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const toggle = (slug: string) =>
-    setChosen((current) =>
-      current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug],
-    );
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await claimProfessor(code.trim(), chosen);
-      await refreshUser();
-    } catch (caught) {
-      setError(reason(caught, "that did not go through — try again"));
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Frame>
-      <p className="eyebrow">Teaching</p>
-      <h1 className="mt-3 display-2">This is a student account</h1>
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-frost">
-        You are signed in as {user?.display_name} (@{user?.handle}). If you teach on QuantaVerse,
-        enter the invite code your site&rsquo;s administrator gave you to turn this account into a
-        teaching account. Your own lessons and badges stay as they are.
-      </p>
-
-      <form onSubmit={submit} className="panel mt-8 max-w-3xl space-y-5 rounded-2xl p-5 lg:p-6">
-        <div className="space-y-1.5">
-          <label
-            htmlFor="claim_code"
-            className="font-mono text-[12px] tracking-[0.16em] text-frost uppercase"
-          >
-            Invite code
-          </label>
-          <input
-            id="claim_code"
-            className={cn(FIELD, "font-mono")}
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-            maxLength={120}
-            required
-          />
-        </div>
-        <fieldset className="space-y-2">
-          <legend className="font-mono text-[12px] tracking-[0.16em] text-frost uppercase">
-            Modules you teach
-          </legend>
-          <ModulePicker
-            catalogue={MODULES.map(({ slug, title, ket }) => ({ slug, title, ket }))}
-            chosen={chosen}
-            onToggle={toggle}
-          />
-        </fieldset>
-        {error && (
-          <p role="alert" className="text-[13px] text-collapse">
-            {error}
-          </p>
-        )}
-        <ActionButton type="submit" disabled={busy || !code.trim()}>
-          {busy ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-          ) : (
-            <GraduationCap className="size-4" aria-hidden />
-          )}
-          {busy ? "Checking…" : "Become a professor"}
-        </ActionButton>
-      </form>
-
-      <p className="mt-5 text-[13px] text-frost">
-        Signed in with the wrong account?{" "}
-        <Link href="/professor/login" className="text-photon underline-offset-4 hover:underline">
-          Sign in as a professor
-        </Link>
-      </p>
-    </Frame>
   );
 }
 
@@ -506,7 +463,9 @@ function TeachingEditor({
   act: Act;
 }) {
   const current = data.modules.map((module) => module.slug);
-  const [editing, setEditing] = useState(false);
+  /* Open from the start for a professor who teaches nothing yet: sign-up does
+     not ask, so this is the first thing a new teaching account needs to do. */
+  const [editing, setEditing] = useState(current.length === 0);
   const [chosen, setChosen] = useState<string[]>(current);
 
   const toggle = (slug: string) =>

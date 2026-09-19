@@ -102,7 +102,6 @@ origin call the API with a bearer token.
 | --- | --- | --- |
 | `QUANTAVERSE_JWT_SECRET` | yes | Generate a fresh one. Do not reuse the local value in `backend/.env` |
 | `QUANTAVERSE_DATABASE_URL` | yes | Postgres, pasted as the host gives it — a `postgres://` or `postgresql://` URL is pointed at the installed psycopg 3 driver automatically. SQLite on a container is wiped on every redeploy |
-| `QUANTAVERSE_PROFESSOR_CODE` | for teaching accounts | The invite code a professor enters to register. Professor sign-up stays closed until it is set. Generate a fresh one; do not reuse the local value in `backend/.env` |
 | `QUANTAVERSE_NOTES_DIR` | for uploads to survive | Where professors' PDFs are written. Point it at a persistent disk — see section 2 |
 | `QUANTAVERSE_ALLOWED_ORIGINS` | yes | The Vercel URL |
 | `OPENAI_API_KEY` | no | Without it the tutor uses its deterministic Qiskit read-out. Any OpenAI-compatible key works |

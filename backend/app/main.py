@@ -108,7 +108,6 @@ async def root() -> dict[str, Any]:
             "GET /api/notes/file/{note_id}",
             "DELETE /api/notes/file/{note_id}",
             "GET /api/professor",
-            "POST /api/professor/claim",
             "PUT /api/professor/modules",
             "POST /api/professor/requests/{id}/accept",
             "POST /api/professor/requests/{id}/decline",

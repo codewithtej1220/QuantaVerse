@@ -337,9 +337,8 @@ export function register(body: {
   password: string;
   display_name: string;
   institution?: string | null;
-  /* A professor registers with the site's invite code and what they teach. */
-  professor_code?: string | null;
-  teaches?: string[];
+  /* Which kind of account: a professor signs up exactly as a student does. */
+  role?: "student" | "professor";
 }) {
   return send<AuthResponse>("/api/auth/register", jsonInit("POST", body));
 }

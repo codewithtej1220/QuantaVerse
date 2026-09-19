@@ -3,17 +3,13 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from app.api.deps import CurrentUser, DatabaseSession
-from app.core.config import get_settings
-from app.models.auth import StudentProfile
 from app.models.teaching import (
-    ClaimRequest,
     JoinRequest,
     ModuleClasses,
     ProfessorDashboard,
     TeachingUpdate,
 )
 from app.services import teaching as service
-from app.services.progress import profile_of
 
 """
 Professors and classes.
@@ -33,30 +29,12 @@ def _fail(error: service.TeachingError) -> HTTPException:
     return HTTPException(status_code=error.status, detail=error.message)
 
 
-@router.get("/api/professor/signup")
-def professor_signup() -> dict[str, bool]:
-    """Whether professor sign-up is switched on, so the form can say so first."""
-    return {"open": get_settings().professor_signup_open}
-
-
 @router.get("/api/professor", response_model=ProfessorDashboard)
 def professor_dashboard(session: DatabaseSession, user: CurrentUser) -> ProfessorDashboard:
     try:
         return service.dashboard(session, user)
     except service.TeachingError as error:
         raise _fail(error) from error
-
-
-@router.post("/api/professor/claim", response_model=StudentProfile)
-def claim_professor(
-    payload: ClaimRequest, session: DatabaseSession, user: CurrentUser
-) -> StudentProfile:
-    """Turn the signed-in account into a professor's, with the invite code."""
-    try:
-        service.make_professor(session, user, payload.code, payload.modules)
-    except service.TeachingError as error:
-        raise _fail(error) from error
-    return profile_of(user)
 
 
 @router.put("/api/professor/modules", response_model=ProfessorDashboard)

@@ -1,5 +1,4 @@
-import { API_BASE, ApiError } from "@/lib/api";
-import { authed, type StudentProfile } from "@/lib/auth";
+import { authed } from "@/lib/auth";
 
 /**
  * Professors and their classes.
@@ -9,9 +8,9 @@ import { authed, type StudentProfile } from "@/lib/auth";
  * student's progress on the module, so every ranking on the professor's page
  * is of students who chose to be in it.
  *
- * The professor role comes with the site's invite code, at registration or by
- * claiming it on an existing account. The server checks every action; the
- * role on the client only decides which pages are offered.
+ * The professor role is picked at registration, on the Professor tab, the way
+ * a student picks theirs. The server checks every action; the role on the
+ * client only decides which pages are offered.
  */
 
 export interface Person {
@@ -119,21 +118,6 @@ export function answerRequest(id: number, accept: boolean) {
 
 export function removeStudent(membershipId: number) {
   return authed<ProfessorDashboard>(`/api/professor/students/${membershipId}`, "DELETE");
-}
-
-export function claimProfessor(code: string, modules: string[]) {
-  return authed<StudentProfile>("/api/professor/claim", "POST", { code, modules });
-}
-
-/** Whether professor sign-up is switched on for this site. No account needed. */
-export async function professorSignupOpen(): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE}/api/professor/signup`, { cache: "no-store" });
-    if (!response.ok) return false;
-    return Boolean(((await response.json()) as { open?: boolean }).open);
-  } catch {
-    throw new ApiError(`cannot reach the QuantaVerse API at ${API_BASE} — is uvicorn running?`);
-  }
 }
 
 /* ------------------------------------------------------------------ */

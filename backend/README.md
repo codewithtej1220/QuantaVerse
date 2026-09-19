@@ -97,7 +97,6 @@ before they write, which is why the budget above is raised; at 700,
 | `QUANTAVERSE_NOTES_DIR` | `backend/uploads/notes` | Where uploaded module notes are written. Point it at a mounted volume on a host with an ephemeral disk. |
 | `QUANTAVERSE_NOTES_MAX_MB` | `20` | Largest PDF accepted per upload. |
 | `QUANTAVERSE_NOTES_UPLOADERS` | empty | Comma-separated e-mail addresses allowed to upload. Empty means any professor, into the modules they teach. |
-| `QUANTAVERSE_PROFESSOR_CODE` | empty | The invite code a professor enters to register, or to turn an existing account into a professor's. Empty switches professor sign-up off. |
 
 ## Endpoints
 
@@ -116,7 +115,7 @@ before they write, which is why the budget above is raised; at 700,
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/api/auth/register` | Create a student. Returns the profile and a token pair. |
+| POST | `/api/auth/register` | Create an account — a student's, or a professor's with `role: "professor"`. Returns the profile and a token pair. |
 | POST | `/api/auth/login` | Exchange email and password for a token pair. |
 | POST | `/api/auth/refresh` | Rotate a refresh token. The old one dies on use. |
 | POST | `/api/auth/logout` | Retire one session, or every session with `{"everywhere": true}`. |
@@ -140,30 +139,30 @@ before they write, which is why the budget above is raised; at 700,
 ### Module notes
 
 PDFs a professor uploads for a module, shown on its page beside the example
-notes that ship with the site. Every route needs a token: uploads are other
-people's course material, and the listing carries the uploader's name.
+notes that ship with the site — to the students accepted into that professor's
+class on the module, and to nobody else. Every route needs a token: uploads are
+other people's course material, and the listing carries the uploader's name.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/notes/{module_slug}` | The module's uploaded notes, whether the caller may add one, and the size limit. |
+| GET | `/api/notes/{module_slug}` | The uploaded notes the caller may read — their own, and those of professors whose class on the module they are in — whether they may add one, and the size limit. |
 | POST | `/api/notes/{module_slug}` | Upload a PDF. The file is the request body with `Content-Type: application/pdf`; `title`, and optionally `description` and `filename`, are query parameters. Professors, into modules they teach. |
-| GET | `/api/notes/file/{note_id}` | The PDF itself, inline. |
+| GET | `/api/notes/file/{note_id}` | The PDF itself, inline. The uploader and their accepted students only. |
 | DELETE | `/api/notes/file/{note_id}` | Remove notes. The uploader only. |
 
 ### Professors and classes
 
 A class is one professor and one module. A student asks to join and the professor
 accepts or declines; accepting is what lets the professor see that student's
-progress on the module, and nothing else of it. The professor role comes with
-`QUANTAVERSE_PROFESSOR_CODE` — at registration (`professor_code` and `teaches` on
-`/api/auth/register`) or later with `/api/professor/claim` — and never from the
-hub card, because it carries that view of other people's work.
+progress on the module, and nothing else of it. The role is chosen at
+registration — `role: "professor"` on `/api/auth/register` — the same way a
+student's is, and never from the hub card. What keeps open sign-up safe is that
+consent: a professor sees only students who asked to join and were accepted, and
+their uploaded notes reach only those students.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/professor/signup` | Whether professor sign-up is switched on. No token needed. |
 | GET | `/api/professor` | The professor's dashboard: requests waiting, and each taught module's students ranked. |
-| POST | `/api/professor/claim` | Turn the signed-in account into a professor's, with the invite code and the modules taught. |
 | PUT | `/api/professor/modules` | Set the modules taught. Classes on dropped modules are hidden, not deleted. |
 | POST | `/api/professor/requests/{id}/accept` | Accept a student into a class. |
 | POST | `/api/professor/requests/{id}/decline` | Decline a request. The student may ask again. |

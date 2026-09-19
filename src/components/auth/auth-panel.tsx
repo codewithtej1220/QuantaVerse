@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GraduationCap, KeyRound, Loader2, UserPlus } from "lucide-react";
@@ -8,8 +8,6 @@ import { GraduationCap, KeyRound, Loader2, UserPlus } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ActionButton } from "@/components/site/action";
 import { ApiError } from "@/lib/api";
-import { MODULES } from "@/lib/data";
-import { professorSignupOpen } from "@/lib/professor";
 import { cn } from "@/lib/utils";
 
 /* A field is a well with a hairline. Focus moves the hairline to copper —
@@ -45,7 +43,7 @@ const COPY = {
     register: {
       eyebrow: "Professor registration",
       title: "Set up a teaching account",
-      lede: "Register with the invite code your site's administrator gave you and pick the modules you teach. Students then ask to join your class on each one, and you decide who is in.",
+      lede: "Sign up the same way a student does. Once you are in, pick the modules you teach from your dashboard — students then ask to join your class on each one, and you decide who is in.",
     },
   },
 } as const;
@@ -64,35 +62,12 @@ export function AuthPanel({
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [institution, setInstitution] = useState("");
-  const [code, setCode] = useState("");
-  const [teaches, setTeaches] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const registering = mode === "register";
   const professor = audience === "professor";
   const copy = COPY[audience][mode];
-
-  /* Professor sign-up only exists where the site has set an invite code. Asked
-     up front, so nobody fills in the whole form to be told at the end. */
-  const [signupOpen, setSignupOpen] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (!professor || !registering) return;
-    let live = true;
-    professorSignupOpen().then(
-      (open) => live && setSignupOpen(open),
-      () => live && setSignupOpen(null),
-    );
-    return () => {
-      live = false;
-    };
-  }, [professor, registering]);
-  const closed = professor && registering && signupOpen === false;
-
-  const toggleModule = (slug: string) =>
-    setTeaches((current) =>
-      current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug],
-    );
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -105,21 +80,16 @@ export function AuthPanel({
             password,
             display_name: displayName,
             institution: institution.trim() || null,
-            ...(professor ? { professor_code: code.trim(), teaches } : {}),
+            role: professor ? "professor" : "student",
           })
         : await signIn(email, password);
       /* Where to land goes by what the account is, not by which tab was used:
          a professor who signs in on the student tab still lands on their
-         classes. A new student lands on the track, where the two
-         starting-point questions are waiting in a box over it. Someone on the
-         professor tab whose account is not a professor's lands on /professor
-         too, where the invite code is asked for. */
+         classes, and a student on the professor tab on their own dashboard.
+         A new student lands on the track, where the two starting-point
+         questions are waiting in a box over it. */
       router.push(
-        profile.role === "professor" || professor
-          ? "/professor"
-          : registering
-            ? "/curriculum"
-            : "/dashboard",
+        profile.role === "professor" ? "/professor" : registering ? "/curriculum" : "/dashboard",
       );
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "something went wrong — try again");
@@ -129,9 +99,7 @@ export function AuthPanel({
 
   return (
     <div className="min-h-screen pt-32 pb-24">
-      <div
-        className={cn("mx-auto px-5", professor && registering ? "max-w-[640px]" : "max-w-[520px]")}
-      >
+      <div className="mx-auto max-w-[520px] px-5">
         {/* Student or professor, said before anything else on the page: the
             header's one "Sign in" link lands here for both. */}
         <nav
@@ -168,17 +136,6 @@ export function AuthPanel({
         <p className="mt-3 text-[14.5px] leading-relaxed text-frost">{copy.lede}</p>
 
         <form onSubmit={submit} className="panel mt-8 space-y-4 rounded-2xl p-5 lg:p-6">
-          {closed && (
-            <p
-              role="status"
-              className="rounded-xl border border-edge-hi bg-strata px-3.5 py-2.5 text-[12.5px] leading-relaxed text-frost"
-            >
-              Professor sign-up isn&rsquo;t switched on for this site. It opens when the
-              administrator sets an invite code (
-              <code className="font-mono">QUANTAVERSE_PROFESSOR_CODE</code>) on the API.
-            </p>
-          )}
-
           {registering && (
             <div className="space-y-1.5">
               <label htmlFor="display_name" className={LABEL}>
@@ -254,67 +211,6 @@ export function AuthPanel({
             </div>
           )}
 
-          {registering && professor && (
-            <>
-              <div className="space-y-1.5">
-                <label htmlFor="professor_code" className={LABEL}>
-                  Invite code
-                </label>
-                <input
-                  id="professor_code"
-                  className={cn(FIELD, "font-mono")}
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                  placeholder="from your site's administrator"
-                  autoComplete="off"
-                  spellCheck={false}
-                  maxLength={120}
-                  required
-                  disabled={closed}
-                />
-                <p className="text-[12px] leading-relaxed text-frost">
-                  A professor sees the progress of every student they accept, so the role needs the
-                  code rather than a tick-box.
-                </p>
-              </div>
-
-              <fieldset className="space-y-2">
-                <legend className={LABEL}>Modules you teach</legend>
-                <p className="text-[12px] leading-relaxed text-frost">
-                  Students can ask to join your class on these. You can change them later.
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {MODULES.map((module) => {
-                    const on = teaches.includes(module.slug);
-                    return (
-                      <label
-                        key={module.slug}
-                        className={cn(
-                          "flex cursor-pointer items-center gap-3 border px-3 py-2.5 transition-colors",
-                          on
-                            ? "border-photon bg-photon/[0.07]"
-                            : "border-edge hover:border-edge-hi",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          onChange={() => toggleModule(module.slug)}
-                          disabled={closed}
-                          className="size-3.5 shrink-0 accent-photon"
-                        />
-                        <span className="ket shrink-0 text-[12px] text-photon">{module.ket}</span>
-                        <span className="min-w-0 text-[13px] leading-snug text-paper">
-                          {module.title}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            </>
-          )}
-
           {error && (
             <p
               role="alert"
@@ -324,7 +220,7 @@ export function AuthPanel({
             </p>
           )}
 
-          <ActionButton type="submit" size="lg" className="w-full" disabled={busy || closed}>
+          <ActionButton type="submit" size="lg" className="w-full" disabled={busy}>
             {busy ? (
               <Loader2 className="size-4 animate-spin" />
             ) : registering ? (
@@ -361,7 +257,7 @@ export function AuthPanel({
               }
               className="text-photon underline-offset-4 hover:underline"
             >
-              {registering ? "Sign in" : professor ? "Register with an invite code" : "Create one"}
+              {registering ? "Sign in" : professor ? "Create a teaching account" : "Create one"}
             </Link>
           </p>
         </form>

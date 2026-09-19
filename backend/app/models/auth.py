@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -12,10 +13,11 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=10, max_length=72)
     display_name: str = Field(min_length=2, max_length=80)
     institution: str | None = Field(default=None, max_length=160)
-    # A professor registers with the site's invite code and the modules they
-    # teach. Without a code the account is an ordinary student's.
-    professor_code: str | None = Field(default=None, max_length=120)
-    teaches: list[str] = Field(default_factory=list, max_length=16)
+    # Chosen on the form, the way a student or a professor tab is. A professor
+    # signs up exactly as a student does; the account differs only in where it
+    # lands and what it can do there. The modules they teach are picked on the
+    # teaching dashboard afterwards, not here.
+    role: Literal["student", "professor"] = "student"
 
     @field_validator("display_name", "institution")
     @classmethod

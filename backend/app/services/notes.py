@@ -6,12 +6,12 @@ import re
 import secrets
 from pathlib import Path
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.curriculum import MODULE_BY_SLUG
-from app.db.models import ModuleNote, User
+from app.db.models import ClassMembership, ModuleNote, User
 from app.models.notes import NoteRecord, NoteUploader
 from app.services import teaching
 
@@ -21,9 +21,14 @@ well as, the lesson videos.
 
 Uploading is limited to professors, into the modules they teach, and
 optionally to a named list of e-mail addresses (QUANTAVERSE_NOTES_UPLOADERS).
-Reading needs any account. A directory of uploads with names and institutions
-on it is no more public than the research hub it borrows those from, and a
-course site should not become an open file host.
+
+Reading is limited to the class. A professor's notes on a module are shown to
+that professor and to the students accepted into their class on it, and to
+nobody else. Anyone can sign up as a professor, so notes that reached every
+student on a module would make the course an open publishing platform for
+whoever registered; tied to the class, they only reach students who asked to
+be taught by that person. Everyone keeps the example notes that ship with the
+site.
 
 A file has to look like a PDF to be kept: it must start with the PDF header and
 end with the end-of-file marker. That is not a guarantee of a well-formed PDF,
@@ -97,11 +102,22 @@ def record(note: ModuleNote, viewer: User) -> NoteRecord:
     )
 
 
-def list_notes(session: Session, module_slug: str) -> list[ModuleNote]:
+def _readable_by(viewer: User, module_slug: str):
+    """Notes on a module `viewer` may read: their own, and those of every
+    professor whose class on it they have been accepted into."""
+    their_professors = select(ClassMembership.professor_id).where(
+        ClassMembership.student_id == viewer.id,
+        ClassMembership.module_slug == module_slug,
+        ClassMembership.status == "accepted",
+    )
+    return or_(ModuleNote.uploader_id == viewer.id, ModuleNote.uploader_id.in_(their_professors))
+
+
+def list_notes(session: Session, module_slug: str, viewer: User) -> list[ModuleNote]:
     _module(module_slug)
     statement = (
         select(ModuleNote)
-        .where(ModuleNote.module_slug == module_slug)
+        .where(ModuleNote.module_slug == module_slug, _readable_by(viewer, module_slug))
         .options(selectinload(ModuleNote.uploader))
         .order_by(ModuleNote.created_at.desc(), ModuleNote.id.desc())
     )
@@ -213,10 +229,19 @@ def save_note(
     return note
 
 
-def get_note(session: Session, note_id: int) -> tuple[ModuleNote, Path]:
+def get_note(session: Session, note_id: int, viewer: User) -> tuple[ModuleNote, Path]:
     note = session.get(ModuleNote, note_id)
     if note is None:
         raise NotesError("those notes no longer exist", status=404)
+    readable = session.scalar(
+        select(func.count())
+        .select_from(ModuleNote)
+        .where(ModuleNote.id == note.id, _readable_by(viewer, note.module_slug))
+    )
+    if not readable:
+        raise NotesError(
+            "those notes are for the students in that professor's class", status=403
+        )
     path = get_settings().notes_dir / note.stored_name
     if not path.is_file():
         raise NotesError("the file for those notes is missing on the server", status=410)

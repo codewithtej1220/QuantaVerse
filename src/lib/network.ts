@@ -8,7 +8,7 @@ import { authed } from "@/lib/auth";
  * so there is no anonymous path here to fall back to.
  */
 
-/* "professor" comes with the site's invite code; a card can only choose the other two. */
+/* "professor" comes with a teaching account; a card can only choose the other two. */
 export type Role = "student" | "mentor" | "professor";
 export type SelfRole = Exclude<Role, "professor">;
 export type ConnectionStatus = "pending" | "accepted" | "declined";

@@ -96,13 +96,6 @@ class TeachingUpdate(BaseModel):
     modules: list[str] = Field(max_length=16)
 
 
-class ClaimRequest(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    code: str = Field(min_length=1, max_length=120)
-    modules: list[str] = Field(default_factory=list, max_length=16)
-
-
 class JoinRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 

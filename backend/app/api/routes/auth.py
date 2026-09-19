@@ -37,16 +37,6 @@ def register(
             detail="registration is closed on this instance",
         )
 
-    # A professor's invite code is checked before anything is created, so a
-    # wrong code leaves no half-made student account behind it.
-    professor = payload.professor_code is not None and bool(payload.professor_code.strip())
-    if professor:
-        try:
-            teaching.check_code(payload.professor_code)
-            modules = teaching.clean_modules(payload.teaches)
-        except teaching.TeachingError as error:
-            raise HTTPException(status_code=error.status, detail=error.message) from error
-
     try:
         user = accounts.create_user(
             session,
@@ -65,8 +55,8 @@ def register(
             detail="that email already has an account — sign in instead",
         ) from error
 
-    if professor:
-        teaching.make_professor(session, user, payload.professor_code, modules)
+    if payload.role == "professor":
+        teaching.make_professor(session, user)
 
     tokens = accounts.issue_tokens(session, user, user_agent=user_agent)
     return AuthResponse(user=profile_of(user), tokens=tokens)

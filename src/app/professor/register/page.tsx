@@ -5,7 +5,7 @@ import { AuthPanel } from "@/components/auth/auth-panel";
 export const metadata: Metadata = {
   title: "Professor registration",
   description:
-    "Set up a QuantaVerse teaching account with your site's invite code and choose the modules you teach.",
+    "Create a QuantaVerse teaching account, then choose the modules you teach from your dashboard.",
 };
 
 export default function ProfessorRegisterPage() {

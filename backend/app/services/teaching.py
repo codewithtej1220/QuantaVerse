@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import secrets
 from collections import defaultdict
 from datetime import datetime
 
@@ -8,7 +7,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.clock import as_utc, utcnow
-from app.core.config import get_settings
 from app.core.curriculum import MODULE_BY_SLUG, MODULES, Module, module_units
 from app.db.models import (
     ClassMembership,
@@ -41,8 +39,10 @@ professor accepts or declines; acceptance is what lets the professor see that
 student's progress on the module, and nothing else of it. The ranking a
 professor sees is therefore always of students who chose to be ranked.
 
-The professor role is granted with the site's invite code and never by the
-account holder alone, because it carries that view of other people's work.
+Anyone can sign up as a professor, the way anyone can sign up as a student.
+What keeps that safe is the consent above: a professor sees a student's work
+only after that student asks to join the class and is accepted, and the notes
+a professor uploads are shown only to the students in that class.
 """
 
 # A student's requests still waiting at once, across every module.
@@ -60,23 +60,6 @@ class TeachingError(Exception):
 
 def is_professor(user: User) -> bool:
     return user.role == "professor" and bool(user.is_active)
-
-
-def code_matches(code: str | None) -> bool:
-    expected = get_settings().professor_code
-    if not expected or not code:
-        return False
-    # Constant time, so the code cannot be guessed a character at a time.
-    return secrets.compare_digest(code.strip().encode("utf-8"), expected.encode("utf-8"))
-
-
-def check_code(code: str | None) -> None:
-    if not get_settings().professor_signup_open:
-        raise TeachingError("professor sign-up is not enabled on this site", status=403)
-    if not code_matches(code):
-        raise TeachingError(
-            "that invite code is not right — the site's administrator has it", status=403
-        )
 
 
 def clean_modules(slugs: list[str]) -> list[str]:
@@ -129,14 +112,15 @@ def set_modules(session: Session, professor: User, slugs: list[str]) -> list[str
     return wanted
 
 
-def make_professor(session: Session, user: User, code: str | None, modules: list[str]) -> User:
-    """Grant the professor role with the invite code, and set what they teach."""
-    check_code(code)
-    wanted = clean_modules(modules)
+def make_professor(session: Session, user: User) -> User:
+    """Make a freshly registered account a professor's.
+
+    Nothing else is set here: the modules they teach are picked on the teaching
+    dashboard, which opens on that choice while there is none.
+    """
     if user.role != "professor":
         user.role = "professor"
         session.commit()
-    set_modules(session, user, wanted)
     return user
 
 
