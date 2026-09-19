@@ -8,7 +8,7 @@ import { Stage, Zone } from "@/components/three/stage";
 export const metadata: Metadata = {
   title: "Algorithms",
   description:
-    "Walk through the quantum algorithms that beat their classical counterparts — Grover, Deutsch–Jozsa, Bernstein–Vazirani, superdense coding and teleportation — stage by stage and gate by gate, on a real statevector simulation running in your browser.",
+    "Walk through quantum algorithms — Grover, Deutsch–Jozsa, Bernstein–Vazirani, superdense coding and teleportation — stage by stage and gate by gate, on a real statevector simulation running in your browser.",
 };
 
 /**
@@ -33,13 +33,13 @@ export default function AlgorithmsPage() {
           <div className="max-w-2xl">
             <p className="eyebrow">Algorithms</p>
             <h1 data-tour="algorithms" className="mt-3 display-2">
-              The circuits that{" "}
-              <span className="text-photon">beat the classical one.</span>
+              Watch each algorithm{" "}
+              <span className="text-photon">run, stage by stage.</span>
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-frost">
-              Five algorithms, each taken a stage at a time — superposition,
-              oracle, interference, measurement — with a picture of what every
-              stage does to the amplitudes, and the gates, the Qiskit and the
+              Each one is taken a stage at a time — superposition, oracle,
+              interference, measurement — with a picture of what every stage
+              does to the amplitudes, and the gates, the Qiskit and the
               statevector underneath. Nothing here is an animation of a circuit:
               every picture is read off the circuit itself, running on the same
               simulator the sandbox uses, in your browser.

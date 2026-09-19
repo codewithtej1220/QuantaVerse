@@ -54,7 +54,7 @@ const GUIDE: Record<string, Line> = {
     ask: "Are my two qubits entangled?",
   },
   "/algorithms": {
-    text: "Five algorithms that beat the classical way of doing it, each one actually running. Ask me which is worth your time first.",
+    text: "Every algorithm here actually runs, a stage at a time. Ask me which is worth your time first.",
     eyebrow: "the shelf",
     ask: "Which of these algorithms should I understand first?",
   },

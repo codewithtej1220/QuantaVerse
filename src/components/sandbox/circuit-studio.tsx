@@ -8,7 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Play, RotateCcw, Trash2 } from "lucide-react";
+import { ChevronDown, Play, RotateCcw, Trash2 } from "lucide-react";
 
 import {
   ApiError,
@@ -99,7 +99,12 @@ import { StepThrough } from "./step-through";
  */
 
 const COLUMNS = 10;
-const SHOTS = 1024;
+/* How many times a run samples the circuit — a choice, not a constant. One shot
+   shows that a measurement is a single random outcome, a hundred show the noise
+   the shot-noise lesson is about, and thousands show the counts settling onto
+   the exact bars beside them. */
+const SHOT_OPTIONS = [1, 10, 100, 1024, 4096, 8192];
+const DEFAULT_SHOTS = 1024;
 const QUBIT_OPTIONS = [2, 3, 4];
 const GRID_LIMITS = {
   minQubits: QUBIT_OPTIONS[0],
@@ -175,6 +180,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
   const [touched, setTouched] = useState(false);
   const [preset, setPreset] = useState<Preset | null>(opening);
   const [shots, setShots] = useState<number[] | null>(null);
+  const [shotsPerRun, setShotsPerRun] = useState(DEFAULT_SHOTS);
   const [running, setRunning] = useState(false);
 
   /**
@@ -755,7 +761,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     const started = performance.now();
     const sampled = sampleShots(
       finalResult.probabilities,
-      SHOTS,
+      shotsPerRun,
       runCount.current * 7919 + 13,
     );
     /* Timed around the sampling itself, not around the readability delay below
@@ -766,7 +772,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setTimings((last) => ({ ...last, browser: took }));
     setRunning(false);
     setPose("idle");
-  }, [finalResult.probabilities]);
+  }, [finalResult.probabilities, shotsPerRun]);
 
   const run = () => {
     runCount.current += 1;
@@ -778,7 +784,8 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     setPose("working");
 
     if (engine === "browser") {
-      // A short delay: 1,024 shots finish instantly, and instant is unreadable.
+      // A short delay: even thousands of shots finish instantly, and instant is
+      // unreadable.
       timer.current = setTimeout(runLocally, 420);
       return;
     }
@@ -786,7 +793,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
     runSimulation({
       circuit: submission,
       backend: engine,
-      shots: SHOTS,
+      shots: shotsPerRun,
     })
       .then((response: SimulationResponse) => {
         setShots(histogramToCounts(response.histogram, qubits));
@@ -1027,7 +1034,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
           </>
         )}
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        {/* The controls get a row of their own, centred: they are the page's
+            instrument panel, and pushed into the far corner beside the presets
+            they read as an afterthought. */}
+        <div className="flex w-full flex-wrap items-center justify-center gap-2 border-t border-edge pt-3">
           <ProactiveToggle on={proactive} onChange={setProactive} />
           <EnginePicker
             engine={engine}
@@ -1102,30 +1112,71 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             clear
           </button>
 
-          <button
-            type="button"
-            onClick={run}
-            disabled={running}
-            className={cn(
-              // The one thing this page exists to do, so it is the one solid
-              // copper control on it.
-              "flex items-center gap-2 bg-photon px-4 py-2.5",
-              "font-mono text-[12px] font-semibold tracking-[0.12em] text-void uppercase transition-colors",
-              "hover:bg-photon-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-          >
-            {running ? (
-              <RotateCcw className="size-3.5 animate-spin" />
-            ) : (
-              <Play className="size-3.5" />
-            )}
-            {running
-              ? engine === "browser"
-                ? "sampling"
-                : `running on ${engine}`
-              : `run ${SHOTS.toLocaleString("en-IN")} shots`}
-          </button>
+          {/* How many shots, then go: one control, so the count sits against
+              the button it changes. */}
+          <div className="flex items-stretch">
+            <label
+              className={cn(
+                "flex items-center gap-2 border border-r-0 border-edge px-2.5 transition-colors",
+                "focus-within:border-photon hover:border-edge-hi hover:bg-strata",
+              )}
+            >
+              <span className="font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
+                shots
+              </span>
+              <span className="relative flex items-center">
+                <select
+                  value={shotsPerRun}
+                  onChange={(event) => {
+                    setShotsPerRun(Number(event.target.value));
+                    setShots(null);
+                    setRunNote(null);
+                  }}
+                  disabled={running}
+                  aria-label="Shots per run"
+                  className="cursor-pointer appearance-none bg-transparent py-2 pr-5 font-mono text-[12px] text-paper tabular-nums outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {SHOT_OPTIONS.map((count) => (
+                    <option
+                      key={count}
+                      value={count}
+                      className="bg-nebula text-paper"
+                    >
+                      {count.toLocaleString("en-IN")}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-0 size-3 text-frost"
+                  aria-hidden
+                />
+              </span>
+            </label>
+            <button
+              type="button"
+              onClick={run}
+              disabled={running}
+              className={cn(
+                // The one thing this page exists to do, so it is the one solid
+                // accent control on it.
+                "flex items-center gap-2 bg-photon px-4 py-2.5",
+                "font-mono text-[12px] font-semibold tracking-[0.12em] text-void uppercase transition-colors",
+                "hover:bg-photon-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+              )}
+            >
+              {running ? (
+                <RotateCcw className="size-3.5 animate-spin" />
+              ) : (
+                <Play className="size-3.5" />
+              )}
+              {running
+                ? engine === "browser"
+                  ? "sampling"
+                  : `running on ${engine}`
+                : "run"}
+            </button>
+          </div>
         </div>
 
         {/* What produced the last histogram, or why the fallback took over. */}
@@ -1237,7 +1288,11 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         result={result}
         qubits={qubits}
         shots={shots}
-        shotCount={SHOTS}
+        /* Counted off the histogram itself: a tab switched back to keeps the
+           run it had, which may have used a different number of shots. */
+        shotCount={
+          shots ? shots.reduce((total, count) => total + count, 0) : shotsPerRun
+        }
         /* Named so the read-out cannot be mistaken for the finished circuit
            while the transport is parked mid-way through it. */
         stepLabel={
