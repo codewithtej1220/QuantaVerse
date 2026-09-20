@@ -68,6 +68,11 @@ class TaughtModule(BaseModel):
     students: list[ClassStudent]
     pending: int
     notes: int
+    # A module the professor added themselves: no lessons, no lab, no class to
+    # join — just their own notes. `own_id` is what deletes it.
+    own: bool = False
+    own_id: int | None = None
+    summary: str | None = None
 
 
 class ModuleChoice(BaseModel):
@@ -94,6 +99,13 @@ class TeachingUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     modules: list[str] = Field(max_length=16)
+
+
+class OwnModuleRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = Field(min_length=2, max_length=120)
+    summary: str | None = Field(default=None, max_length=300)
 
 
 class JoinRequest(BaseModel):

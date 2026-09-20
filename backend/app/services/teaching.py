@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from datetime import datetime
 
@@ -13,6 +14,7 @@ from app.db.models import (
     ExerciseAttempt,
     LessonCompletion,
     ModuleNote,
+    OwnModule,
     TeachingAssignment,
     User,
 )
@@ -110,6 +112,70 @@ def set_modules(session: Session, professor: User, slugs: list[str]) -> list[str
     session.commit()
     session.refresh(professor)
     return wanted
+
+
+MAX_OWN_MODULES = 24
+
+
+def own_modules(session: Session, professor: User) -> list[OwnModule]:
+    return list(
+        session.scalars(
+            select(OwnModule)
+            .where(OwnModule.professor_id == professor.id)
+            .order_by(OwnModule.created_at, OwnModule.id)
+        )
+    )
+
+
+def _own_slug(session: Session, title: str) -> str:
+    """A readable slug that cannot collide with a curriculum module's."""
+    stem = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:48] or "module"
+    base = f"own-{stem}"
+    slug = base
+    for suffix in range(2, 60):
+        clash = session.scalar(select(OwnModule.id).where(OwnModule.slug == slug))
+        if clash is None and slug not in MODULE_BY_SLUG:
+            return slug
+        slug = f"{base}-{suffix}"
+    raise TeachingError("that name is already taken — try another", status=409)
+
+
+def add_own_module(
+    session: Session, professor: User, title: str, summary: str | None
+) -> OwnModule:
+    """A module of the professor's own, named by them."""
+    if not is_professor(professor):
+        raise TeachingError("only professors add modules", status=403)
+    clean_title = " ".join(title.split())
+    if len(clean_title) < 2:
+        raise TeachingError("give the module a name", status=422)
+    if len(own_modules(session, professor)) >= MAX_OWN_MODULES:
+        raise TeachingError(
+            f"that is {MAX_OWN_MODULES} modules of your own — remove one first", status=409
+        )
+    module = OwnModule(
+        professor_id=professor.id,
+        slug=_own_slug(session, clean_title),
+        title=clean_title,
+        summary=" ".join(summary.split()) if summary and summary.strip() else None,
+    )
+    session.add(module)
+    session.commit()
+    session.refresh(module)
+    return module
+
+
+def own_module(session: Session, professor: User, module_id: int) -> OwnModule:
+    module = session.get(OwnModule, module_id)
+    if module is None or module.professor_id != professor.id:
+        # The same answer as a missing row, so ids cannot be probed.
+        raise TeachingError("that module is not one of yours", status=404)
+    return module
+
+
+def remove_own_module(session: Session, professor: User, module: OwnModule) -> None:
+    session.delete(module)
+    session.commit()
 
 
 def make_professor(session: Session, user: User) -> User:
@@ -265,6 +331,26 @@ def dashboard(session: Session, professor: User) -> ProfessorDashboard:
             )
         )
 
+    # Then whatever the professor added themselves, oldest first. These carry
+    # notes and nothing else: the site teaches no lessons for them, so there is
+    # no progress to rank and no class to join.
+    own = own_modules(session, professor)
+    for entry in own:
+        modules.append(
+            TaughtModule(
+                slug=entry.slug,
+                title=entry.title,
+                ket="",
+                lessons=0,
+                students=[],
+                pending=0,
+                notes=int(notes.get(entry.slug, 0)),
+                own=True,
+                own_id=entry.id,
+                summary=entry.summary,
+            )
+        )
+
     # Oldest first: the student who has waited longest is answered first.
     pending.sort(key=lambda row: row.created_at)
     requests = [
@@ -287,7 +373,8 @@ def dashboard(session: Session, professor: User) -> ProfessorDashboard:
         totals=ProfessorTotals(
             students=len({row.student_id for group in accepted.values() for row in group}),
             requests=len(requests),
-            notes=sum(int(notes.get(slug, 0)) for slug in slugs),
+            notes=sum(int(notes.get(slug, 0)) for slug in slugs)
+            + sum(int(notes.get(entry.slug, 0)) for entry in own),
         ),
     )
 

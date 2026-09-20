@@ -1,12 +1,12 @@
 /**
  * Who each module is presented by.
  *
- * These are the research hub's four example instructors, each paired with the
- * two modules closest to their field. They are not real people: the names are
- * invented, the institutions are invented, and the portraits are generated
- * faces of nobody. That is said wherever a byline appears, in the same words
- * the hub uses, because a real-looking academic on an invented name is the one
- * thing this site must not pass off as real.
+ * Five instructors, each paired with the modules closest to their field. They
+ * are not real people: the names and the institutions are invented, and every
+ * portrait is a generated face of nobody. The last part is not negotiable —
+ * a real person's photograph over an invented name and invented credentials is
+ * the one thing this site must never carry — so any instructor added later
+ * takes a generated face too.
  *
  * A professor who teaches a module on the site appears on its page in the
  * classes panel, separately from this byline.
@@ -19,6 +19,13 @@ export interface Instructor {
   /** A generated portrait, under /public/avatars. */
   photo: string;
 }
+
+const SARIN: Instructor = {
+  name: "Prof. Iqbal Sarin",
+  position: "Professor of Quantum Information",
+  institution: "Institute for Quantum Systems",
+  photo: "/avatars/i-sarin.webp",
+};
 
 const MARSH: Instructor = {
   name: "Prof. Helena Marsh",
@@ -49,7 +56,7 @@ const BAKKER: Instructor = {
 };
 
 const BY_MODULE: Record<string, Instructor> = {
-  "qubit-and-superposition": MARSH,
+  "qubit-and-superposition": SARIN,
   "measurement-and-probability": BAKKER,
   "single-qubit-gates": DUARTE,
   "quantum-entanglement": MARSH,
@@ -62,6 +69,3 @@ const BY_MODULE: Record<string, Instructor> = {
 export function instructorFor(slug: string): Instructor | null {
   return BY_MODULE[slug] ?? null;
 }
-
-/** Said on every byline: the instructor is an example, not a person. */
-export const EXAMPLE_NOTE = "Example instructor — a generated portrait, not a real person";

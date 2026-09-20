@@ -6,9 +6,11 @@ from app.api.deps import CurrentUser, DatabaseSession
 from app.models.teaching import (
     JoinRequest,
     ModuleClasses,
+    OwnModuleRequest,
     ProfessorDashboard,
     TeachingUpdate,
 )
+from app.services import notes as notes_service
 from app.services import teaching as service
 
 """
@@ -43,6 +45,36 @@ def set_teaching(
 ) -> ProfessorDashboard:
     try:
         service.set_modules(session, user, payload.modules)
+        return service.dashboard(session, user)
+    except service.TeachingError as error:
+        raise _fail(error) from error
+
+
+@router.post(
+    "/api/professor/modules/own",
+    response_model=ProfessorDashboard,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_own_module(
+    payload: OwnModuleRequest, session: DatabaseSession, user: CurrentUser
+) -> ProfessorDashboard:
+    """A module of the professor's own, named by them, for their own notes."""
+    try:
+        service.add_own_module(session, user, payload.title, payload.summary)
+        return service.dashboard(session, user)
+    except service.TeachingError as error:
+        raise _fail(error) from error
+
+
+@router.delete("/api/professor/modules/own/{module_id}", response_model=ProfessorDashboard)
+def remove_own_module(
+    module_id: int, session: DatabaseSession, user: CurrentUser
+) -> ProfessorDashboard:
+    """Remove it, and the notes under it — nothing else could reach them."""
+    try:
+        module = service.own_module(session, user, module_id)
+        notes_service.delete_module_notes(session, user, module.slug)
+        service.remove_own_module(session, user, module)
         return service.dashboard(session, user)
     except service.TeachingError as error:
         raise _fail(error) from error

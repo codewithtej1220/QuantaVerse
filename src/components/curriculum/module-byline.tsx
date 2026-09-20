@@ -1,14 +1,13 @@
 import Image from "next/image";
 
-import { EXAMPLE_NOTE, instructorFor } from "@/lib/instructors";
+import { instructorFor } from "@/lib/instructors";
 import { cn } from "@/lib/utils";
 
 /**
  * "Module by …", with the instructor's portrait beside it.
  *
  * The small form sits on a row of the curriculum or a card; the large one heads
- * a module's own page, with the instructor's post and institution under it and
- * the plain statement that this is an example instructor.
+ * a module's own page, with the instructor's post and institution under it.
  */
 export function ModuleByline({
   slug,
@@ -24,7 +23,7 @@ export function ModuleByline({
   const px = size === "md" ? 44 : 28;
 
   return (
-    <span className={cn("flex min-w-0 items-center gap-2.5", className)} title={EXAMPLE_NOTE}>
+    <span className={cn("flex min-w-0 items-center gap-2.5", className)}>
       <Image
         src={instructor.photo}
         alt=""
@@ -43,15 +42,12 @@ export function ModuleByline({
           <span className="text-frost">Module by </span>
           {instructor.name}
         </span>
-        {/* Wraps rather than truncating: on a phone an ellipsis would cut off
-            the words that say this is an example instructor. */}
-        {size === "md" ? (
+        {/* Wraps rather than truncating: on a phone an ellipsis would cut
+            the post and the institution short. */}
+        {size === "md" && (
           <span className="block text-[12.5px] text-frost">
             {instructor.position} · {instructor.institution}
-            <span className="text-dim"> · example instructor</span>
           </span>
-        ) : (
-          <span className="sr-only"> ({EXAMPLE_NOTE})</span>
         )}
       </span>
     </span>

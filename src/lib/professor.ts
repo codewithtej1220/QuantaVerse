@@ -60,6 +60,11 @@ export interface TaughtModule {
   students: ClassStudent[];
   pending: number;
   notes: number;
+  /* A module the professor added themselves: their own notes, no lessons, no
+     lab and no class to join. `own_id` is what removes it. */
+  own: boolean;
+  own_id: number | null;
+  summary: string | null;
 }
 
 export interface ModuleChoice {
@@ -103,6 +108,17 @@ export interface ModuleClasses {
 
 export function fetchProfessorDashboard() {
   return authed<ProfessorDashboard>("/api/professor");
+}
+
+export function addOwnModule(title: string, summary: string | null) {
+  return authed<ProfessorDashboard>("/api/professor/modules/own", "POST", {
+    title,
+    summary,
+  });
+}
+
+export function removeOwnModule(id: number) {
+  return authed<ProfessorDashboard>(`/api/professor/modules/own/${id}`, "DELETE");
 }
 
 export function setTaughtModules(modules: string[]) {

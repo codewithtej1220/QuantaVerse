@@ -38,7 +38,12 @@ const TEACHING = { href: "/professor", label: "Teaching" };
 export function SiteNav() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const links = user?.role === "professor" ? [...LINKS, TEACHING] : LINKS;
+  /* A professor also loses the graded lab: it is a student's page, where the
+     only thing to do is be marked. */
+  const links =
+    user?.role === "professor"
+      ? [...LINKS.filter((link) => link.href !== "/lab"), TEACHING]
+      : LINKS;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [route, setRoute] = useState(pathname);

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.curriculum import MODULE_BY_SLUG
-from app.db.models import ClassMembership, ModuleNote, User
+from app.db.models import ClassMembership, ModuleNote, OwnModule, User
 from app.models.notes import NoteRecord, NoteUploader
 from app.services import teaching
 
@@ -64,9 +64,15 @@ def _tidy(value: str | None, limit: int) -> str | None:
     return collapsed[:limit] or None
 
 
-def _module(slug: str) -> None:
-    if slug not in MODULE_BY_SLUG:
-        raise NotesError("there is no module with that name", status=404)
+def _own(session: Session, slug: str) -> OwnModule | None:
+    return session.scalar(select(OwnModule).where(OwnModule.slug == slug))
+
+
+def _module(session: Session, slug: str) -> None:
+    """A module notes can hang on: one of the eight, or a professor's own."""
+    if slug in MODULE_BY_SLUG or _own(session, slug) is not None:
+        return
+    raise NotesError("there is no module with that name", status=404)
 
 
 def upload_permission(session: Session, user: User, module_slug: str) -> tuple[bool, str | None]:
@@ -74,7 +80,11 @@ def upload_permission(session: Session, user: User, module_slug: str) -> tuple[b
     settings = get_settings()
     if user.role != "professor":
         return False, "Notes are uploaded by the professors who teach this module."
-    if not teaching.teaches(session, user, module_slug):
+    own = _own(session, module_slug)
+    if own is not None:
+        if own.professor_id != user.id:
+            return False, "That module belongs to another professor."
+    elif not teaching.teaches(session, user, module_slug):
         return False, "Add this module to the ones you teach to upload notes for it."
     if settings.notes_uploaders and user.email.lower() not in settings.notes_uploaders:
         return False, "This site only accepts notes from its listed teaching staff."
@@ -114,7 +124,7 @@ def _readable_by(viewer: User, module_slug: str):
 
 
 def list_notes(session: Session, module_slug: str, viewer: User) -> list[ModuleNote]:
-    _module(module_slug)
+    _module(session, module_slug)
     statement = (
         select(ModuleNote)
         .where(ModuleNote.module_slug == module_slug, _readable_by(viewer, module_slug))
@@ -152,7 +162,7 @@ def save_note(
     original_name: str | None = None,
 ) -> ModuleNote:
     settings = get_settings()
-    _module(module_slug)
+    _module(session, module_slug)
 
     allowed, reason = upload_permission(session, uploader, module_slug)
     if not allowed:
@@ -246,6 +256,28 @@ def get_note(session: Session, note_id: int, viewer: User) -> tuple[ModuleNote, 
     if not path.is_file():
         raise NotesError("the file for those notes is missing on the server", status=410)
     return note, path
+
+
+def delete_module_notes(session: Session, user: User, module_slug: str) -> int:
+    """Every note `user` uploaded to a module, files included.
+
+    For a professor removing a module of their own: the module row goes, and
+    leaving its files behind would be an upload nobody could ever reach again.
+    """
+    notes = list(
+        session.scalars(
+            select(ModuleNote).where(
+                ModuleNote.module_slug == module_slug, ModuleNote.uploader_id == user.id
+            )
+        )
+    )
+    folder = get_settings().notes_dir
+    for note in notes:
+        session.delete(note)
+    session.commit()
+    for note in notes:
+        (folder / note.stored_name).unlink(missing_ok=True)
+    return len(notes)
 
 
 def delete_note(session: Session, user: User, note_id: int) -> None:

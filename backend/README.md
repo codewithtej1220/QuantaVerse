@@ -138,10 +138,12 @@ before they write, which is why the budget above is raised; at 700,
 
 ### Module notes
 
-PDFs a professor uploads for a module, shown on its page beside the example
-notes that ship with the site — to the students accepted into that professor's
-class on the module, and to nobody else. Every route needs a token: uploads are
-other people's course material, and the listing carries the uploader's name.
+PDFs a professor uploads for a module — one of the eight, or a module of their
+own — shown on its page beside the example notes that ship with the site, to the
+students accepted into that professor's class on the module and to nobody else.
+A module of their own has no class, so those notes are theirs alone. Every
+route needs a token: uploads are other people's course material, and the
+listing carries the uploader's name.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -164,6 +166,8 @@ their uploaded notes reach only those students.
 | --- | --- | --- |
 | GET | `/api/professor` | The professor's dashboard: requests waiting, and each taught module's students ranked. |
 | PUT | `/api/professor/modules` | Set the modules taught. Classes on dropped modules are hidden, not deleted. |
+| POST | `/api/professor/modules/own` | Add a module of the professor's own: `{title, summary}`. No lessons, no lab, no class — just their notes. |
+| DELETE | `/api/professor/modules/own/{id}` | Remove one of their own modules, and the notes under it. |
 | POST | `/api/professor/requests/{id}/accept` | Accept a student into a class. |
 | POST | `/api/professor/requests/{id}/decline` | Decline a request. The student may ask again. |
 | DELETE | `/api/professor/students/{id}` | Remove a student from a class. |

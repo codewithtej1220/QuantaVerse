@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Loader2,
   Pencil,
+  Plus,
   Trash2,
   Upload,
   UserMinus,
@@ -28,9 +29,11 @@ import {
   type UploadedNote,
 } from "@/lib/notes";
 import {
+  addOwnModule,
   answerRequest,
   fetchProfessorDashboard,
   initialsOf,
+  removeOwnModule,
   removeStudent,
   setTaughtModules,
   sinceWhen,
@@ -523,7 +526,116 @@ function TeachingEditor({
           </div>
         </div>
       )}
+      <OwnModuleForm busy={busy} act={act} />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * A module the professor names themselves.
+ *
+ * The eight are the site's course; a syllabus is bigger than that. This adds a
+ * heading of their own — a week of lectures, a seminar, a paper the class is
+ * reading — with their notes under it.
+ */
+function OwnModuleForm({ busy, act }: { busy: string | null; act: Act }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    const name = title.trim();
+    if (!name) return;
+    const saved = await act(
+      "own",
+      () => addOwnModule(name, summary.trim() || null),
+      `${name} is on your teaching page.`,
+    );
+    if (saved) {
+      setTitle("");
+      setSummary("");
+      setOpen(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={cn(SMALL, "mt-4 border-edge text-frost hover:border-paper hover:text-paper")}
+      >
+        <Plus className="size-3.5" aria-hidden />
+        add a module of your own
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="panel mt-4 space-y-4 rounded-2xl p-5">
+      <p className="max-w-2xl text-[13.5px] leading-relaxed text-frost">
+        Anything you teach that is not one of the eight — a week of lectures, a seminar, a paper the
+        class is reading. Name it and upload your notes under it.
+      </p>
+      <div className="space-y-1.5">
+        <label
+          htmlFor="own_title"
+          className="font-mono text-[12px] tracking-[0.16em] text-frost uppercase"
+        >
+          Module name
+        </label>
+        <input
+          id="own_title"
+          className={FIELD}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Week 9 — Quantum error correction"
+          maxLength={120}
+          required
+          autoFocus
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label
+          htmlFor="own_summary"
+          className="font-mono text-[12px] tracking-[0.16em] text-frost uppercase"
+        >
+          One line about it <span className="text-dim">optional</span>
+        </label>
+        <input
+          id="own_summary"
+          className={FIELD}
+          value={summary}
+          onChange={(event) => setSummary(event.target.value)}
+          placeholder="Surface codes, and what a logical qubit costs"
+          maxLength={300}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <ActionButton type="submit" disabled={busy !== null || !title.trim()}>
+          {busy === "own" ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Plus className="size-4" aria-hidden />
+          )}
+          Add module
+        </ActionButton>
+        <ActionButton
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setOpen(false);
+            setTitle("");
+            setSummary("");
+          }}
+        >
+          Cancel
+        </ActionButton>
+      </div>
+    </form>
   );
 }
 
@@ -572,156 +684,201 @@ function ClassPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-3">
-            <span className="ket rounded-lg border border-photon bg-photon/10 px-2 py-0.5 text-[13px] text-photon">
-              {module.ket}
-            </span>
+            {module.own ? (
+              <span className="rounded-lg border border-edge-hi px-2 py-1 font-mono text-[10.5px] tracking-[0.14em] text-frost uppercase">
+                your module
+              </span>
+            ) : (
+              <span className="ket rounded-lg border border-photon bg-photon/10 px-2 py-0.5 text-[13px] text-photon">
+                {module.ket}
+              </span>
+            )}
             <span className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
-              {module.students.length} {module.students.length === 1 ? "student" : "students"}
-              {module.pending > 0 && ` · ${module.pending} waiting`} · {module.notes}{" "}
-              {module.notes === 1 ? "note" : "notes"}
+              {!module.own && (
+                <>
+                  {module.students.length} {module.students.length === 1 ? "student" : "students"}
+                  {module.pending > 0 && ` · ${module.pending} waiting`} ·{" "}
+                </>
+              )}
+              {module.notes} {module.notes === 1 ? "note" : "notes"}
             </span>
           </p>
           <h3 id={`class-${module.slug}`} className="mt-2.5 text-[21px] font-medium text-paper">
             {module.title}
           </h3>
-        </div>
-        <Link
-          href={`/curriculum/${module.slug}`}
-          className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors hover:text-photon"
-        >
-          module page
-          <ArrowRight className="size-3.5" aria-hidden />
-        </Link>
-      </div>
-
-      <h4 className="mt-6 font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
-        Top students
-      </h4>
-      {module.students.length === 0 ? (
-        <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-frost">
-          No students yet. They ask to join from this module&rsquo;s page, and appear here, ranked,
-          once you accept them.
-        </p>
-      ) : (
-        /* relative: the table scrolls inside this box on a phone, and the
-           screen-reader-only header is absolutely positioned — without a
-           positioned box it escapes the scroller and widens the whole page. */
-        <div className="relative mt-2 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
-            <thead>
-              <tr className="border-b border-edge-hi text-left font-mono text-[10.5px] tracking-[0.12em] text-dim uppercase">
-                <th scope="col" className="w-10 py-2 pr-3 font-normal">
-                  #
-                </th>
-                <th scope="col" className="py-2 pr-3 font-normal">
-                  Student
-                </th>
-                <th scope="col" className="w-[26%] py-2 pr-3 font-normal">
-                  Progress
-                </th>
-                <th scope="col" className="py-2 pr-3 font-normal">
-                  Lessons
-                </th>
-                <th scope="col" className="py-2 pr-3 font-normal">
-                  {module.lab_title ? "Lab" : "Lab"}
-                </th>
-                <th scope="col" className="py-2 pr-3 font-normal">
-                  Active
-                </th>
-                <th scope="col" className="w-10 py-2 font-normal">
-                  <span className="sr-only">Remove</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((row) => (
-                <tr key={row.membership_id} className="border-b border-edge last:border-0">
-                  <td
-                    className={cn(
-                      "py-2.5 pr-3 font-mono tabular-nums",
-                      row.rank <= 3 ? "text-photon" : "text-frost",
-                    )}
-                  >
-                    {row.rank}
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    <span className="flex min-w-0 items-center gap-2.5">
-                      <Initials name={row.student.display_name} size="sm" />
-                      <span className="min-w-0">
-                        <span className="block truncate text-paper">
-                          {row.student.display_name}
-                        </span>
-                        <span className="block truncate font-mono text-[11px] text-dim">
-                          @{row.student.handle}
-                        </span>
-                      </span>
-                    </span>
-                  </td>
-                  <td className="py-2.5 pr-3">
-                    <span className="flex items-center gap-2.5">
-                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-strata">
-                        <span
-                          className="block h-full rounded-full bg-photon"
-                          style={{ width: `${row.percent}%` }}
-                        />
-                      </span>
-                      <span className="w-10 text-right font-mono text-[12px] text-paper tabular-nums">
-                        {row.percent}%
-                      </span>
-                    </span>
-                  </td>
-                  <td className="py-2.5 pr-3 font-mono text-[12px] text-frost tabular-nums">
-                    {row.lessons_completed}/{row.lessons_total}
-                  </td>
-                  <td className="py-2.5 pr-3 text-[12.5px]">
-                    <LabCell student={row} />
-                  </td>
-                  <td className="py-2.5 pr-3 text-[12.5px] text-frost">
-                    {sinceWhen(row.last_active)}
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <button
-                      type="button"
-                      disabled={busy !== null}
-                      title={`Remove ${row.student.display_name} from this class`}
-                      aria-label={`Remove ${row.student.display_name} from this class`}
-                      onClick={() => {
-                        if (
-                          !window.confirm(
-                            `Remove ${row.student.display_name} from your ${module.title} class? They can ask to join again.`,
-                          )
-                        )
-                          return;
-                        void act(
-                          `remove-${row.membership_id}`,
-                          () => removeStudent(row.membership_id),
-                          `${row.student.display_name} is no longer in your ${module.title} class.`,
-                        );
-                      }}
-                      className="rounded-md p-1.5 text-dim transition-colors hover:text-collapse focus-visible:outline-2 focus-visible:outline-photon disabled:opacity-40"
-                    >
-                      <UserMinus className="size-4" aria-hidden />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {module.students.length > SHOWN && (
-            <button
-              type="button"
-              onClick={() => setAll((value) => !value)}
-              className="mt-3 font-mono text-[11px] tracking-[0.14em] text-photon uppercase hover:text-paper"
-            >
-              {all ? `Show the top ${SHOWN}` : `Show all ${module.students.length}`}
-            </button>
+          {module.own && module.summary && (
+            <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-frost">
+              {module.summary}
+            </p>
           )}
         </div>
+        {module.own ? (
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() => {
+              if (module.own_id === null) return;
+              void act(
+                `own-${module.own_id}`,
+                () => removeOwnModule(module.own_id as number),
+                `${module.title} is removed.`,
+              );
+            }}
+            className={cn(SMALL, "border-edge text-frost hover:border-collapse hover:text-paper")}
+          >
+            <Trash2 className="size-3.5" aria-hidden />
+            remove
+          </button>
+        ) : (
+          <Link
+            href={`/curriculum/${module.slug}`}
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors hover:text-photon"
+          >
+            module page
+            <ArrowRight className="size-3.5" aria-hidden />
+          </Link>
+        )}
+      </div>
+
+      {module.own ? (
+        /* Nothing on the site teaches this one, so there is no progress to
+           rank and no class to join — only the professor's own notes below. */
+        <p className="mt-6 max-w-2xl text-[13px] leading-relaxed text-dim">
+          Your own module. Upload whatever your class reads for it; the site has no lessons or lab
+          of its own here.
+        </p>
+      ) : (
+        <>
+          <h4 className="mt-6 font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
+            Top students
+          </h4>
+          {module.students.length === 0 ? (
+            <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-frost">
+              No students yet. They ask to join from this module&rsquo;s page, and appear here,
+              ranked, once you accept them.
+            </p>
+          ) : (
+            /* relative: the table scrolls inside this box on a phone, and the
+           screen-reader-only header is absolutely positioned — without a
+           positioned box it escapes the scroller and widens the whole page. */
+            <div className="relative mt-2 overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
+                <thead>
+                  <tr className="border-b border-edge-hi text-left font-mono text-[10.5px] tracking-[0.12em] text-dim uppercase">
+                    <th scope="col" className="w-10 py-2 pr-3 font-normal">
+                      #
+                    </th>
+                    <th scope="col" className="py-2 pr-3 font-normal">
+                      Student
+                    </th>
+                    <th scope="col" className="w-[26%] py-2 pr-3 font-normal">
+                      Progress
+                    </th>
+                    <th scope="col" className="py-2 pr-3 font-normal">
+                      Lessons
+                    </th>
+                    <th scope="col" className="py-2 pr-3 font-normal">
+                      {module.lab_title ? "Lab" : "Lab"}
+                    </th>
+                    <th scope="col" className="py-2 pr-3 font-normal">
+                      Active
+                    </th>
+                    <th scope="col" className="w-10 py-2 font-normal">
+                      <span className="sr-only">Remove</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((row) => (
+                    <tr key={row.membership_id} className="border-b border-edge last:border-0">
+                      <td
+                        className={cn(
+                          "py-2.5 pr-3 font-mono tabular-nums",
+                          row.rank <= 3 ? "text-photon" : "text-frost",
+                        )}
+                      >
+                        {row.rank}
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <span className="flex min-w-0 items-center gap-2.5">
+                          <Initials name={row.student.display_name} size="sm" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-paper">
+                              {row.student.display_name}
+                            </span>
+                            <span className="block truncate font-mono text-[11px] text-dim">
+                              @{row.student.handle}
+                            </span>
+                          </span>
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <span className="flex items-center gap-2.5">
+                          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-strata">
+                            <span
+                              className="block h-full rounded-full bg-photon"
+                              style={{ width: `${row.percent}%` }}
+                            />
+                          </span>
+                          <span className="w-10 text-right font-mono text-[12px] text-paper tabular-nums">
+                            {row.percent}%
+                          </span>
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-3 font-mono text-[12px] text-frost tabular-nums">
+                        {row.lessons_completed}/{row.lessons_total}
+                      </td>
+                      <td className="py-2.5 pr-3 text-[12.5px]">
+                        <LabCell student={row} />
+                      </td>
+                      <td className="py-2.5 pr-3 text-[12.5px] text-frost">
+                        {sinceWhen(row.last_active)}
+                      </td>
+                      <td className="py-2.5 text-right">
+                        <button
+                          type="button"
+                          disabled={busy !== null}
+                          title={`Remove ${row.student.display_name} from this class`}
+                          aria-label={`Remove ${row.student.display_name} from this class`}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                `Remove ${row.student.display_name} from your ${module.title} class? They can ask to join again.`,
+                              )
+                            )
+                              return;
+                            void act(
+                              `remove-${row.membership_id}`,
+                              () => removeStudent(row.membership_id),
+                              `${row.student.display_name} is no longer in your ${module.title} class.`,
+                            );
+                          }}
+                          className="rounded-md p-1.5 text-dim transition-colors hover:text-collapse focus-visible:outline-2 focus-visible:outline-photon disabled:opacity-40"
+                        >
+                          <UserMinus className="size-4" aria-hidden />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {module.students.length > SHOWN && (
+                <button
+                  type="button"
+                  onClick={() => setAll((value) => !value)}
+                  className="mt-3 font-mono text-[11px] tracking-[0.14em] text-photon uppercase hover:text-paper"
+                >
+                  {all ? `Show the top ${SHOWN}` : `Show all ${module.students.length}`}
+                </button>
+              )}
+            </div>
+          )}
+          <p className="mt-3 text-[12px] leading-relaxed text-dim">
+            Ranked by how much of the module is done — lessons plus the lab — then by the
+            lab&rsquo;s best score, then by who passed it first.
+          </p>
+        </>
       )}
-      <p className="mt-3 text-[12px] leading-relaxed text-dim">
-        Ranked by how much of the module is done — lessons plus the lab — then by the lab&rsquo;s
-        best score, then by who passed it first.
-      </p>
 
       <NotesManager slug={module.slug} title={module.title} onChanged={onNotesChanged} />
     </article>

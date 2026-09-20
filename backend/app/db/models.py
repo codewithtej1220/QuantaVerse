@@ -280,6 +280,37 @@ class ModuleNote(Base):
     uploader: Mapped[User] = relationship(back_populates="notes")
 
 
+class OwnModule(Base):
+    """A module a professor adds themselves, outside the site's curriculum.
+
+    The eight modules are the course; this is the rest of a real syllabus — a
+    week of lectures, a seminar, a paper the class is reading — which the
+    professor names and puts their own notes under. It has no lessons and no
+    lab, because nothing on the site teaches it, so it carries a title, an
+    optional line about it, and whatever files they upload.
+
+    The slug is derived from the title but kept unique across the table, so a
+    note row can go on pointing at a module by slug whichever kind it is.
+    """
+
+    __tablename__ = "own_modules"
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_own_module_slug"),
+        Index("ix_own_module_professor", "professor_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    professor_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    slug: Mapped[str] = mapped_column(String(80), nullable=False)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    summary: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+    professor: Mapped[User] = relationship()
+
+
 class TeachingAssignment(Base):
     """A module a professor teaches: where their notes go and whose class a
     student can ask to join."""
