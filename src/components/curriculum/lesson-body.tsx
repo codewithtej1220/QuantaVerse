@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FlaskConical } from "lucide-react";
+import { Check, FlaskConical, Loader2 } from "lucide-react";
 
 import { LessonQuiz } from "@/components/curriculum/lesson-quiz";
 import { LessonMedia } from "@/components/curriculum/module-notes";
 import { useLessonToggle } from "@/components/curriculum/use-lesson-toggle";
-import type { Lesson } from "@/lib/lessons";
+import type { Lesson, TestQuestion } from "@/lib/lessons";
 import type { GradeMode } from "@/lib/challenges";
 import { quizFor } from "@/lib/quizzes";
 
@@ -22,7 +22,9 @@ import { quizFor } from "@/lib/quizzes";
  * complete — there is no self-declared tick. A button reading "I have read
  * this" costs nothing to press and tells the recommendation engine nothing;
  * more than half of four questions about the page you just read is weak
- * evidence rather than none.
+ * evidence rather than none. The exception is a professor's own lesson
+ * written without a checkpoint: with no questions to pass, the reader's word
+ * is the only evidence there is, and a lesson nobody could finish is worse.
  *
  * The lab is the last thing in the module, below every lesson, because it is
  * the one item here that is measured rather than claimed.
@@ -73,10 +75,22 @@ function Notation({ lines, caption }: { lines: string[]; caption?: string }) {
   );
 }
 
+/** Where a lesson's completion is read from and written to. */
+export interface LessonProgress {
+  isDone: (index: number) => boolean;
+  markDone: (index: number) => void | Promise<void>;
+  pending: number | null;
+  signedIn: boolean;
+  error: string | null;
+}
+
 export function LessonBodies({
   slug,
   lessons,
   lab,
+  quizzes,
+  progress,
+  videoOptional = false,
 }: {
   slug: string;
   lessons: Lesson[];
@@ -84,14 +98,25 @@ export function LessonBodies({
     href: string;
     title: string;
     goal: string;
-    level: number;
-    of: number;
+    /** Where it sits on the curriculum's ladder; left out for a lab a
+        professor set, which is not on it. */
+    level?: number;
+    of?: number;
     mode: GradeMode;
   } | null;
+  /** A module whose quizzes are not the curriculum's — a professor's own. */
+  quizzes?: TestQuestion[][];
+  /** And whose progress is not in the curriculum's record. */
+  progress?: LessonProgress;
+  /** Leave out the video slot of a lesson that has none, rather than hold a
+      place for a recording to come: a professor's lesson may not have one. */
+  videoOptional?: boolean;
 }) {
-  const { isDone, markDone, pending, signedIn, error } = useLessonToggle(slug);
+  const curriculum = useLessonToggle(slug);
+  const { isDone, markDone, pending, signedIn, error } = progress ?? curriculum;
 
-  if (!lessons.length) return null;
+  /* A professor's module may be a lab and nothing else. */
+  if (!lessons.length && !lab) return null;
 
   return (
     <section className="mt-10">
@@ -102,7 +127,7 @@ export function LessonBodies({
 
           return (
             <article
-              key={lesson.title}
+              key={`${index}:${lesson.title}`}
               id={`lesson-${index + 1}`}
               className="scroll-mt-28 border-t border-edge pt-8 first:border-0 first:pt-0"
             >
@@ -120,14 +145,17 @@ export function LessonBodies({
                   set in the tertiary tone at body size, so it read as a caption
                   that had drifted up the page rather than as the sentence
                   telling you what the next four paragraphs are for. */}
-              <p className="mt-3 max-w-[52rem] text-[16.5px] leading-relaxed text-frost">
-                {lesson.summary}
-              </p>
+              {lesson.summary && (
+                <p className="mt-3 max-w-[52rem] text-[16.5px] leading-relaxed text-frost">
+                  {lesson.summary}
+                </p>
+              )}
 
               <LessonMedia
                 video={lesson.video}
                 title={lesson.title}
                 index={index}
+                optional={videoOptional}
               />
 
               {/* The theory.
@@ -149,20 +177,22 @@ export function LessonBodies({
                   reading. It now sets to the same width as the video above it
                   and the notation below it, so a lesson has one left edge and
                   one right edge the whole way down. */}
-              <div className="mt-7 flex flex-col gap-5">
-                {lesson.body.map((paragraph, i) => (
-                  <p
-                    key={paragraph.slice(0, 40)}
-                    className={
-                      i === 0
-                        ? "text-[17px] leading-[1.72] text-paper"
-                        : "text-[16px] leading-[1.75] text-paper"
-                    }
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
+              {lesson.body.length > 0 && (
+                <div className="mt-7 flex flex-col gap-5">
+                  {lesson.body.map((paragraph, i) => (
+                    <p
+                      key={`${i}:${paragraph.slice(0, 40)}`}
+                      className={
+                        i === 0
+                          ? "text-[17px] leading-[1.72] text-paper"
+                          : "text-[16px] leading-[1.75] text-paper"
+                      }
+                    >
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              )}
 
               {lesson.notation && (
                 <Notation
@@ -193,15 +223,48 @@ export function LessonBodies({
                 </div>
               )}
 
-              <LessonQuiz
-                questions={quizFor(slug, index)}
-                index={index}
-                complete={complete}
-                busy={busy}
-                signedIn={signedIn}
-                onPass={markDone}
-                isLast={index === lessons.length - 1}
-              />
+              {(() => {
+                const questions = quizzes
+                  ? (quizzes[index] ?? [])
+                  : quizFor(slug, index);
+                if (questions.length) {
+                  return (
+                    <LessonQuiz
+                      questions={questions}
+                      index={index}
+                      complete={complete}
+                      busy={busy}
+                      signedIn={signedIn}
+                      onPass={markDone}
+                      isLast={index === lessons.length - 1}
+                    />
+                  );
+                }
+                /* A lesson with no checkpoint — a professor may leave one
+                   out — still has to be finishable, so it gets the plain
+                   version: a button that says the reader is done. */
+                if (!signedIn) return null;
+                return complete ? (
+                  <p className="mt-7 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-photon uppercase">
+                    <Check className="size-3.5" aria-hidden />
+                    Lesson complete
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void markDone(index)}
+                    className="mt-7 inline-flex h-10 items-center gap-2 border border-photon px-4 font-mono text-[11.5px] tracking-[0.12em] text-photon uppercase transition-colors hover:bg-photon/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:opacity-50"
+                  >
+                    {busy ? (
+                      <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                    ) : (
+                      <Check className="size-3.5" aria-hidden />
+                    )}
+                    Mark this lesson complete
+                  </button>
+                );
+              })()}
             </article>
           );
         })}
@@ -219,7 +282,9 @@ export function LessonBodies({
         >
           <p className="eyebrow flex items-center gap-2 text-photon">
             <FlaskConical className="size-3.5" aria-hidden />
-            Lab {lab.level} of {lab.of} · the assessment
+            {lab.level && lab.of
+              ? `Lab ${lab.level} of ${lab.of} · the assessment`
+              : "The lab · the assessment"}
           </p>
           <h3 className="mt-2.5 text-[19px] font-medium text-paper">
             {lab.title}

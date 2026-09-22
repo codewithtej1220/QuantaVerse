@@ -9,7 +9,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from app.api.routes import auth, execute, network, notes, progress, teaching, tutor
+from app.api.routes import (
+    auth,
+    execute,
+    network,
+    notes,
+    own_modules,
+    progress,
+    teaching,
+    tutor,
+)
 from app.core.config import get_settings
 from app.db.seed import seed_demo_mentors
 from app.db.session import database_status, init_db, session_scope
@@ -66,6 +75,7 @@ app.include_router(progress.router)
 app.include_router(network.router)
 app.include_router(notes.router)
 app.include_router(teaching.router)
+app.include_router(own_modules.router)
 
 
 @app.exception_handler(AdapterError)
@@ -109,6 +119,13 @@ async def root() -> dict[str, Any]:
             "DELETE /api/notes/file/{note_id}",
             "GET /api/professor",
             "PUT /api/professor/modules",
+            "POST /api/professor/modules/own",
+            "PUT /api/professor/modules/own/{id}",
+            "DELETE /api/professor/modules/own/{id}",
+            "GET /api/own-modules",
+            "GET /api/own-modules/{slug}",
+            "POST /api/own-modules/{slug}/lessons/{index}",
+            "DELETE /api/own-modules/{slug}/lessons/{index}",
             "POST /api/professor/requests/{id}/accept",
             "POST /api/professor/requests/{id}/decline",
             "DELETE /api/professor/students/{id}",

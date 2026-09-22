@@ -43,6 +43,8 @@ export interface Challenge {
   mode: GradeMode;
   /** The reference circuit, in reading order. */
   ops: { gate: string; wires: number[] }[];
+  /** A lab a professor set, not one of the curriculum's ladder: who set it. */
+  setBy?: string;
 }
 
 export const CHALLENGES: Challenge[] = [

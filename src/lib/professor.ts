@@ -1,4 +1,5 @@
 import { authed } from "@/lib/auth";
+import type { OwnModuleContent } from "@/lib/own-modules";
 
 /**
  * Professors and their classes.
@@ -60,11 +61,13 @@ export interface TaughtModule {
   students: ClassStudent[];
   pending: number;
   notes: number;
-  /* A module the professor added themselves: their own notes, no lessons, no
-     lab and no class to join. `own_id` is what removes it. */
+  /* A module the professor wrote themselves. It goes to their whole class
+     rather than to a class of its own, so there is nothing to join; `own_id`
+     is what saves and removes it, and `content` is it as they last saved it. */
   own: boolean;
   own_id: number | null;
   summary: string | null;
+  content: OwnModuleContent | null;
 }
 
 export interface ModuleChoice {
@@ -115,6 +118,10 @@ export function addOwnModule(title: string, summary: string | null) {
     title,
     summary,
   });
+}
+
+export function saveOwnModule(id: number, content: OwnModuleContent) {
+  return authed<ProfessorDashboard>(`/api/professor/modules/own/${id}`, "PUT", content);
 }
 
 export function removeOwnModule(id: number) {

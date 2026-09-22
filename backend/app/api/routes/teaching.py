@@ -6,11 +6,13 @@ from app.api.deps import CurrentUser, DatabaseSession
 from app.models.teaching import (
     JoinRequest,
     ModuleClasses,
+    OwnModuleContent,
     OwnModuleRequest,
     ProfessorDashboard,
     TeachingUpdate,
 )
 from app.services import notes as notes_service
+from app.services import own_modules as own_modules_service
 from app.services import teaching as service
 
 """
@@ -61,6 +63,23 @@ def add_own_module(
     """A module of the professor's own, named by them, for their own notes."""
     try:
         service.add_own_module(session, user, payload.title, payload.summary)
+        return service.dashboard(session, user)
+    except service.TeachingError as error:
+        raise _fail(error) from error
+
+
+@router.put("/api/professor/modules/own/{module_id}", response_model=ProfessorDashboard)
+def save_own_module(
+    module_id: int,
+    payload: OwnModuleContent,
+    session: DatabaseSession,
+    user: CurrentUser,
+) -> ProfessorDashboard:
+    """Everything in one of their own modules — lessons, quizzes, videos, the
+    lab — saved whole. Any part may be left out."""
+    try:
+        module = service.own_module(session, user, module_id)
+        own_modules_service.save(session, module, payload)
         return service.dashboard(session, user)
     except service.TeachingError as error:
         raise _fail(error) from error

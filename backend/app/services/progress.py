@@ -39,6 +39,7 @@ from app.models.progress import (
     SkillPoint,
     UpNext,
 )
+from app.services import own_modules
 
 ACTIVITY_WEEKS = 12
 ACTIVITY_CAP = 4
@@ -533,12 +534,12 @@ def activity_for(session: Session, user: User, weeks: int = ACTIVITY_WEEKS) -> l
     return activity_series(_lessons_of(session, user), _attempts_of(session, user), weeks)
 
 
-def attempt_record(attempt: ExerciseAttempt) -> AttemptRecord:
+def attempt_record(attempt: ExerciseAttempt, title: str | None = None) -> AttemptRecord:
     challenge = CHALLENGE_BY_SLUG.get(attempt.challenge_slug)
     return AttemptRecord(
         id=attempt.id,
         challenge_slug=attempt.challenge_slug,
-        challenge_title=challenge.title if challenge else attempt.challenge_slug,
+        challenge_title=title or (challenge.title if challenge else attempt.challenge_slug),
         passed=attempt.passed,
         score=round(attempt.score, 4),
         state_fidelity=attempt.state_fidelity,
@@ -554,7 +555,16 @@ def recent_attempts(session: Session, user: User, limit: int = 8) -> list[Attemp
         .order_by(ExerciseAttempt.created_at.desc(), ExerciseAttempt.id.desc())
         .limit(limit)
     )
-    return [attempt_record(row) for row in rows]
+    rows = list(rows)
+    # A professor's own lab is not in the curriculum's table; name it the way
+    # its page does rather than by its slug.
+    titles: dict[str, str] = {}
+    for slug in {row.challenge_slug for row in rows} - CHALLENGE_BY_SLUG.keys():
+        own = own_modules.find(session, slug)
+        lab = own_modules.challenge_of(own) if own is not None else None
+        if lab is not None:
+            titles[slug] = lab.title
+    return [attempt_record(row, titles.get(row.challenge_slug)) for row in rows]
 
 
 def mark_lesson(
@@ -618,10 +628,24 @@ def record_attempt(
     depth: int | None = None,
     source: str = "grader",
 ) -> ExerciseAttempt:
-    module = resolve_challenge_module(challenge_slug)
+    module = MODULE_BY_SLUG.get(challenge_slug)
+    if module is not None and module.challenge is not None:
+        slug = module.challenge.slug
+    else:
+        # A professor's own lab, filed like any other — but only by somebody
+        # the module is published to.
+        own = own_modules.find(session, challenge_slug)
+        if (
+            own is None
+            or own_modules.challenge_of(own) is None
+            or not own_modules.can_view(session, user, own)
+        ):
+            resolve_challenge_module(challenge_slug)  # raises the curriculum's own error
+            raise UnknownChallengeError(f"no graded circuit lab called {challenge_slug!r}")
+        slug = own.slug
     attempt = ExerciseAttempt(
         user_id=user.id,
-        challenge_slug=module.challenge.slug if module.challenge else challenge_slug,
+        challenge_slug=slug,
         passed=passed,
         score=max(0.0, min(1.0, score)),
         state_fidelity=state_fidelity,

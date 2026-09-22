@@ -112,22 +112,29 @@ def record(note: ModuleNote, viewer: User) -> NoteRecord:
     )
 
 
-def _readable_by(viewer: User, module_slug: str):
+def _readable_by(viewer: User, module_slug: str, *, own: bool = False):
     """Notes on a module `viewer` may read: their own, and those of every
-    professor whose class on it they have been accepted into."""
-    their_professors = select(ClassMembership.professor_id).where(
+    professor whose class on it they have been accepted into.
+
+    A professor's own module has no class of its own — it goes to their whole
+    class — so there it is any class of that professor's. Only its owner can
+    upload to one, so "a professor who has accepted you" is the same thing."""
+    conditions = [
         ClassMembership.student_id == viewer.id,
-        ClassMembership.module_slug == module_slug,
         ClassMembership.status == "accepted",
-    )
+    ]
+    if not own:
+        conditions.append(ClassMembership.module_slug == module_slug)
+    their_professors = select(ClassMembership.professor_id).where(*conditions)
     return or_(ModuleNote.uploader_id == viewer.id, ModuleNote.uploader_id.in_(their_professors))
 
 
 def list_notes(session: Session, module_slug: str, viewer: User) -> list[ModuleNote]:
     _module(session, module_slug)
+    own = _own(session, module_slug) is not None
     statement = (
         select(ModuleNote)
-        .where(ModuleNote.module_slug == module_slug, _readable_by(viewer, module_slug))
+        .where(ModuleNote.module_slug == module_slug, _readable_by(viewer, module_slug, own=own))
         .options(selectinload(ModuleNote.uploader))
         .order_by(ModuleNote.created_at.desc(), ModuleNote.id.desc())
     )
@@ -243,10 +250,11 @@ def get_note(session: Session, note_id: int, viewer: User) -> tuple[ModuleNote, 
     note = session.get(ModuleNote, note_id)
     if note is None:
         raise NotesError("those notes no longer exist", status=404)
+    own = _own(session, note.module_slug) is not None
     readable = session.scalar(
         select(func.count())
         .select_from(ModuleNote)
-        .where(ModuleNote.id == note.id, _readable_by(viewer, note.module_slug))
+        .where(ModuleNote.id == note.id, _readable_by(viewer, note.module_slug, own=own))
     )
     if not readable:
         raise NotesError(

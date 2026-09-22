@@ -706,13 +706,29 @@ export function LessonMedia({
   video,
   title,
   index,
+  optional = false,
 }: {
   video?: LessonVideo;
   title: string;
   index: number;
+  /** A lesson that may simply have no video: say nothing about one, and show
+      the notes in its place only for a reader who chose to read. */
+  optional?: boolean;
 }) {
   const { medium, setMedium, example, uploaded, choice } = useNotes();
   const hasNotes = Boolean(example || uploaded.length);
+
+  if (optional && !video) {
+    if (!hasNotes || medium !== "notes") return null;
+    return (
+      <div className="mt-5">
+        <div className="flex justify-end">
+          <MediumSwitch size="sm" />
+        </div>
+        <NotesViewer choice={choice} index={index} lessonTitle={title} />
+      </div>
+    );
+  }
 
   if (!hasNotes) return <LessonPlayer video={video} title={title} />;
 

@@ -73,26 +73,30 @@ export function ChallengeCard({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <p className="eyebrow flex items-center gap-2">
               <Target className="size-3.5 text-paper" />
-              Circuit lab {challenge.level} of {total}
+              {challenge.setBy
+                ? `Circuit lab · set by ${challenge.setBy}`
+                : `Circuit lab ${challenge.level} of ${total}`}
             </p>
             {/* The ladder, as a count you can see: one pip per lab, the ones
-                up to this one filled. */}
-            <span
-              className="flex items-center gap-1"
-              role="img"
-              aria-label={`Difficulty ${challenge.level} of ${total}`}
-            >
-              {Array.from({ length: total }, (_, index) => (
-                <span
-                  key={index}
-                  aria-hidden
-                  className={cn(
-                    "h-1.5 w-3 rounded-full",
-                    index < challenge.level ? "bg-photon" : "bg-edge",
-                  )}
-                />
-              ))}
-            </span>
+                up to this one filled. A professor's own lab is not on it. */}
+            {!challenge.setBy && (
+              <span
+                className="flex items-center gap-1"
+                role="img"
+                aria-label={`Difficulty ${challenge.level} of ${total}`}
+              >
+                {Array.from({ length: total }, (_, index) => (
+                  <span
+                    key={index}
+                    aria-hidden
+                    className={cn(
+                      "h-1.5 w-3 rounded-full",
+                      index < challenge.level ? "bg-photon" : "bg-edge",
+                    )}
+                  />
+                ))}
+              </span>
+            )}
           </div>
           <h2 className="mt-2 text-[17px] font-semibold tracking-[-0.01em] text-paper">
             {challenge.title}

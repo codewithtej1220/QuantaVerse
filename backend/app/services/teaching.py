@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.clock import as_utc, utcnow
@@ -31,6 +31,7 @@ from app.models.teaching import (
     ProfessorTotals,
     TaughtModule,
 )
+from app.services import own_modules as own_modules_service
 from app.services.progress import taught_modules
 
 """
@@ -174,6 +175,11 @@ def own_module(session: Session, professor: User, module_id: int) -> OwnModule:
 
 
 def remove_own_module(session: Session, professor: User, module: OwnModule) -> None:
+    # Its students' ticks and lab attempts go with it. They are filed by slug,
+    # and a module added later under the same name is given the same slug, so
+    # left behind they would turn up as work done on the new one.
+    session.execute(delete(LessonCompletion).where(LessonCompletion.module_slug == module.slug))
+    session.execute(delete(ExerciseAttempt).where(ExerciseAttempt.challenge_slug == module.slug))
     session.delete(module)
     session.commit()
 
@@ -194,7 +200,11 @@ def make_professor(session: Session, user: User) -> User:
 # The professor's view
 
 
-def _standings(session: Session, module: Module, rows: list[ClassMembership]) -> list[ClassStudent]:
+def _standings(
+    session: Session,
+    module: Module | own_modules_service.Shape,
+    rows: list[ClassMembership],
+) -> list[ClassStudent]:
     """
     The students of one class, best first.
 
@@ -331,23 +341,33 @@ def dashboard(session: Session, professor: User) -> ProfessorDashboard:
             )
         )
 
-    # Then whatever the professor added themselves, oldest first. These carry
-    # notes and nothing else: the site teaches no lessons for them, so there is
-    # no progress to rank and no class to join.
+    # Then whatever the professor wrote themselves, oldest first. It goes to
+    # their whole class rather than to a class of its own, so its students are
+    # the ones already accepted into any of theirs who have started it — one
+    # membership row each, for the name and the date they joined.
     own = own_modules(session, professor)
     for entry in own:
+        shape = own_modules_service.shape_of(entry)
+        started = own_modules_service.students_with_progress(session, entry)
+        members: dict[int, ClassMembership] = {}
+        for group in accepted.values():
+            for row in group:
+                if row.student_id in started:
+                    members.setdefault(row.student_id, row)
         modules.append(
             TaughtModule(
                 slug=entry.slug,
                 title=entry.title,
                 ket="",
-                lessons=0,
-                students=[],
+                lessons=shape.lessons,
+                lab_title=shape.challenge.title if shape.challenge else None,
+                students=_standings(session, shape, list(members.values())),
                 pending=0,
                 notes=int(notes.get(entry.slug, 0)),
                 own=True,
                 own_id=entry.id,
                 summary=entry.summary,
+                content=own_modules_service.content_of(entry),
             )
         )
 

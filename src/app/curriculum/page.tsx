@@ -4,6 +4,7 @@ import Link from "next/link";
 import { StartingPointDialog } from "@/components/auth/starting-point";
 import { ModuleTrack } from "@/components/curriculum/module-track";
 import { PathHeader } from "@/components/curriculum/path-header";
+import { ProfessorModules } from "@/components/curriculum/professor-modules";
 import { QuestBoard } from "@/components/curriculum/quest-board";
 
 export const metadata: Metadata = {
@@ -26,6 +27,11 @@ export default function CurriculumPage() {
         <div className="mt-14">
           <QuestBoard />
         </div>
+
+        {/* Drawn only for a student whose professors have written modules
+            for their class; it keeps its own spacing so that nothing is left
+            behind when it is not. */}
+        <ProfessorModules className="mt-14" />
 
         <div className="mt-14">
           <ModuleTrack />

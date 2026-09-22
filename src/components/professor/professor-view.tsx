@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { OwnModuleEditor } from "@/components/professor/own-module-editor";
+import { FIELD, SMALL, type Act } from "@/components/professor/styles";
 import { ActionButton, ActionLink } from "@/components/site/action";
 import { ApiError } from "@/lib/api";
 import {
@@ -56,12 +58,6 @@ import { cn } from "@/lib/utils";
  * request is the student's consent to be seen, so a professor never gets a
  * league table of people who did not ask to be in it.
  */
-
-const SMALL =
-  "inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:cursor-not-allowed disabled:opacity-50";
-
-const FIELD =
-  "h-11 w-full border border-edge bg-strata px-3.5 text-[14px] text-paper placeholder:text-dim outline-none transition-colors focus:border-photon";
 
 const reason = (error: unknown, fallback: string) =>
   error instanceof ApiError ? error.message : fallback;
@@ -227,6 +223,9 @@ function Dashboard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<{ tone: "done" | "error"; text: string } | null>(null);
   const [generation, setGeneration] = useState(0);
+  /* The one module being written, if any — held here so that adding a module
+     can open it for writing straight away. */
+  const [writing, setWriting] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -328,7 +327,21 @@ function Dashboard() {
       <Requests data={data} busy={busy} act={act} />
 
       <section className="mt-12">
-        <TeachingEditor data={data} busy={busy} act={act} />
+        <TeachingEditor
+          data={data}
+          busy={busy}
+          act={act}
+          onAdded={(slug) => {
+            setWriting(slug);
+            window.setTimeout(
+              () =>
+                document
+                  .getElementById(`class-${slug}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+              60,
+            );
+          }}
+        />
         {data.modules.length === 0 ? (
           <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-frost">
             You don&rsquo;t teach any modules yet. Pick the ones you teach and students will be able
@@ -343,6 +356,8 @@ function Dashboard() {
                 busy={busy}
                 act={act}
                 onNotesChanged={refresh}
+                writing={writing === module.slug}
+                onWrite={(on) => setWriting(on ? module.slug : null)}
               />
             ))}
           </div>
@@ -351,8 +366,6 @@ function Dashboard() {
     </Frame>
   );
 }
-
-type Act = (key: string, work: () => Promise<ProfessorDashboard>, said: string) => Promise<boolean>;
 
 /* ------------------------------------------------------------------ */
 
@@ -460,10 +473,12 @@ function TeachingEditor({
   data,
   busy,
   act,
+  onAdded,
 }: {
   data: ProfessorDashboard;
   busy: string | null;
   act: Act;
+  onAdded: (slug: string) => void;
 }) {
   const current = data.modules.map((module) => module.slug);
   /* Open from the start for a professor who teaches nothing yet: sign-up does
@@ -526,7 +541,7 @@ function TeachingEditor({
           </div>
         </div>
       )}
-      <OwnModuleForm busy={busy} act={act} />
+      <OwnModuleForm modules={data.modules} busy={busy} act={act} onAdded={onAdded} />
     </div>
   );
 }
@@ -534,13 +549,24 @@ function TeachingEditor({
 /* ------------------------------------------------------------------ */
 
 /**
- * A module the professor names themselves.
+ * A module the professor adds themselves.
  *
- * The eight are the site's course; a syllabus is bigger than that. This adds a
- * heading of their own — a week of lectures, a seminar, a paper the class is
- * reading — with their notes under it.
+ * The eight are the site's course; a syllabus is bigger than that. This names
+ * one of their own — a week of lectures, a seminar, a paper the class is
+ * reading — and opens it for writing: lessons, a quiz, a lab and notes, any of
+ * which can wait or be left out.
  */
-function OwnModuleForm({ busy, act }: { busy: string | null; act: Act }) {
+function OwnModuleForm({
+  modules,
+  busy,
+  act,
+  onAdded,
+}: {
+  modules: TaughtModule[];
+  busy: string | null;
+  act: Act;
+  onAdded: (slug: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -549,15 +575,22 @@ function OwnModuleForm({ busy, act }: { busy: string | null; act: Act }) {
     event.preventDefault();
     const name = title.trim();
     if (!name) return;
+    const before = new Set(modules.map((module) => module.slug));
+    let added: string | null = null;
     const saved = await act(
       "own",
-      () => addOwnModule(name, summary.trim() || null),
-      `${name} is on your teaching page.`,
+      async () => {
+        const next = await addOwnModule(name, summary.trim() || null);
+        added = next.modules.find((module) => module.own && !before.has(module.slug))?.slug ?? null;
+        return next;
+      },
+      `${name} is on your teaching page. Write its lessons and lab below.`,
     );
     if (saved) {
       setTitle("");
       setSummary("");
       setOpen(false);
+      if (added) onAdded(added);
     }
   };
 
@@ -578,7 +611,9 @@ function OwnModuleForm({ busy, act }: { busy: string | null; act: Act }) {
     <form onSubmit={submit} className="panel mt-4 space-y-4 rounded-2xl p-5">
       <p className="max-w-2xl text-[13.5px] leading-relaxed text-frost">
         Anything you teach that is not one of the eight — a week of lectures, a seminar, a paper the
-        class is reading. Name it and upload your notes under it.
+        class is reading. Name it, then write it like any module here: lessons with theory, videos,
+        practice and checkpoint quizzes, a graded lab, and your notes. Every part is optional, and
+        it goes to the students you have accepted into any of your classes.
       </p>
       <div className="space-y-1.5">
         <label
@@ -670,14 +705,22 @@ function ClassPanel({
   busy,
   act,
   onNotesChanged,
+  writing,
+  onWrite,
 }: {
   module: TaughtModule;
   busy: string | null;
   act: Act;
   onNotesChanged: () => void;
+  writing: boolean;
+  onWrite: (on: boolean) => void;
 }) {
   const [all, setAll] = useState(false);
   const students = all ? module.students : module.students.slice(0, SHOWN);
+  /* A student is in a professor's own module through one of their other
+     classes, so there is no place in this one to remove them from. */
+  const removable = !module.own;
+  const empty = module.own && module.lessons === 0 && !module.lab_title;
 
   return (
     <article className="panel rounded-2xl p-5 lg:p-6" aria-labelledby={`class-${module.slug}`}>
@@ -694,7 +737,13 @@ function ClassPanel({
               </span>
             )}
             <span className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
-              {!module.own && (
+              {module.own ? (
+                <>
+                  {module.lessons} {module.lessons === 1 ? "lesson" : "lessons"} ·{" "}
+                  {module.lab_title ? "graded lab" : "no lab"} · {module.students.length} started
+                  ·{" "}
+                </>
+              ) : (
                 <>
                   {module.students.length} {module.students.length === 1 ? "student" : "students"}
                   {module.pending > 0 && ` · ${module.pending} waiting`} ·{" "}
@@ -713,22 +762,48 @@ function ClassPanel({
           )}
         </div>
         {module.own ? (
-          <button
-            type="button"
-            disabled={busy !== null}
-            onClick={() => {
-              if (module.own_id === null) return;
-              void act(
-                `own-${module.own_id}`,
-                () => removeOwnModule(module.own_id as number),
-                `${module.title} is removed.`,
-              );
-            }}
-            className={cn(SMALL, "border-edge text-frost hover:border-collapse hover:text-paper")}
-          >
-            <Trash2 className="size-3.5" aria-hidden />
-            remove
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {!writing && (
+              <button
+                type="button"
+                onClick={() => onWrite(true)}
+                className={cn(SMALL, "border-photon bg-photon/10 text-photon hover:bg-photon/20")}
+              >
+                <Pencil className="size-3.5" aria-hidden />
+                {empty ? "write the module" : "edit module"}
+              </button>
+            )}
+            <Link
+              href={`/curriculum/own/${module.slug}`}
+              className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+            >
+              view as a student
+              <ArrowRight className="size-3.5" aria-hidden />
+            </Link>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => {
+                if (module.own_id === null) return;
+                if (
+                  !window.confirm(
+                    `Remove ${module.title}? Its lessons, lab and notes are deleted, and your students no longer see it.`,
+                  )
+                ) {
+                  return;
+                }
+                void act(
+                  `own-${module.own_id}`,
+                  () => removeOwnModule(module.own_id as number),
+                  `${module.title} is removed.`,
+                );
+              }}
+              className={cn(SMALL, "border-edge text-frost hover:border-collapse hover:text-paper")}
+            >
+              <Trash2 className="size-3.5" aria-hidden />
+              remove
+            </button>
+          </div>
         ) : (
           <Link
             href={`/curriculum/${module.slug}`}
@@ -740,12 +815,14 @@ function ClassPanel({
         )}
       </div>
 
-      {module.own ? (
-        /* Nothing on the site teaches this one, so there is no progress to
-           rank and no class to join — only the professor's own notes below. */
-        <p className="mt-6 max-w-2xl text-[13px] leading-relaxed text-dim">
-          Your own module. Upload whatever your class reads for it; the site has no lessons or lab
-          of its own here.
+      {writing ? (
+        <OwnModuleEditor module={module} busy={busy} act={act} onClose={() => onWrite(false)} />
+      ) : empty ? (
+        /* Named, and nothing written under it yet. */
+        <p className="mt-6 max-w-2xl text-[13.5px] leading-relaxed text-frost">
+          Nothing for students to take yet. Write lessons — theory, a video, a practice task, a
+          checkpoint quiz — and a graded lab, or just upload notes below; every part is optional. It
+          goes to the students you have accepted into any of your classes.
         </p>
       ) : (
         <>
@@ -754,8 +831,9 @@ function ClassPanel({
           </h4>
           {module.students.length === 0 ? (
             <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-frost">
-              No students yet. They ask to join from this module&rsquo;s page, and appear here,
-              ranked, once you accept them.
+              {module.own
+                ? "Nobody has started it yet. It is on the curriculum page of every student you have accepted into one of your classes, and they appear here, ranked, once they begin."
+                : "No students yet. They ask to join from this module\u2019s page, and appear here, ranked, once you accept them."}
             </p>
           ) : (
             /* relative: the table scrolls inside this box on a phone, and the
@@ -778,14 +856,16 @@ function ClassPanel({
                       Lessons
                     </th>
                     <th scope="col" className="py-2 pr-3 font-normal">
-                      {module.lab_title ? "Lab" : "Lab"}
+                      Lab
                     </th>
                     <th scope="col" className="py-2 pr-3 font-normal">
                       Active
                     </th>
-                    <th scope="col" className="w-10 py-2 font-normal">
-                      <span className="sr-only">Remove</span>
-                    </th>
+                    {removable && (
+                      <th scope="col" className="w-10 py-2 font-normal">
+                        <span className="sr-only">Remove</span>
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -834,30 +914,32 @@ function ClassPanel({
                       <td className="py-2.5 pr-3 text-[12.5px] text-frost">
                         {sinceWhen(row.last_active)}
                       </td>
-                      <td className="py-2.5 text-right">
-                        <button
-                          type="button"
-                          disabled={busy !== null}
-                          title={`Remove ${row.student.display_name} from this class`}
-                          aria-label={`Remove ${row.student.display_name} from this class`}
-                          onClick={() => {
-                            if (
-                              !window.confirm(
-                                `Remove ${row.student.display_name} from your ${module.title} class? They can ask to join again.`,
+                      {removable && (
+                        <td className="py-2.5 text-right">
+                          <button
+                            type="button"
+                            disabled={busy !== null}
+                            title={`Remove ${row.student.display_name} from this class`}
+                            aria-label={`Remove ${row.student.display_name} from this class`}
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  `Remove ${row.student.display_name} from your ${module.title} class? They can ask to join again.`,
+                                )
                               )
-                            )
-                              return;
-                            void act(
-                              `remove-${row.membership_id}`,
-                              () => removeStudent(row.membership_id),
-                              `${row.student.display_name} is no longer in your ${module.title} class.`,
-                            );
-                          }}
-                          className="rounded-md p-1.5 text-dim transition-colors hover:text-collapse focus-visible:outline-2 focus-visible:outline-photon disabled:opacity-40"
-                        >
-                          <UserMinus className="size-4" aria-hidden />
-                        </button>
-                      </td>
+                                return;
+                              void act(
+                                `remove-${row.membership_id}`,
+                                () => removeStudent(row.membership_id),
+                                `${row.student.display_name} is no longer in your ${module.title} class.`,
+                              );
+                            }}
+                            className="rounded-md p-1.5 text-dim transition-colors hover:text-collapse focus-visible:outline-2 focus-visible:outline-photon disabled:opacity-40"
+                          >
+                            <UserMinus className="size-4" aria-hidden />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -880,7 +962,12 @@ function ClassPanel({
         </>
       )}
 
-      <NotesManager slug={module.slug} title={module.title} onChanged={onNotesChanged} />
+      <NotesManager
+        slug={module.slug}
+        title={module.title}
+        own={module.own}
+        onChanged={onNotesChanged}
+      />
     </article>
   );
 }
@@ -890,10 +977,12 @@ function ClassPanel({
 function NotesManager({
   slug,
   title,
+  own,
   onChanged,
 }: {
   slug: string;
   title: string;
+  own: boolean;
   onChanged: () => void;
 }) {
   const [notes, setNotes] = useState<UploadedNote[] | null>(null);
@@ -1018,7 +1107,9 @@ function NotesManager({
         <p className="mt-2 text-[13px] text-dim">Loading…</p>
       ) : notes.length === 0 ? (
         <p className="mt-2 text-[13.5px] text-frost">
-          None yet. Students on {title} can read the example notes until you add your own.
+          {own
+            ? `None yet. Notes you upload show at the top of ${title}, and in each lesson for a student who would rather read than watch.`
+            : `None yet. Students on ${title} can read the example notes until you add your own.`}
         </p>
       ) : (
         <ul className="mt-2 divide-y divide-edge">

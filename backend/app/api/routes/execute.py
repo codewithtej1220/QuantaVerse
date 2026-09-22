@@ -26,6 +26,7 @@ from app.services.adapters.factory import (
 from app.core.curriculum import CHALLENGE_BY_SLUG
 from app.services.grader import grade, reference_ir
 from app.services.sandbox import execute_and_introspect
+from app.services import own_modules
 from app.services import progress as progress_service
 from app.core.config import get_settings
 
@@ -118,6 +119,12 @@ async def grade_submission(
     # from the client, and a record and a badge rested on it.
     if request.challenge_slug:
         challenge = CHALLENGE_BY_SLUG.get(request.challenge_slug)
+        if challenge is None:
+            # A professor's own lab, marked against the answer they saved —
+            # and only for somebody the module is published to.
+            own = own_modules.find(session, request.challenge_slug)
+            if own is not None and own_modules.can_view(session, user, own):
+                challenge = own_modules.challenge_of(own)
         if challenge is None:
             raise HTTPException(
                 status_code=404, detail=f"there is no lab called '{request.challenge_slug}'"

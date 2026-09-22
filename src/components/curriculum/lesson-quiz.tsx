@@ -65,7 +65,10 @@ export function LessonQuiz({
   return (
     <div className="mt-8 rounded-2xl border border-edge bg-strata p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="eyebrow">Checkpoint · {questions.length} questions</p>
+        <p className="eyebrow">
+          Checkpoint · {questions.length}{" "}
+          {questions.length === 1 ? "question" : "questions"}
+        </p>
         <p className="font-mono text-[11px] text-dim tabular-nums">
           {complete
             ? "lesson complete"
@@ -78,7 +81,7 @@ export function LessonQuiz({
           const choice = picked[qi];
           const right = choice === question.answer;
           return (
-            <li key={question.prompt}>
+            <li key={`${qi}:${question.prompt}`}>
               <p className="text-[14px] leading-snug text-paper">
                 {qi + 1}. {question.prompt}
               </p>
@@ -88,7 +91,7 @@ export function LessonQuiz({
                   const isAnswer = question.answer === oi;
                   return (
                     <button
-                      key={option}
+                      key={`${oi}:${option}`}
                       type="button"
                       disabled={marked}
                       aria-pressed={chosen}
@@ -135,7 +138,8 @@ export function LessonQuiz({
                 })}
               </div>
 
-              {marked && (
+              {/* A professor's own question may have no explanation. */}
+              {marked && question.because && (
                 <p
                   className={cn(
                     "mt-2 border-l-2 pl-3 text-[12.5px] leading-relaxed text-frost",

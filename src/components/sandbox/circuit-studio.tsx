@@ -944,7 +944,10 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
       }
     };
 
-    if (!health) {
+    /* Still asking whether the API is up is not an answer that it is down:
+       a check pressed in the first second after the page opens goes to the
+       server like any other, and an unreachable one is caught below. */
+    if (!health && !probing) {
       conclude(gradeLocally(challenge, placements, qubits), true);
       setGrading(false);
       return;
@@ -983,7 +986,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
         <ChallengeCard
           challenge={challenge}
           verdict={fresh?.result ?? null}
-          offline={fresh?.offline ?? !health}
+          offline={fresh?.offline ?? (!health && !probing)}
           error={gradeError}
           grading={grading}
           onCheck={check}

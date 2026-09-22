@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    JSON,
     Index,
     Integer,
     String,
@@ -306,6 +307,11 @@ class OwnModule(Base):
     slug: Mapped[str] = mapped_column(String(80), nullable=False)
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     summary: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # Everything a curriculum module carries, written by the professor: the
+    # lessons (theory, video, practice, a checkpoint quiz each) and a graded
+    # lab. Stored whole, as the validated shape in models/teaching.py, because
+    # it is only ever read and written whole. Null until they add any.
+    content: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
 
     professor: Mapped[User] = relationship()
