@@ -16,7 +16,10 @@ export default function SandboxPage() {
         {/* The shared canvas the header zone renders into. */}
         <Stage />
 
-        <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
+        {/* Centred on the chip beside it: the heading used to be tall enough
+            to reach the chip's middle while bottom-aligned, and set in sentence
+            case it is not, so aligned to the bottom it slid down the page. */}
+        <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-center">
           <div className="max-w-2xl">
             <p className="eyebrow">Sandbox</p>
             <h1 className="mt-3 display-2">

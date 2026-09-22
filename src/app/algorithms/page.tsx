@@ -31,7 +31,10 @@ export default function AlgorithmsPage() {
       <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
         <Stage />
 
-        <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-end">
+        {/* Top-aligned: the heading used to be tall enough to set the row's
+            height itself. Set in sentence case it is shorter than the 3D piece
+            beside it, and bottom-aligned it slid down the page. */}
+        <header className="grid gap-x-10 gap-y-8 border-b border-edge pb-7 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
           <div className="max-w-2xl">
             <p className="eyebrow">Algorithms</p>
             <h1 data-tour="algorithms" className="mt-3 display-2">
