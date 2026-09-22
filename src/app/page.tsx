@@ -17,7 +17,10 @@ import { StageMount } from "@/components/three/stage-mount";
  */
 export default function Home() {
   return (
-    <>
+    /* The landing page keeps the instrument dressing — the machined panels,
+       the ivory ink and the capitals. Every other route is a working page and
+       is set crisper; see the surface tokens in globals.css. */
+    <div className="surface-home">
       <BootScreen />
 
       {/* One field, one stage, behind everything on this route. */}
@@ -29,6 +32,6 @@ export default function Home() {
       <Surfaces />
       <YourModules />
       <OpenSource />
-    </>
+    </div>
   );
 }

@@ -46,12 +46,10 @@ export function ProfessorModules({ className }: { className?: string }) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-edge pb-4">
         <h2
           id="professor-modules-title"
-          className="font-mono text-[12px] tracking-[0.14em] text-photon uppercase"
+          className="flex items-center gap-2.5 text-[18px] font-semibold tracking-[-0.01em] text-paper"
         >
-          From your professors{" "}
-          <span className="text-[11px] tabular-nums opacity-70">
-            {cards.length}
-          </span>
+          From your professors
+          <span className="pill text-grape">{cards.length}</span>
         </h2>
         <p className="text-[13px] text-frost">
           Written for the classes you are in.
@@ -63,9 +61,16 @@ export function ProfessorModules({ className }: { className?: string }) {
           <li key={card.slug}>
             <Link
               href={`/curriculum/own/${card.slug}`}
-              className="group panel flex h-full flex-col rounded-2xl p-5 transition-colors hover:border-photon! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+              className="group panel relative flex h-full flex-col overflow-hidden rounded-2xl p-5 transition-colors hover:border-violet-400/50! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
             >
-              <span className="text-[17px] leading-snug font-medium text-paper">
+              <span
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-1 bg-violet-400"
+              />
+              <span className="pill self-start text-grape">
+                From your professor
+              </span>
+              <span className="mt-3 text-[17px] leading-snug font-semibold text-paper">
                 {card.title}
               </span>
               {card.summary && (
@@ -76,16 +81,16 @@ export function ProfessorModules({ className }: { className?: string }) {
               <Byline person={card.professor} className="mt-4" />
 
               <span className="mt-auto flex items-center gap-3 pt-5">
-                <span className="font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
+                <span className="pill text-frost">
                   {card.lessons} {card.lessons === 1 ? "lesson" : "lessons"}
                 </span>
                 {card.has_lab && (
-                  <span className="flex items-center gap-1 font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
+                  <span className="pill text-ok">
                     <FlaskConical className="size-3" aria-hidden />
-                    lab
+                    Lab
                   </span>
                 )}
-                <span className="ml-auto flex items-center gap-2 font-mono text-[12px] text-paper tabular-nums">
+                <span className="ml-auto flex items-center gap-2 text-[14px] font-semibold text-violet-200 tabular-nums">
                   {card.percent}%
                   <ArrowRight
                     className="size-3.5 text-photon transition-transform group-hover:translate-x-0.5"
@@ -93,9 +98,9 @@ export function ProfessorModules({ className }: { className?: string }) {
                   />
                 </span>
               </span>
-              <span className="mt-2.5 block h-1 overflow-hidden rounded-full bg-strata">
+              <span className="mt-2.5 block h-1.5 overflow-hidden rounded-full bg-strata">
                 <span
-                  className="block h-full rounded-full bg-photon"
+                  className="block h-full rounded-full bg-violet-400"
                   style={{ width: `${card.percent}%` }}
                 />
               </span>

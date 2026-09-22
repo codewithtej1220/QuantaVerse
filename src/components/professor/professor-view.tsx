@@ -5,22 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
+  BookOpen,
   Check,
+  CircleAlert,
+  Clock,
   ExternalLink,
+  FileText,
   GraduationCap,
+  Hourglass,
   Loader2,
   Pencil,
   Plus,
   Trash2,
   Upload,
   UserMinus,
+  Users,
   X,
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { OwnModuleEditor } from "@/components/professor/own-module-editor";
-import { FIELD, SMALL, type Act } from "@/components/professor/styles";
+import { FIELD, SMALL, TINT, type Act } from "@/components/professor/styles";
 import { ActionButton, ActionLink } from "@/components/site/action";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ApiError } from "@/lib/api";
 import {
   deleteModuleNote,
@@ -34,7 +41,6 @@ import {
   addOwnModule,
   answerRequest,
   fetchProfessorDashboard,
-  initialsOf,
   removeOwnModule,
   removeStudent,
   setTaughtModules,
@@ -44,6 +50,7 @@ import {
   type ProfessorDashboard,
   type TaughtModule,
 } from "@/lib/professor";
+import { TONE, moduleTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 /**
@@ -62,16 +69,40 @@ import { cn } from "@/lib/utils";
 const reason = (error: unknown, fallback: string) =>
   error instanceof ApiError ? error.message : fallback;
 
-function Initials({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
+/** A module, named in its own colour. */
+function ModuleChip({ slug, title }: { slug: string; title: string }) {
+  const tone = TONE[moduleTone(slug)];
   return (
     <span
-      aria-hidden
       className={cn(
-        "grid shrink-0 place-items-center rounded-full bg-strata font-mono text-frost ring-1 ring-edge-hi",
-        size === "sm" ? "size-8 text-[11px]" : "size-10 text-[12.5px]",
+        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[12.5px] font-semibold",
+        tone.soft,
+        tone.text,
       )}
     >
-      {initialsOf(name)}
+      <span aria-hidden className={cn("size-1.5 rounded-full", tone.solid)} />
+      {title}
+    </span>
+  );
+}
+
+/* The top three are told apart at a glance — gold, silver, bronze — and the
+   rest are only numbered, so the eye goes to the head of the class first. */
+const MEDAL = [
+  "bg-amber-400/20 text-amber-200 ring-amber-400/45",
+  "bg-slate-300/15 text-slate-100 ring-slate-300/40",
+  "bg-orange-400/15 text-orange-200 ring-orange-400/40",
+];
+
+function Rank({ rank }: { rank: number }) {
+  return (
+    <span
+      className={cn(
+        "grid size-7 place-items-center rounded-full text-[12px] font-semibold tabular-nums",
+        rank <= 3 ? cn("ring-1", MEDAL[rank - 1]) : "text-dim",
+      )}
+    >
+      {rank}
     </span>
   );
 }
@@ -190,12 +221,13 @@ function ModulePicker({
     <div className="grid gap-2 sm:grid-cols-2">
       {catalogue.map((module) => {
         const on = chosen.includes(module.slug);
+        const tone = TONE[moduleTone(module.slug)];
         return (
           <label
             key={module.slug}
             className={cn(
-              "flex cursor-pointer items-center gap-3 border px-3 py-2.5 transition-colors",
-              on ? "border-photon bg-photon/[0.07]" : "border-edge hover:border-edge-hi",
+              "flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors",
+              on ? cn(tone.border, tone.soft) : "border-edge hover:border-edge-hi",
             )}
           >
             <input
@@ -205,7 +237,7 @@ function ModulePicker({
               disabled={disabled}
               className="size-3.5 shrink-0 accent-photon"
             />
-            <span className="ket shrink-0 text-[12px] text-photon">{module.ket}</span>
+            <span className={cn("ket shrink-0 text-[12px]", tone.text)}>{module.ket}</span>
             <span className="min-w-0 text-[13px] leading-snug text-paper">{module.title}</span>
           </label>
         );
@@ -265,7 +297,7 @@ function Dashboard() {
       <Frame>
         <p className="eyebrow">Teaching</p>
         {loadError ? (
-          <p className="mt-4 text-[14px] text-collapse">{loadError}</p>
+          <p className="mt-4 text-[14px] text-bad">{loadError}</p>
         ) : (
           <p className="mt-4 flex items-center gap-2 text-[14px] text-frost">
             <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -277,34 +309,40 @@ function Dashboard() {
   }
 
   const { professor, totals } = data;
+  const counts = [
+    { label: "Students", value: totals.students, icon: Users, tone: "text-cyan-300" },
+    { label: "Waiting", value: totals.requests, icon: Hourglass, tone: "text-warn" },
+    { label: "Modules", value: data.modules.length, icon: BookOpen, tone: "text-violet-300" },
+    { label: "Notes", value: totals.notes, icon: FileText, tone: "text-emerald-300" },
+  ];
 
   return (
     <Frame>
-      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7">
-        <div className="max-w-2xl">
-          <p className="eyebrow">Teaching</p>
-          <h1 className="mt-3 display-2">{professor.display_name}</h1>
-          <p className="mt-3 text-[15px] leading-relaxed text-frost">
-            {professor.institution ? `${professor.institution} · ` : ""}@{professor.handle}
-          </p>
+      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-8">
+        <div className="flex min-w-0 items-center gap-4">
+          <PersonAvatar
+            name={professor.display_name}
+            toneKey={professor.handle}
+            src={professor.avatar_url}
+            size="lg"
+            className="size-14 text-[19px]"
+          />
+          <div className="min-w-0">
+            <p className="eyebrow">Teaching</p>
+            <h1 className="mt-1.5 display-2">{professor.display_name}</h1>
+            <p className="mt-2 text-[14.5px] text-frost">
+              {professor.institution ? `${professor.institution} · ` : ""}@{professor.handle}
+            </p>
+          </div>
         </div>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
-          {[
-            ["Students", totals.students],
-            ["Waiting", totals.requests],
-            ["Modules", data.modules.length],
-            ["Notes", totals.notes],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <dt className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
+        <dl className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:grid-cols-4">
+          {counts.map(({ label, value, icon: Icon, tone }) => (
+            <div key={label} className="panel rounded-xl px-4 py-3.5 sm:min-w-[8.5rem]">
+              <dt className="flex items-center justify-between gap-3 text-[12.5px] font-medium text-frost">
                 {label}
+                <Icon className={cn("size-4", tone)} aria-hidden />
               </dt>
-              <dd
-                className={cn(
-                  "mt-1 text-[28px] leading-none font-medium tabular-nums",
-                  label === "Waiting" && Number(value) > 0 ? "text-photon" : "text-paper",
-                )}
-              >
+              <dd className={cn("mt-2 text-[28px] leading-none font-semibold tabular-nums", tone)}>
                 {value}
               </dd>
             </div>
@@ -316,10 +354,17 @@ function Dashboard() {
         <p
           role={flash.tone === "error" ? "alert" : "status"}
           className={cn(
-            "mt-6 text-[13.5px]",
-            flash.tone === "error" ? "text-collapse" : "text-photon",
+            "mt-6 flex items-center gap-2.5 rounded-xl border px-4 py-3 text-[13.5px]",
+            flash.tone === "error"
+              ? "border-rose-400/30 bg-rose-400/10 text-rose-200"
+              : "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
           )}
         >
+          {flash.tone === "error" ? (
+            <CircleAlert className="size-4 shrink-0" aria-hidden />
+          ) : (
+            <Check className="size-4 shrink-0" aria-hidden />
+          )}
           {flash.text}
         </p>
       )}
@@ -380,8 +425,14 @@ function Requests({
 }) {
   return (
     <section className="mt-10" aria-labelledby="requests-title">
-      <h2 id="requests-title" className="eyebrow">
-        Waiting to join · {data.requests.length}
+      <h2
+        id="requests-title"
+        className="flex items-center gap-2.5 text-[18px] font-semibold tracking-[-0.01em] text-paper"
+      >
+        Waiting to join
+        <span className={cn("pill", data.requests.length ? "text-warn" : "text-dim")}>
+          {data.requests.length}
+        </span>
       </h2>
       {data.requests.length === 0 ? (
         <p className="mt-3 text-[14px] text-frost">
@@ -392,72 +443,83 @@ function Requests({
           {data.requests.map((request) => {
             const key = `request-${request.id}`;
             return (
-              <li key={request.id} className="panel rounded-xl p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex min-w-0 gap-3">
-                    <Initials name={request.student.display_name} />
+              <li
+                key={request.id}
+                className={cn(
+                  "panel flex flex-col rounded-2xl p-5 transition-opacity",
+                  busy === key && "opacity-60",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <PersonAvatar
+                      name={request.student.display_name}
+                      toneKey={request.student.handle}
+                      src={request.student.avatar_url}
+                    />
                     <div className="min-w-0">
-                      <p className="truncate text-[15px] font-medium text-paper">
+                      <p className="truncate text-[15.5px] font-semibold text-paper">
                         {request.student.display_name}
                       </p>
-                      <p className="truncate font-mono text-[11.5px] text-dim">
+                      <p className="truncate text-[12.5px] text-dim">
                         @{request.student.handle}
-                        {request.student.institution && (
-                          <span className="text-frost"> · {request.student.institution}</span>
-                        )}
+                        {request.student.institution && ` · ${request.student.institution}`}
                       </p>
                     </div>
                   </div>
-                  <div className={cn("flex shrink-0 gap-2", busy === key && "opacity-50")}>
-                    <button
-                      type="button"
-                      disabled={busy !== null}
-                      onClick={() =>
-                        act(
-                          key,
-                          () => answerRequest(request.id, true),
-                          `${request.student.display_name} is in your ${request.module_title} class.`,
-                        )
-                      }
-                      className={cn(
-                        SMALL,
-                        "border-photon bg-photon/10 text-photon hover:bg-photon/20",
-                      )}
-                    >
-                      <Check className="size-3.5" aria-hidden />
-                      accept
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy !== null}
-                      onClick={() =>
-                        act(
-                          key,
-                          () => answerRequest(request.id, false),
-                          `Declined ${request.student.display_name}'s request.`,
-                        )
-                      }
-                      className={cn(
-                        SMALL,
-                        "border-edge text-frost hover:border-paper hover:text-paper",
-                      )}
-                    >
-                      <X className="size-3.5" aria-hidden />
-                      decline
-                    </button>
-                  </div>
+                  <span className="pill shrink-0 text-warn">
+                    <Hourglass className="size-3" aria-hidden />
+                    Waiting
+                  </span>
                 </div>
-                <p className="mt-3 text-[13px] text-frost">
-                  wants to join <span className="text-paper">{request.module_title}</span>
+
+                <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13.5px] text-frost">
+                  Wants to join
+                  <ModuleChip slug={request.module_slug} title={request.module_title} />
                 </p>
                 {request.note && (
-                  <p className="mt-2 border-l-2 border-edge-hi pl-3 text-[13.5px] leading-relaxed text-frost italic">
-                    {request.note}
+                  <p className="mt-3 rounded-xl bg-strata px-3.5 py-2.5 text-[13.5px] leading-relaxed text-paper">
+                    &ldquo;{request.note}&rdquo;
                   </p>
                 )}
-                <p className="mt-2 font-mono text-[11px] text-dim">
-                  asked {sinceWhen(request.created_at)}
-                </p>
+
+                <div className="flex-1" aria-hidden />
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-edge pt-4">
+                  <span className="mr-auto flex items-center gap-1.5 text-[12.5px] text-dim">
+                    <Clock className="size-3.5" aria-hidden />
+                    Asked {sinceWhen(request.created_at)}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      act(
+                        key,
+                        () => answerRequest(request.id, true),
+                        `${request.student.display_name} is in your ${request.module_title} class.`,
+                      )
+                    }
+                    className={cn(SMALL, TINT.go)}
+                  >
+                    <Check className="size-3.5" aria-hidden />
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      act(
+                        key,
+                        () => answerRequest(request.id, false),
+                        `Declined ${request.student.display_name}'s request.`,
+                      )
+                    }
+                    className={cn(SMALL, TINT.stop)}
+                  >
+                    <X className="size-3.5" aria-hidden />
+                    Decline
+                  </button>
+                </div>
               </li>
             );
           })}
@@ -494,7 +556,10 @@ function TeachingEditor({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="eyebrow">Your modules · {data.modules.length}</h2>
+        <h2 className="flex items-center gap-2.5 text-[18px] font-semibold tracking-[-0.01em] text-paper">
+          Your modules
+          <span className="pill text-cyan-300">{data.modules.length}</span>
+        </h2>
         {!editing && (
           <button
             type="button"
@@ -502,10 +567,10 @@ function TeachingEditor({
               setChosen(current);
               setEditing(true);
             }}
-            className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+            className={cn(SMALL, TINT.quiet)}
           >
             <Pencil className="size-3.5" aria-hidden />
-            change modules
+            Change modules
           </button>
         )}
       </div>
@@ -596,13 +661,9 @@ function OwnModuleForm({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={cn(SMALL, "mt-4 border-edge text-frost hover:border-paper hover:text-paper")}
-      >
+      <button type="button" onClick={() => setOpen(true)} className={cn(SMALL, TINT.own, "mt-4")}>
         <Plus className="size-3.5" aria-hidden />
-        add a module of your own
+        Add a module of your own
       </button>
     );
   }
@@ -680,24 +741,24 @@ const SHOWN = 5;
 
 function LabCell({ student }: { student: ClassStudent }) {
   const lab = student.lab;
-  if (!lab) return <span className="text-dim">no lab</span>;
+  if (!lab) return <span className="text-dim">No lab</span>;
+  const best = Math.round(lab.best_score * 100);
   if (lab.passed) {
     return (
-      <span className="text-photon">
-        <Check className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />
-        passed · {Math.round(lab.best_score * 100)}%
+      <span className="pill text-ok">
+        <Check className="size-3" aria-hidden />
+        Passed · {best}%
       </span>
     );
   }
   if (lab.attempts) {
     return (
-      <span className="text-frost">
-        best {Math.round(lab.best_score * 100)}% · {lab.attempts}{" "}
-        {lab.attempts === 1 ? "try" : "tries"}
+      <span className="pill text-warn">
+        Best {best}% · {lab.attempts} {lab.attempts === 1 ? "try" : "tries"}
       </span>
     );
   }
-  return <span className="text-dim">not tried</span>;
+  return <span className="pill text-dim">Not tried</span>;
 }
 
 function ClassPanel({
@@ -721,38 +782,54 @@ function ClassPanel({
      classes, so there is no place in this one to remove them from. */
   const removable = !module.own;
   const empty = module.own && module.lessons === 0 && !module.lab_title;
+  const tone = TONE[moduleTone(module.slug)];
 
   return (
     <article className="panel rounded-2xl p-5 lg:p-6" aria-labelledby={`class-${module.slug}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-3">
+          <p className="flex flex-wrap items-center gap-2">
             {module.own ? (
-              <span className="rounded-lg border border-edge-hi px-2 py-1 font-mono text-[10.5px] tracking-[0.14em] text-frost uppercase">
-                your module
-              </span>
+              <span className="pill text-grape">Your module</span>
             ) : (
-              <span className="ket rounded-lg border border-photon bg-photon/10 px-2 py-0.5 text-[13px] text-photon">
+              <span
+                className={cn(
+                  "ket rounded-lg px-2.5 py-1 text-[13px] font-medium",
+                  tone.soft,
+                  tone.text,
+                )}
+              >
                 {module.ket}
               </span>
             )}
-            <span className="font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
-              {module.own ? (
-                <>
-                  {module.lessons} {module.lessons === 1 ? "lesson" : "lessons"} ·{" "}
-                  {module.lab_title ? "graded lab" : "no lab"} · {module.students.length} started
-                  ·{" "}
-                </>
-              ) : (
-                <>
+            {module.own ? (
+              <>
+                <span className="pill text-frost">
+                  {module.lessons} {module.lessons === 1 ? "lesson" : "lessons"}
+                </span>
+                <span className={cn("pill", module.lab_title ? "text-ok" : "text-dim")}>
+                  {module.lab_title ? "Graded lab" : "No lab"}
+                </span>
+                <span className="pill text-cyan-300">{module.students.length} started</span>
+              </>
+            ) : (
+              <>
+                <span className="pill text-cyan-300">
                   {module.students.length} {module.students.length === 1 ? "student" : "students"}
-                  {module.pending > 0 && ` · ${module.pending} waiting`} ·{" "}
-                </>
-              )}
+                </span>
+                {module.pending > 0 && (
+                  <span className="pill text-warn">{module.pending} waiting</span>
+                )}
+              </>
+            )}
+            <span className="pill text-frost">
               {module.notes} {module.notes === 1 ? "note" : "notes"}
             </span>
           </p>
-          <h3 id={`class-${module.slug}`} className="mt-2.5 text-[21px] font-medium text-paper">
+          <h3
+            id={`class-${module.slug}`}
+            className="mt-3 text-[22px] font-semibold tracking-[-0.015em] text-paper"
+          >
             {module.title}
           </h3>
           {module.own && module.summary && (
@@ -764,20 +841,13 @@ function ClassPanel({
         {module.own ? (
           <div className="flex flex-wrap items-center gap-2">
             {!writing && (
-              <button
-                type="button"
-                onClick={() => onWrite(true)}
-                className={cn(SMALL, "border-photon bg-photon/10 text-photon hover:bg-photon/20")}
-              >
+              <button type="button" onClick={() => onWrite(true)} className={cn(SMALL, TINT.own)}>
                 <Pencil className="size-3.5" aria-hidden />
-                {empty ? "write the module" : "edit module"}
+                {empty ? "Write the module" : "Edit module"}
               </button>
             )}
-            <Link
-              href={`/curriculum/own/${module.slug}`}
-              className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
-            >
-              view as a student
+            <Link href={`/curriculum/own/${module.slug}`} className={cn(SMALL, TINT.quiet)}>
+              View as a student
               <ArrowRight className="size-3.5" aria-hidden />
             </Link>
             <button
@@ -798,18 +868,15 @@ function ClassPanel({
                   `${module.title} is removed.`,
                 );
               }}
-              className={cn(SMALL, "border-edge text-frost hover:border-collapse hover:text-paper")}
+              className={cn(SMALL, TINT.stop)}
             >
               <Trash2 className="size-3.5" aria-hidden />
-              remove
+              Remove
             </button>
           </div>
         ) : (
-          <Link
-            href={`/curriculum/${module.slug}`}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors hover:text-photon"
-          >
-            module page
+          <Link href={`/curriculum/${module.slug}`} className={cn(SMALL, TINT.quiet)}>
+            Module page
             <ArrowRight className="size-3.5" aria-hidden />
           </Link>
         )}
@@ -826,9 +893,7 @@ function ClassPanel({
         </p>
       ) : (
         <>
-          <h4 className="mt-6 font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
-            Top students
-          </h4>
+          <h4 className="mt-7 text-[13px] font-semibold text-frost">Top students</h4>
           {module.students.length === 0 ? (
             <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-frost">
               {module.own
@@ -842,23 +907,23 @@ function ClassPanel({
             <div className="relative mt-2 overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-[13.5px]">
                 <thead>
-                  <tr className="border-b border-edge-hi text-left font-mono text-[10.5px] tracking-[0.12em] text-dim uppercase">
-                    <th scope="col" className="w-10 py-2 pr-3 font-normal">
+                  <tr className="border-b border-edge text-left text-[12px] font-medium text-dim">
+                    <th scope="col" className="w-12 py-2.5 pr-3 font-medium">
                       #
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-normal">
+                    <th scope="col" className="py-2.5 pr-3 font-medium">
                       Student
                     </th>
-                    <th scope="col" className="w-[26%] py-2 pr-3 font-normal">
+                    <th scope="col" className="w-[26%] py-2.5 pr-3 font-medium">
                       Progress
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-normal">
+                    <th scope="col" className="py-2.5 pr-3 font-medium">
                       Lessons
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-normal">
+                    <th scope="col" className="py-2.5 pr-3 font-medium">
                       Lab
                     </th>
-                    <th scope="col" className="py-2 pr-3 font-normal">
+                    <th scope="col" className="py-2.5 pr-3 font-medium">
                       Active
                     </th>
                     {removable && (
@@ -871,51 +936,51 @@ function ClassPanel({
                 <tbody>
                   {students.map((row) => (
                     <tr key={row.membership_id} className="border-b border-edge last:border-0">
-                      <td
-                        className={cn(
-                          "py-2.5 pr-3 font-mono tabular-nums",
-                          row.rank <= 3 ? "text-photon" : "text-frost",
-                        )}
-                      >
-                        {row.rank}
+                      <td className="py-3 pr-3">
+                        <Rank rank={row.rank} />
                       </td>
-                      <td className="py-2.5 pr-3">
+                      <td className="py-3 pr-3">
                         <span className="flex min-w-0 items-center gap-2.5">
-                          <Initials name={row.student.display_name} size="sm" />
+                          <PersonAvatar
+                            name={row.student.display_name}
+                            toneKey={row.student.handle}
+                            src={row.student.avatar_url}
+                            size="sm"
+                          />
                           <span className="min-w-0">
-                            <span className="block truncate text-paper">
+                            <span className="block truncate font-medium text-paper">
                               {row.student.display_name}
                             </span>
-                            <span className="block truncate font-mono text-[11px] text-dim">
+                            <span className="block truncate text-[12px] text-dim">
                               @{row.student.handle}
                             </span>
                           </span>
                         </span>
                       </td>
-                      <td className="py-2.5 pr-3">
+                      <td className="py-3 pr-3">
                         <span className="flex items-center gap-2.5">
-                          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-strata">
+                          <span className="h-2 flex-1 overflow-hidden rounded-full bg-strata">
                             <span
-                              className="block h-full rounded-full bg-photon"
+                              className={cn("block h-full rounded-full", tone.solid)}
                               style={{ width: `${row.percent}%` }}
                             />
                           </span>
-                          <span className="w-10 text-right font-mono text-[12px] text-paper tabular-nums">
+                          <span className="w-11 text-right text-[13px] font-semibold text-paper tabular-nums">
                             {row.percent}%
                           </span>
                         </span>
                       </td>
-                      <td className="py-2.5 pr-3 font-mono text-[12px] text-frost tabular-nums">
+                      <td className="py-3 pr-3 text-[13px] text-frost tabular-nums">
                         {row.lessons_completed}/{row.lessons_total}
                       </td>
-                      <td className="py-2.5 pr-3 text-[12.5px]">
+                      <td className="py-3 pr-3 text-[12.5px]">
                         <LabCell student={row} />
                       </td>
-                      <td className="py-2.5 pr-3 text-[12.5px] text-frost">
+                      <td className="py-3 pr-3 text-[13px] text-frost">
                         {sinceWhen(row.last_active)}
                       </td>
                       {removable && (
-                        <td className="py-2.5 text-right">
+                        <td className="py-3 text-right">
                           <button
                             type="button"
                             disabled={busy !== null}
@@ -934,7 +999,7 @@ function ClassPanel({
                                 `${row.student.display_name} is no longer in your ${module.title} class.`,
                               );
                             }}
-                            className="rounded-md p-1.5 text-dim transition-colors hover:text-collapse focus-visible:outline-2 focus-visible:outline-photon disabled:opacity-40"
+                            className="rounded-lg p-1.5 text-dim transition-colors hover:bg-rose-400/10 hover:text-rose-300 focus-visible:outline-2 focus-visible:outline-photon disabled:opacity-40"
                           >
                             <UserMinus className="size-4" aria-hidden />
                           </button>
@@ -948,7 +1013,7 @@ function ClassPanel({
                 <button
                   type="button"
                   onClick={() => setAll((value) => !value)}
-                  className="mt-3 font-mono text-[11px] tracking-[0.14em] text-photon uppercase hover:text-paper"
+                  className="mt-3 text-[13px] font-medium text-photon hover:text-paper"
                 >
                   {all ? `Show the top ${SHOWN}` : `Show all ${module.students.length}`}
                 </button>
@@ -1088,17 +1153,11 @@ function NotesManager({
   return (
     <div className="mt-6 border-t border-edge pt-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h4 className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
-          Your notes for this module
-        </h4>
+        <h4 className="text-[13px] font-semibold text-frost">Your notes for this module</h4>
         {!open && (
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className={cn(SMALL, "border-edge-hi text-paper hover:border-photon")}
-          >
+          <button type="button" onClick={() => setOpen(true)} className={cn(SMALL, TINT.quiet)}>
             <Upload className="size-3.5" aria-hidden />
-            upload a PDF
+            Upload a PDF
           </button>
         )}
       </div>
@@ -1114,30 +1173,37 @@ function NotesManager({
       ) : (
         <ul className="mt-2 divide-y divide-edge">
           {notes.map((note) => (
-            <li key={note.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
-              <span className="min-w-0">
-                <span className="block truncate text-[14px] text-paper">{note.title}</span>
-                <span className="block font-mono text-[11px] text-dim">
-                  {sinceWhen(note.uploaded_at)} · {describeSize(note.size_bytes)}
-                  {note.pages ? ` · ${note.pages} pages` : ""}
+            <li key={note.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-400/15 text-emerald-300">
+                  <FileText className="size-4" aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[14px] font-medium text-paper">
+                    {note.title}
+                  </span>
+                  <span className="block text-[12px] text-dim">
+                    {sinceWhen(note.uploaded_at)} · {describeSize(note.size_bytes)}
+                    {note.pages ? ` · ${note.pages} pages` : ""}
+                  </span>
                 </span>
               </span>
               <span className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => void openNote(note)}
-                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10.5px] tracking-[0.1em] text-frost uppercase hover:bg-strata hover:text-paper"
+                  className={cn(SMALL, TINT.quiet)}
                 >
                   <ExternalLink className="size-3.5" aria-hidden />
-                  open
+                  Open
                 </button>
                 <button
                   type="button"
                   onClick={() => void remove(note)}
-                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10.5px] tracking-[0.1em] text-frost uppercase hover:bg-strata hover:text-collapse"
+                  className={cn(SMALL, TINT.stop)}
                 >
                   <Trash2 className="size-3.5" aria-hidden />
-                  delete
+                  Delete
                 </button>
               </span>
             </li>
@@ -1192,10 +1258,7 @@ function NotesManager({
       {message && (
         <p
           role={message.tone === "error" ? "alert" : "status"}
-          className={cn(
-            "mt-3 text-[12.5px]",
-            message.tone === "error" ? "text-collapse" : "text-photon",
-          )}
+          className={cn("mt-3 text-[12.5px]", message.tone === "error" ? "text-bad" : "text-ok")}
         >
           {message.text}
         </p>

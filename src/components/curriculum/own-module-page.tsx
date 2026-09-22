@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
@@ -25,6 +24,7 @@ import {
   type OwnModuleState,
 } from "@/components/curriculum/use-own-module";
 import { ActionButton, ActionLink } from "@/components/site/action";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ApiError } from "@/lib/api";
 import {
   asLesson,
@@ -32,7 +32,7 @@ import {
   markOwnLesson,
   type OwnModuleView,
 } from "@/lib/own-modules";
-import { initialsOf, type Person } from "@/lib/professor";
+import { type Person } from "@/lib/professor";
 import { cn } from "@/lib/utils";
 
 /**
@@ -119,7 +119,7 @@ function ModuleBody({
             </span>
             <Link
               href="/professor"
-              className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-photon uppercase hover:text-paper"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-violet-300 hover:text-paper"
             >
               <Pencil className="size-3.5" aria-hidden />
               Edit it on your teaching page
@@ -131,7 +131,7 @@ function ModuleBody({
           <div className="min-w-0">
             <header className="border-b border-edge pb-7">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-lg border border-photon bg-photon/10 px-2.5 py-1 font-mono text-[11px] tracking-[0.14em] text-photon uppercase">
+                <span className="pill text-[12.5px] text-grape">
                   From your professor
                 </span>
                 <span className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
@@ -247,7 +247,7 @@ export function OwnModuleStatus({
     body = (
       <>
         <p className="eyebrow">From your professor</p>
-        <p className="mt-4 text-[14px] text-collapse">{state.error}</p>
+        <p className="mt-4 text-[14px] text-bad">{state.error}</p>
         <ActionButton
           type="button"
           variant="outline"
@@ -304,22 +304,12 @@ export function Byline({
     .join(" · ");
   return (
     <span className={cn("flex min-w-0 items-center gap-2.5", className)}>
-      {person.avatar_url ? (
-        <Image
-          src={person.avatar_url}
-          alt=""
-          width={44}
-          height={44}
-          className="size-11 shrink-0 rounded-full object-cover ring-1 ring-edge-hi ring-offset-2 ring-offset-nebula"
-        />
-      ) : (
-        <span
-          aria-hidden
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-strata font-mono text-[13px] text-frost ring-1 ring-edge-hi ring-offset-2 ring-offset-nebula"
-        >
-          {initialsOf(person.display_name)}
-        </span>
-      )}
+      <PersonAvatar
+        name={person.display_name}
+        toneKey={person.handle}
+        src={person.avatar_url}
+        size="lg"
+      />
       <span className="min-w-0 leading-snug">
         <span className="block truncate text-[15px] font-medium text-paper">
           <span className="text-frost">Module by </span>
@@ -364,7 +354,7 @@ function Outline({
               >
                 {complete ? (
                   <Check
-                    className="mt-0.5 size-3.5 shrink-0 text-photon"
+                    className="mt-0.5 size-3.5 shrink-0 text-ok"
                     aria-hidden
                   />
                 ) : (
@@ -395,10 +385,10 @@ function Outline({
               className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-strata focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
             >
               <FlaskConical
-                className="size-3.5 shrink-0 text-photon"
+                className="size-3.5 shrink-0 text-violet-300"
                 aria-hidden
               />
-              <span className="flex-1 text-[13px] text-photon">
+              <span className="flex-1 text-[13px] font-medium text-violet-300">
                 Lab — build it
               </span>
             </Link>
@@ -428,7 +418,7 @@ function Standing({ view }: { view: OwnModuleView }) {
       </p>
       <span className="mt-3 block h-1.5 overflow-hidden rounded-full bg-strata">
         <span
-          className="block h-full rounded-full bg-photon transition-[width] duration-500"
+          className="block h-full rounded-full bg-violet-400 transition-[width] duration-500"
           style={{ width: `${percent}%` }}
         />
       </span>
@@ -449,7 +439,7 @@ function Standing({ view }: { view: OwnModuleView }) {
             <dd
               className={cn(
                 "mt-1 font-mono text-[13px]",
-                lab?.passed ? "text-photon" : "text-paper",
+                lab?.passed ? "text-ok" : "text-paper",
               )}
             >
               {lab?.passed

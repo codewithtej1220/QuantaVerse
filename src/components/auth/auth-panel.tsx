@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 /* A field is a well with a hairline. Focus moves the hairline to copper —
    no ring, no halo, because the border already says which one is live. */
 const FIELD =
-  "h-12 w-full border border-edge bg-strata px-4 text-[15px] " +
+  "h-12 w-full rounded-lg border border-edge bg-strata px-4 text-[15px] " +
   "text-paper placeholder:text-dim outline-none transition-colors " +
   "focus:border-photon";
 

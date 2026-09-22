@@ -81,7 +81,7 @@ export function ProfessorConsole({ focus }: { focus: BlochVector }) {
               : "border-edge text-frost hover:border-photon hover:text-photon",
           )}
         >
-          {link === "connecting" ? "linking…" : live ? "connected" : "connect"}
+          {link === "connecting" ? "Linking…" : live ? "Connected" : "Connect"}
         </button>
       </div>
 
@@ -160,7 +160,7 @@ export function ProfessorConsole({ focus }: { focus: BlochVector }) {
                   className="inline-flex items-center gap-1 font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase hover:text-paper"
                 >
                   <X className="size-3" />
-                  clear
+                  Clear
                 </button>
               </div>
             ) : (

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { ALGORITHMS } from "@/lib/algorithms";
+import { TONE, algorithmTone } from "@/lib/tone";
+import { cn } from "@/lib/utils";
 import { Stage, Zone } from "@/components/three/stage";
 
 export const metadata: Metadata = {
@@ -55,78 +57,93 @@ export default function AlgorithmsPage() {
         </header>
 
         <ul className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {ALGORITHMS.map((algorithm) => (
-            <li key={algorithm.slug}>
-              <Link
-                href={`/algorithms/${algorithm.slug}`}
-                className="panel group flex h-full flex-col rounded-xl p-5 transition-colors hover:border-photon/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-[17px] font-medium text-paper">
-                    {algorithm.name}
-                  </h2>
-                  <span className="font-mono text-[11px] text-dim whitespace-nowrap">
-                    {algorithm.qubits}q
-                  </span>
-                </div>
-
-                <p className="mt-2 text-[13.5px] leading-relaxed text-frost">
-                  {algorithm.tagline}
-                </p>
-
-                {/* The stages, in order: the shape of the idea before the gates. */}
-                <ol
-                  aria-label="Stages"
-                  className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-mono text-[10.5px] tracking-[0.06em] text-dim"
+          {ALGORITHMS.map((algorithm) => {
+            const tone = TONE[algorithmTone(algorithm.slug)];
+            return (
+              <li key={algorithm.slug}>
+                <Link
+                  href={`/algorithms/${algorithm.slug}`}
+                  className="panel group relative flex h-full flex-col overflow-hidden rounded-2xl p-5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
                 >
-                  {algorithm.stages.map((stage, i) => (
-                    <li key={stage.title} className="flex items-center gap-1.5">
-                      {i > 0 && (
-                        <span aria-hidden className="text-edge-hi">
-                          →
-                        </span>
-                      )}
-                      <span className="text-frost">{stage.title}</span>
-                    </li>
-                  ))}
-                </ol>
-
-                {/* The comparison is the reason the algorithm exists, so it is
-                    on the card rather than buried on the page behind it. */}
-                <dl className="mt-4 grid gap-2 border-t border-edge pt-4 text-[12px]">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
-                      classical
-                    </dt>
-                    <dd className="text-right text-frost">
-                      {algorithm.classical}
-                    </dd>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
-                      this circuit
-                    </dt>
-                    <dd className="text-right font-medium text-photon">
-                      {algorithm.quantum}
-                    </dd>
-                  </div>
-                </dl>
-
-                <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-frost uppercase transition-colors group-hover:text-photon">
-                  walk the {algorithm.stages.length} stages
-                  <ArrowRight
-                    className="size-3.5 transition-transform group-hover:translate-x-0.5"
+                  <span
                     aria-hidden
+                    className={cn("absolute inset-x-0 top-0 h-1", tone.solid)}
                   />
-                </span>
-              </Link>
-            </li>
-          ))}
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2 className="text-[17px] font-semibold text-paper">
+                      {algorithm.name}
+                    </h2>
+                    <span className={cn("pill", tone.text)}>
+                      {algorithm.qubits} qubits
+                    </span>
+                  </div>
+
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-frost">
+                    {algorithm.tagline}
+                  </p>
+
+                  {/* The stages, in order: the shape of the idea before the gates. */}
+                  <ol
+                    aria-label="Stages"
+                    className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1.5 text-[12.5px] text-dim"
+                  >
+                    {algorithm.stages.map((stage, i) => (
+                      <li
+                        key={stage.title}
+                        className="flex items-center gap-1.5"
+                      >
+                        {i > 0 && (
+                          <span aria-hidden className="text-edge-hi">
+                            →
+                          </span>
+                        )}
+                        <span className="text-frost">{stage.title}</span>
+                      </li>
+                    ))}
+                  </ol>
+
+                  {/* The comparison is the reason the algorithm exists, so it is
+                    on the card rather than buried on the page behind it. */}
+                  <dl className="mt-4 grid gap-2 border-t border-edge pt-4 text-[12px]">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
+                        Classical
+                      </dt>
+                      <dd className="text-right text-frost">
+                        {algorithm.classical}
+                      </dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
+                        This circuit
+                      </dt>
+                      <dd className={cn("text-right font-semibold", tone.text)}>
+                        {algorithm.quantum}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <span
+                    className={cn(
+                      "mt-auto inline-flex items-center gap-1.5 pt-4 text-[13px] font-semibold",
+                      tone.text,
+                    )}
+                  >
+                    Walk the {algorithm.stages.length} stages
+                    <ArrowRight
+                      className="size-3.5 transition-transform group-hover:translate-x-0.5"
+                      aria-hidden
+                    />
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
         <p className="mt-8 max-w-3xl border-t border-edge pt-6 text-[13px] leading-relaxed text-dim">
           <span className="font-mono text-[10.5px] tracking-[0.14em] text-frost uppercase">
-            what is not here
+            What is not here
           </span>
           <br />
           Shor&rsquo;s algorithm needs controlled modular exponentiation across

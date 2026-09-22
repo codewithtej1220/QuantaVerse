@@ -99,15 +99,15 @@ export function LessonQuiz({
                         setPicked((prev) => ({ ...prev, [qi]: oi }))
                       }
                       className={cn(
-                        "flex items-start gap-2.5 border px-3 py-2 text-left text-[13px] leading-snug transition-colors",
+                        "flex items-start gap-2.5 rounded-lg border px-3 py-2 text-left text-[13.5px] leading-snug transition-colors",
                         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                         marked &&
                           isAnswer &&
-                          "border-photon bg-photon/10 text-paper",
+                          "border-emerald-400/60 bg-emerald-400/10 text-paper",
                         marked &&
                           chosen &&
                           !isAnswer &&
-                          "border-collapse bg-collapse/10 text-paper",
+                          "border-rose-400/60 bg-rose-400/10 text-paper",
                         marked &&
                           !isAnswer &&
                           !chosen &&
@@ -122,13 +122,13 @@ export function LessonQuiz({
                     >
                       {marked && isAnswer && (
                         <Check
-                          className="mt-0.5 size-3.5 shrink-0 text-photon"
+                          className="mt-0.5 size-3.5 shrink-0 text-ok"
                           aria-hidden
                         />
                       )}
                       {marked && chosen && !isAnswer && (
                         <X
-                          className="mt-0.5 size-3.5 shrink-0 text-collapse"
+                          className="mt-0.5 size-3.5 shrink-0 text-bad"
                           aria-hidden
                         />
                       )}
@@ -143,7 +143,7 @@ export function LessonQuiz({
                 <p
                   className={cn(
                     "mt-2 border-l-2 pl-3 text-[12.5px] leading-relaxed text-frost",
-                    right ? "border-photon" : "border-collapse",
+                    right ? "border-emerald-400" : "border-rose-400",
                   )}
                 >
                   {question.because}
@@ -162,7 +162,7 @@ export function LessonQuiz({
               disabled={answered < questions.length}
               onClick={mark}
               className={cn(
-                "inline-flex h-10 items-center px-4 text-[13px] font-medium transition-colors",
+                "inline-flex h-10 items-center rounded-lg px-4 text-[13.5px] font-semibold transition-colors",
                 "focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon",
                 answered === questions.length
                   ? "bg-photon text-void hover:bg-photon-hi"
@@ -180,7 +180,7 @@ export function LessonQuiz({
             <p
               className={cn(
                 "font-mono text-[12.5px] tabular-nums",
-                passed ? "text-photon" : "text-collapse",
+                passed ? "text-ok" : "text-bad",
               )}
             >
               {busy ? (

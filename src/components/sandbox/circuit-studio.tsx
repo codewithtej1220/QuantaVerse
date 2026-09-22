@@ -1060,7 +1060,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
                be marked on the wrong number of qubits — though a program
                built from code can still change it, so there is a way back. */
             <div className="flex items-center gap-2 rounded-lg border border-edge px-2.5 py-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
-              qubits
+              Qubits
               <span className="rounded-md bg-paper px-2 py-0.5 text-[12px] text-void">
                 {challenge.qubits}
               </span>
@@ -1085,7 +1085,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               aria-label="Register width"
             >
               <span className="px-1.5 font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
-                qubits
+                Qubits
               </span>
               {QUBIT_OPTIONS.map((n) => (
                 <button
@@ -1112,7 +1112,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
             className="flex items-center gap-1.5 border border-edge px-3 py-2.5 font-mono text-[12px] tracking-[0.1em] text-frost uppercase transition-colors hover:border-paper hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-collapse"
           >
             <Trash2 className="size-3.5" />
-            clear
+            Clear
           </button>
 
           {/* How many shots, then go: one control, so the count sits against
@@ -1125,7 +1125,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
               )}
             >
               <span className="font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
-                shots
+                Shots
               </span>
               <span className="relative flex items-center">
                 <select
@@ -1177,7 +1177,7 @@ export function CircuitStudio({ challenge }: { challenge?: Challenge }) {
                 ? engine === "browser"
                   ? "sampling"
                   : `running on ${engine}`
-                : "run"}
+                : "Run"}
             </button>
           </div>
         </div>

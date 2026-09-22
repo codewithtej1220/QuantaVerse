@@ -7,6 +7,8 @@ import { MasteryRing } from "@/components/dashboard/mastery-ring";
 import { SkillGraph } from "@/components/dashboard/skill-graph";
 import { AmplitudeBar } from "@/components/site/amplitude-bar";
 import { Reveal } from "@/components/site/reveal";
+import { TONE, moduleTone, type Tone } from "@/lib/tone";
+import { cn } from "@/lib/utils";
 import { StreakWatcher } from "@/components/mascot/streak-watcher";
 import type { BadgeItem, Skill } from "@/lib/data";
 import type { ReactNode } from "react";
@@ -42,7 +44,11 @@ export interface DashboardModel {
   banner?: ReactNode;
 }
 
+/* Each count in its own colour, in the order the tiles come. */
+const TILE_TONES: Tone[] = ["cyan", "violet", "emerald", "amber"];
+
 export function DashboardShell({ model }: { model: DashboardModel }) {
+  const upNextTone = TONE[moduleTone(model.upNext?.slug ?? "")];
   return (
     <div className="min-h-screen overflow-x-clip pt-32 pb-24">
       <div className="mx-auto max-w-[1440px] px-5 lg:px-10">
@@ -62,21 +68,21 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
             <h1 data-tour="dashboard" className="display-2 mt-5 break-words">
               {model.name}
             </h1>
-            <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[12.5px] text-frost">
-              <span className="text-photon">@{model.handle}</span>
+            <p className="mt-5 flex flex-wrap items-center gap-2 text-[13px] text-frost">
+              <span className="pill text-cyan-300">@{model.handle}</span>
               {model.institution && (
-                <>
-                  <span className="h-3 w-px bg-edge-hi" />
-                  <span>{model.institution}</span>
-                </>
+                <span className="pill text-frost">{model.institution}</span>
               )}
-              <span className="h-3 w-px bg-edge-hi" />
-              <span>{model.cohort}</span>
-              <span className="h-3 w-px bg-edge-hi" />
-              <span className="inline-flex items-center gap-1.5 text-photon">
-                <Flame className="size-3.5" />
+              <span className="pill text-grape">{model.cohort}</span>
+              <span
+                className={cn(
+                  "pill",
+                  model.streakDays === 0 ? "text-dim" : "text-orange-300",
+                )}
+              >
+                <Flame className="size-3" />
                 {model.streakDays === 0
-                  ? "no run yet"
+                  ? "No run yet"
                   : `${model.streakDays}-day run`}
               </span>
             </p>
@@ -104,14 +110,21 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
         {model.upNext && (
           <Link
             href={`/curriculum/${model.upNext.slug}`}
-            className="group mt-16 grid gap-x-8 gap-y-6 border-y-2 border-photon py-8 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            className={cn(
+              "panel group relative mt-16 grid gap-x-8 gap-y-6 overflow-hidden rounded-2xl px-7 py-7 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center",
+            )}
           >
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-y-0 left-0 w-1.5",
+                upNextTone.solid,
+              )}
+            />
             <div className="min-w-0">
-              <p className="font-mono text-[12px] tracking-[0.2em] text-photon uppercase">
-                Up next
-              </p>
-              <h2 className="display-2 mt-4 flex flex-wrap items-baseline gap-x-4 text-paper">
-                <span className="ket text-[0.45em] text-photon">
+              <p className={cn("eyebrow", upNextTone.text)}>Up next</p>
+              <h2 className="display-2 mt-3 flex flex-wrap items-baseline gap-x-4 text-paper">
+                <span className={cn("ket text-[0.45em]", upNextTone.text)}>
                   {model.upNext.ket}
                 </span>
                 {model.upNext.title}
@@ -120,7 +133,7 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
                 {model.upNext.detail}
               </p>
             </div>
-            <span className="inline-flex shrink-0 items-center gap-2 self-start bg-photon px-5 py-2.5 font-mono text-[12px] tracking-[0.14em] text-void uppercase sm:self-center">
+            <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-lg bg-photon px-5 py-2.5 text-[13.5px] font-semibold text-void transition-colors group-hover:bg-photon-hi sm:self-center">
               Resume module
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
@@ -130,22 +143,35 @@ export function DashboardShell({ model }: { model: DashboardModel }) {
         {/* Counted, not boxed: one rule and four columns. */}
         <Reveal
           as="dl"
-          className="mt-14 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-edge pt-8 lg:grid-cols-4"
+          className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4"
           step={100}
         >
-          {model.tiles.map((tile) => (
-            <div key={tile.label}>
-              <dt className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
-                {tile.label}
-              </dt>
-              <dd className="font-display mt-2 text-4xl font-extrabold text-paper tabular-nums">
-                {tile.value}
-              </dd>
-              <dd className="mt-1.5 font-mono text-[11.5px] text-frost">
-                {tile.detail}
-              </dd>
-            </div>
-          ))}
+          {model.tiles.map((tile, index) => {
+            const tone = TONE[TILE_TONES[index % TILE_TONES.length]];
+            return (
+              <div
+                key={tile.label}
+                className="panel relative overflow-hidden rounded-2xl px-5 py-4"
+              >
+                <span
+                  aria-hidden
+                  className={cn("absolute inset-x-0 top-0 h-1", tone.solid)}
+                />
+                <dt className="text-[13px] font-medium text-frost">
+                  {tile.label}
+                </dt>
+                <dd
+                  className={cn(
+                    "mt-2 text-[2.1rem] leading-none font-semibold tracking-[-0.02em] tabular-nums",
+                    tone.text,
+                  )}
+                >
+                  {tile.value}
+                </dd>
+                <dd className="mt-2 text-[12.5px] text-dim">{tile.detail}</dd>
+              </div>
+            );
+          })}
         </Reveal>
 
         {/* Each panel arrives as you reach it, so the page reads as a record

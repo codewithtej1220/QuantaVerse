@@ -45,19 +45,22 @@
 
      Code does not live on this ladder at all. See `sheet` below. */
   --color-void: #040a10; /* the page       — L* 2.5 */
-  --color-nebula: #0f2438; /* a panel raised off it  — L* 13.5 */
-  --color-strata: #142e46; /* a well sunk into a panel — L* 18.1 */
-  --color-edge: #213d57; /* hairline — L* 24.8 */
-  --color-edge-low: #0c1e2f; /* the edge facing away from the light */
-  --color-edge-hi: #34597a; /* hairline, hovered or focused */
+  /* Everything that sits on the page reads a surface variable, so that the
+     working pages and the landing page can dress it differently. The values
+     are in the two surface blocks below the theme. */
+  --color-nebula: var(--surface-nebula); /* a panel raised off it */
+  --color-strata: var(--surface-strata); /* a well sunk into a panel */
+  --color-edge: var(--surface-edge); /* hairline */
+  --color-edge-low: var(--surface-edge-low); /* the edge facing away from the light */
+  --color-edge-hi: var(--surface-edge-hi); /* hairline, hovered or focused */
 
   /* --- ink ---
      Warm, against the cool ground. This is a page people read for an hour at
      a time, and a warm ivory on a cool dark surface is easier to sit with than
      the neutral off-white it replaces. */
-  --color-paper: #f4efe6; /* body text — 17.4:1 on the page */
-  --color-frost: #c9c2b4; /* secondary text — 11.2:1 */
-  --color-dim: #9a9487; /* tertiary text — 6.6:1 on the page, 4.6:1 in a well */
+  --color-paper: var(--surface-paper); /* body text */
+  --color-frost: var(--surface-frost); /* secondary text */
+  --color-dim: var(--surface-dim); /* tertiary text */
 
   /* --- meaning --- */
   --color-photon: #2fe4ff; /* laser cyan — 13.7:1 on black */
@@ -91,9 +94,23 @@
   --color-phase: #ffffff;
   --color-collapse: #8e8e89;
 
+  /* --- state ---
+     The working pages say what state a thing is in with colour, the way a
+     well-made dashboard does: a pill that is green because it passed, amber
+     because it is waiting, red because it needs a decision. Each has one job
+     and the same job everywhere; none of them is decoration, and cyan stays
+     the colour of the quantum system itself. Bright enough to read as text on
+     a card and to tint a pill at 15%. */
+  --color-ok: #34d399; /* passed, accepted, done */
+  --color-warn: #fbbf24; /* waiting, part-way, a best score short of a pass */
+  --color-bad: #fb7185; /* declined, removed, wrong, an error */
+  --color-info: #60a5fa; /* in progress, informational */
+  --color-grape: #a78bfa; /* a professor, a module of their own */
+  --color-bloom: #f472b6; /* the odd one out: a fifth hue for people and tags */
+
   /* --- type roles --- */
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-archivo), var(--font-plex-sans), ui-sans-serif, sans-serif;
+  --font-sans: var(--surface-font-sans);
+  --font-display: var(--surface-font-display);
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   /* Notation is set in the mono face: kets, gates and code all come
      from the same machine, so they should look like it. */
@@ -132,15 +149,16 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Machined, not rounded. Every rounded-* utility in the codebase
-     derives from --radius, so one number sharpens the whole site. */
-  --radius-sm: 1px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 2px;
-  --radius-2xl: 3px;
-  --radius-3xl: 3px;
-  --radius-4xl: 4px;
+  /* Every rounded-* utility in the codebase derives from these, so the
+     surface blocks below set the corners of the whole site: machined on the
+     landing page, softened on the working pages. */
+  --radius-sm: var(--surface-radius-sm);
+  --radius-md: var(--surface-radius-md);
+  --radius-lg: var(--surface-radius-lg);
+  --radius-xl: var(--surface-radius-xl);
+  --radius-2xl: var(--surface-radius-2xl);
+  --radius-3xl: var(--surface-radius-3xl);
+  --radius-4xl: var(--surface-radius-4xl);
 
   /* --- motion ---
      Two animations, both of which carry information. Anything that
@@ -237,39 +255,203 @@
    hardcoded blacks, so every Radix surface on the site went on painting the
    old palette after the tokens above had moved — a whole second theme quietly
    outvoting the first. */
+/* ============================================================
+   Surfaces
+
+   Two dressings of the same tokens.
+
+   The landing page and the site's frame — the nav, the footer, the tutor —
+   are the instrument: a machined steel panel with a lit cyan edge, warm ivory
+   ink, uppercase monospace labels and square corners. That is `:root`.
+
+   The working pages are where people spend their time reading, answering and
+   deciding, and there the instrument dressing read as dull and soft: every
+   panel lit the same way, every label a caption in tracked-out capitals, and
+   one hue for everything. So inside `main`, on every route but the landing
+   page, the tokens are re-pointed at a crisper set — solid near-black cards
+   with a hairline edge and rounded corners, cool near-white ink, Geist in
+   sentence case — and state is carried by the colours in the theme above.
+
+   Custom properties resolve where they are declared, so anything outside a
+   utility reads `--surface-*` directly: a `var(--color-*)` would have been
+   settled on `:root` already and would never see the working pages' values.
+   ============================================================ */
 :root {
+  --surface-nebula: #0f2438; /* L* 13.5 */
+  --surface-strata: #142e46; /* L* 18.1 */
+  --surface-edge: #213d57; /* L* 24.8 */
+  --surface-edge-low: #0c1e2f;
+  --surface-edge-hi: #34597a;
+  --surface-paper: #f4efe6; /* 17.4:1 on the page */
+  --surface-frost: #c9c2b4; /* 11.2:1 */
+  --surface-dim: #9a9487; /* 6.6:1 on the page, 4.6:1 in a well */
+
+  --surface-font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --surface-font-display: var(--font-archivo), var(--font-plex-sans), ui-sans-serif, sans-serif;
+  --surface-heading-weight: 800;
+  --surface-heading-track: -0.03em;
+  --surface-display-case: uppercase;
+  --surface-display-weight: 800;
+  --surface-display-track: -0.035em;
+  --surface-display-leading: 0.98;
+  --surface-display-size: clamp(2rem, 4.4vw, 3.5rem);
+
+  --surface-eyebrow-font: var(--font-plex-mono), ui-monospace, monospace;
+  --surface-eyebrow-size: 0.75rem;
+  --surface-eyebrow-weight: 400;
+  --surface-eyebrow-track: 0.18em;
+  --surface-eyebrow-case: uppercase;
+  --surface-eyebrow-color: #f4efe6;
+
+  /* Machined, not rounded. */
+  --surface-radius-sm: 1px;
+  --surface-radius-md: 2px;
+  --surface-radius-lg: 2px;
+  --surface-radius-xl: 2px;
+  --surface-radius-2xl: 3px;
+  --surface-radius-3xl: 3px;
+  --surface-radius-4xl: 4px;
+  --surface-radius-button: 0px;
+
+  --surface-panel-sheen: linear-gradient(
+    180deg,
+    rgb(150 215 255 / 0.07) 0,
+    rgb(150 215 255 / 0) 220px
+  );
+  --surface-panel-top: rgb(47 228 255 / 0.35);
+  --surface-panel-bottom: #0c1e2f;
+  --surface-panel-shadow:
+    inset 0 1px 0 0 rgb(47 228 255 / 0.1), 0 1px 0 0 rgb(0 0 0 / 0.55),
+    0 28px 56px -30px rgb(0 0 0 / 0.95);
+  --surface-well-shadow: inset 0 1px 3px 0 rgb(0 0 0 / 0.45);
+
   --radius: 2px;
   --background: var(--color-void);
-  --foreground: var(--color-paper);
-  --card: var(--color-nebula);
-  --card-foreground: var(--color-paper);
-  --popover: var(--color-nebula);
-  --popover-foreground: var(--color-paper);
+  --foreground: var(--surface-paper);
+  --card: var(--surface-nebula);
+  --card-foreground: var(--surface-paper);
+  --popover: var(--surface-nebula);
+  --popover-foreground: var(--surface-paper);
   --primary: var(--color-photon);
   --primary-foreground: var(--color-void);
-  --secondary: var(--color-strata);
-  --secondary-foreground: var(--color-paper);
-  --muted: var(--color-strata);
-  --muted-foreground: var(--color-frost);
-  --accent: var(--color-strata);
-  --accent-foreground: var(--color-paper);
+  --secondary: var(--surface-strata);
+  --secondary-foreground: var(--surface-paper);
+  --muted: var(--surface-strata);
+  --muted-foreground: var(--surface-frost);
+  --accent: var(--surface-strata);
+  --accent-foreground: var(--surface-paper);
   --destructive: var(--color-photon);
-  --border: var(--color-edge);
-  --input: var(--color-edge-hi);
+  --border: var(--surface-edge);
+  --input: var(--surface-edge-hi);
   --ring: var(--color-photon);
   --chart-1: var(--color-photon);
-  --chart-2: var(--color-paper);
+  --chart-2: var(--surface-paper);
   --chart-3: var(--color-collapse);
   --chart-4: var(--color-photon-deep);
-  --chart-5: var(--color-dim);
-  --sidebar: var(--color-nebula);
-  --sidebar-foreground: var(--color-paper);
+  --chart-5: var(--surface-dim);
+  --sidebar: var(--surface-nebula);
+  --sidebar-foreground: var(--surface-paper);
   --sidebar-primary: var(--color-photon);
   --sidebar-primary-foreground: var(--color-void);
-  --sidebar-accent: var(--color-strata);
-  --sidebar-accent-foreground: var(--color-paper);
-  --sidebar-border: var(--color-edge);
+  --sidebar-accent: var(--surface-strata);
+  --sidebar-accent-foreground: var(--surface-paper);
+  --sidebar-border: var(--surface-edge);
   --sidebar-ring: var(--color-photon);
+}
+
+/* The working pages. `:has` rather than a class on each page, because the
+   pages are many and the landing page is one: it wraps its sections in
+   `.surface-home`, and every other route gets this without being told. */
+main:not(:has(> .surface-home)),
+.surface-app {
+  /* Solid cards a little off the night, so the stars show between them
+     rather than through them, each with an edge you can see. */
+  --surface-nebula: #0d1526; /* a card */
+  --surface-strata: #141e33; /* a well, a field, a hovered row */
+  --surface-edge: #1f2b42; /* hairline */
+  --surface-edge-low: #19233a;
+  --surface-edge-hi: #33435f;
+  /* Cool and crisp. The warm ivory suits long reading on the landing page's
+     instrument panel; on a near-black card it reads as a soft, slightly
+     yellowed grey, and the secondary tone went muddy with it. */
+  --surface-paper: #f3f6fb; /* 16:1 on a card */
+  --surface-frost: #a7b3c7; /* 8.7:1 */
+  --surface-dim: #77849b; /* 4.8:1 */
+
+  --surface-font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --surface-font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --surface-heading-weight: 700;
+  --surface-heading-track: -0.022em;
+  --surface-display-case: none;
+  --surface-display-weight: 700;
+  --surface-display-track: -0.032em;
+  --surface-display-leading: 1.04;
+  --surface-display-size: clamp(2rem, 3.6vw, 3rem);
+
+  /* A label is a word, not a caption. */
+  --surface-eyebrow-font: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --surface-eyebrow-size: 0.8125rem;
+  --surface-eyebrow-weight: 600;
+  --surface-eyebrow-track: 0;
+  --surface-eyebrow-case: none;
+  --surface-eyebrow-color: #a7b3c7;
+
+  --surface-radius-sm: 6px;
+  --surface-radius-md: 8px;
+  --surface-radius-lg: 10px;
+  --surface-radius-xl: 12px;
+  --surface-radius-2xl: 16px;
+  --surface-radius-3xl: 20px;
+  --surface-radius-4xl: 24px;
+  --surface-radius-button: 10px;
+
+  /* No sheen and no lit edge: a card is flat, and its top edge is only a
+     shade lighter than the rest, which is what makes the corner read as
+     sharp rather than soft. */
+  --surface-panel-sheen: none;
+  --surface-panel-top: #2a3852;
+  --surface-panel-bottom: #1b2539;
+  --surface-panel-shadow: 0 24px 48px -30px rgb(0 0 0 / 0.9);
+  --surface-well-shadow: none;
+
+  /* The shadcn surfaces follow, re-declared here so they resolve against
+     these values rather than the frame's. */
+  --card: var(--surface-nebula);
+  --popover: var(--surface-nebula);
+  --secondary: var(--surface-strata);
+  --muted: var(--surface-strata);
+  --muted-foreground: var(--surface-frost);
+  --accent: var(--surface-strata);
+  --border: var(--surface-edge);
+  --input: var(--surface-edge-hi);
+  --foreground: var(--surface-paper);
+  --card-foreground: var(--surface-paper);
+  --popover-foreground: var(--surface-paper);
+  --secondary-foreground: var(--surface-paper);
+  --accent-foreground: var(--surface-paper);
+
+  font-family: var(--surface-font-sans);
+  color: var(--surface-paper);
+  /* Geist is drawn for screens; letting it use its own spacing at small
+     sizes is most of what keeps 12px text sharp. */
+  font-optical-sizing: auto;
+}
+
+/* A monospace label in capitals is the instrument's voice. On the working
+   pages it is set as an ordinary label instead: same size, in the page's
+   sans, in the case it was written in. Numbers, kets and code keep the mono
+   face — only the tracked-out capitals are retired. */
+:is(main:not(:has(> .surface-home)), .surface-app)
+  :is(.font-mono.uppercase, .uppercase[class*="tracking-"]) {
+  font-family: var(--surface-font-sans);
+  text-transform: none;
+  letter-spacing: 0.002em;
+  font-weight: 500;
+}
+
+:is(main:not(:has(> .surface-home)), .surface-app)
+  :is(.font-mono.uppercase, .uppercase[class*="tracking-"]):is(.font-semibold, .font-bold) {
+  font-weight: 600;
 }
 
 .dark {
@@ -307,16 +489,16 @@
   h2,
   h3,
   h4 {
-    font-family: var(--font-display);
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-family: var(--surface-font-display);
+    font-weight: var(--surface-heading-weight);
+    letter-spacing: var(--surface-heading-track);
     line-height: 1.02;
     text-wrap: balance;
   }
 
   h5,
   h6 {
-    font-family: var(--font-display);
+    font-family: var(--surface-font-display);
     font-weight: 700;
     letter-spacing: -0.015em;
     line-height: 1.15;
@@ -386,55 +568,59 @@
  * edges, which is what a state should do.
  */
 @utility panel {
-  background-color: var(--color-nebula);
-  background-image: linear-gradient(
-    180deg,
-    rgb(150 215 255 / 0.07) 0,
-    rgb(150 215 255 / 0) 220px
-  );
-  border: 1px solid var(--color-edge);
-  border-top-color: rgb(47 228 255 / 0.35);
-  border-bottom-color: var(--color-edge-low);
-  box-shadow:
-    inset 0 1px 0 0 rgb(47 228 255 / 0.1),
-    0 1px 0 0 rgb(0 0 0 / 0.55),
-    0 28px 56px -30px rgb(0 0 0 / 0.95);
+  background-color: var(--surface-nebula);
+  background-image: var(--surface-panel-sheen);
+  border: 1px solid var(--surface-edge);
+  border-top-color: var(--surface-panel-top);
+  border-bottom-color: var(--surface-panel-bottom);
+  box-shadow: var(--surface-panel-shadow);
 }
 
 @utility panel-quiet {
   background-color: transparent;
-  border: 1px solid var(--color-edge);
+  border: 1px solid var(--surface-edge);
 }
 
 /* A well: the recessed area a control or a read-out sits in. Shaded from
    the top edge down, the way light falls into something cut into a plate. */
 @utility well {
-  background-color: var(--color-strata);
-  border: 1px solid var(--color-edge);
-  box-shadow: inset 0 1px 3px 0 rgb(0 0 0 / 0.45);
+  background-color: var(--surface-strata);
+  border: 1px solid var(--surface-edge);
+  box-shadow: var(--surface-well-shadow);
 }
 
 /* Aliases kept so components not yet touched render as panels.
    These used to be frosted glass; they are now the panel above. */
 @utility glass {
-  background-color: var(--color-nebula);
-  background-image: linear-gradient(
-    180deg,
-    rgb(150 215 255 / 0.07) 0,
-    rgb(150 215 255 / 0) 220px
-  );
-  border: 1px solid var(--color-edge);
-  border-top-color: rgb(47 228 255 / 0.35);
-  border-bottom-color: var(--color-edge-low);
-  box-shadow:
-    inset 0 1px 0 0 rgb(47 228 255 / 0.1),
-    0 1px 0 0 rgb(0 0 0 / 0.55),
-    0 28px 56px -30px rgb(0 0 0 / 0.95);
+  background-color: var(--surface-nebula);
+  background-image: var(--surface-panel-sheen);
+  border: 1px solid var(--surface-edge);
+  border-top-color: var(--surface-panel-top);
+  border-bottom-color: var(--surface-panel-bottom);
+  box-shadow: var(--surface-panel-shadow);
 }
 
 @utility glass-quiet {
   background-color: transparent;
-  border: 1px solid var(--color-edge);
+  border: 1px solid var(--surface-edge);
+}
+
+/* A status pill: a word in a colour, on a tint of that colour. Give it a
+   text colour and the tint follows — `pill text-ok`, `pill text-warn`. */
+@utility pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.55rem;
+  font-family: var(--surface-font-sans);
+  font-size: 0.71875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  background-color: color-mix(in oklab, currentColor 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 28%, transparent);
 }
 
 /**
@@ -444,12 +630,13 @@
  * education platform and a label nobody can read is not a label.
  */
 @utility eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--surface-eyebrow-font);
+  font-size: var(--surface-eyebrow-size);
+  font-weight: var(--surface-eyebrow-weight);
   line-height: 1.2;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-paper);
+  letter-spacing: var(--surface-eyebrow-track);
+  text-transform: var(--surface-eyebrow-case);
+  color: var(--surface-eyebrow-color);
 }
 
 /**
@@ -467,25 +654,25 @@
  * the column, that cannot happen at any width.
  */
 @utility display-1 {
-  font-family: var(--font-display);
+  font-family: var(--surface-font-display);
   font-size: clamp(2.5rem, 13cqw, 6.5rem);
-  font-weight: 800;
+  font-weight: var(--surface-display-weight);
   line-height: 0.92;
   letter-spacing: -0.04em;
-  text-transform: uppercase;
+  text-transform: var(--surface-display-case);
 }
 
 @utility display-2 {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4.4vw, 3.5rem);
-  font-weight: 800;
-  line-height: 0.98;
-  letter-spacing: -0.035em;
-  text-transform: uppercase;
+  font-family: var(--surface-font-display);
+  font-size: var(--surface-display-size);
+  font-weight: var(--surface-display-weight);
+  line-height: var(--surface-display-leading);
+  letter-spacing: var(--surface-display-track);
+  text-transform: var(--surface-display-case);
 }
 
 @utility display-3 {
-  font-family: var(--font-display);
+  font-family: var(--surface-font-display);
   font-size: clamp(1.5rem, 2.4vw, 2rem);
   font-weight: 700;
   line-height: 1.05;
@@ -496,13 +683,13 @@
 @utility lede {
   font-size: 1.0625rem;
   line-height: 1.65;
-  color: var(--color-frost);
+  color: var(--surface-frost);
 }
 
 @utility body-text {
   font-size: 0.9375rem;
   line-height: 1.65;
-  color: var(--color-frost);
+  color: var(--surface-frost);
 }
 
 /* Progress drawn as a flat copper bar. Formerly a three-stop

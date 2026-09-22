@@ -5,6 +5,7 @@ import { Check, Circle, FlaskConical } from "lucide-react";
 
 import { useLessonToggle } from "@/components/curriculum/use-lesson-toggle";
 import type { Lesson } from "@/lib/lessons";
+import { TONE, moduleTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,6 +33,7 @@ export function ModuleOutline({
   hasLab: boolean;
 }) {
   const { isDone, signedIn } = useLessonToggle(slug);
+  const tone = TONE[moduleTone(slug)];
 
   const rows = lessons.length
     ? lessons.map((lesson, index) => ({
@@ -63,7 +65,7 @@ export function ModuleOutline({
               >
                 {complete ? (
                   <Check
-                    className="mt-0.5 size-3.5 shrink-0 text-photon"
+                    className="mt-0.5 size-3.5 shrink-0 text-ok"
                     aria-hidden
                   />
                 ) : (
@@ -97,10 +99,10 @@ export function ModuleOutline({
               className="flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-strata focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-photon"
             >
               <FlaskConical
-                className="size-3.5 shrink-0 text-photon"
+                className={cn("size-3.5 shrink-0", tone.text)}
                 aria-hidden
               />
-              <span className="flex-1 text-[13px] text-photon">
+              <span className={cn("flex-1 text-[13px] font-medium", tone.text)}>
                 Lab — build it
               </span>
             </Link>

@@ -169,12 +169,12 @@ export function challengePlacements(challenge: Challenge): Placement[] {
 /** What each marking mode means, in the words the page uses. */
 export const MODE_LABEL: Record<GradeMode, { name: string; detail: string }> = {
   state: {
-    name: "marked on the state",
+    name: "Marked on the state",
     detail:
       "Only the state your circuit reaches counts, up to a global phase — any route there passes.",
   },
   operation: {
-    name: "marked on every input",
+    name: "Marked on every input",
     detail:
       "Your circuit has to do what the algorithm does to every input, not just land on the answer from |0…0⟩.",
   },

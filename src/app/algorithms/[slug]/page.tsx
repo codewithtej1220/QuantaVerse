@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
+import { TONE, algorithmTone } from "@/lib/tone";
+import { cn } from "@/lib/utils";
 import { ALGORITHMS } from "@/lib/algorithms";
 import { AlgorithmTheatre } from "@/components/algorithms/algorithm-theatre";
 import { ActionLink } from "@/components/site/action";
@@ -47,17 +49,31 @@ export default async function AlgorithmPage({ params }: PageProps<"/algorithms/[
           </div>
 
           <dl className="grid gap-3">
-            <div className="panel-quiet rounded-lg px-4 py-3">
+            <div className="panel-quiet rounded-xl px-4 py-3">
               <dt className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
-                classically
+                Classically
               </dt>
               <dd className="mt-1 text-[14px] text-frost">{algorithm.classical}</dd>
             </div>
-            <div className="panel rounded-lg border-photon/40! px-4 py-3">
+            <div className="panel relative overflow-hidden rounded-xl px-4 py-3">
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute inset-y-0 left-0 w-1",
+                  TONE[algorithmTone(algorithm.slug)].solid,
+                )}
+              />
               <dt className="font-mono text-[10.5px] tracking-[0.16em] text-frost uppercase">
-                this circuit
+                This circuit
               </dt>
-              <dd className="mt-1 text-[14px] font-medium text-photon">{algorithm.quantum}</dd>
+              <dd
+                className={cn(
+                  "mt-1 text-[14px] font-semibold",
+                  TONE[algorithmTone(algorithm.slug)].text,
+                )}
+              >
+                {algorithm.quantum}
+              </dd>
             </div>
           </dl>
         </header>
@@ -68,7 +84,7 @@ export default async function AlgorithmPage({ params }: PageProps<"/algorithms/[
 
         <nav className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-edge pt-7">
           <div>
-            <p className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">next</p>
+            <p className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">Next</p>
             <Link
               href={`/algorithms/${next.slug}`}
               className="mt-1 inline-flex items-center gap-2 text-[15px] text-paper transition-colors hover:text-photon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"

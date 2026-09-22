@@ -1,7 +1,11 @@
 import { Award, Lock } from "lucide-react";
 
-import { BADGES, type BadgeItem } from "@/lib/data";
+import { BADGES, MODULES, type BadgeItem } from "@/lib/data";
+import { TONE, moduleTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
+
+/* A badge belongs to the module whose ket it carries. */
+const SLUG_BY_KET = Object.fromEntries(MODULES.map((m) => [m.ket, m.slug]));
 
 /**
  * Badges, one per module, keyed to the same basis states the curriculum uses.
@@ -27,26 +31,28 @@ export function BadgeShelf({ badges = BADGES }: { badges?: BadgeItem[] }) {
             Earned by doing, not by watching
           </h2>
         </div>
-        <p className="font-mono text-[11px] text-frost tabular-nums">
-          <span className="text-paper">{earned}</span> of {badges.length} earned
+        <p className="pill text-[12.5px] text-amber-300 tabular-nums">
+          <Award className="size-3" aria-hidden />
+          {earned} of {badges.length} earned
         </p>
       </div>
 
       <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {badges.map((badge) => {
+          const tone = TONE[moduleTone(SLUG_BY_KET[badge.ket] ?? "")];
           return (
             <li
               key={badge.id}
               className={cn(
-                "flex gap-3.5 p-4 transition-colors",
+                "flex gap-3.5 rounded-2xl p-4 transition-colors",
                 badge.earned ? "panel" : "panel-quiet",
               )}
             >
               <span
                 className={cn(
-                  "grid size-11 shrink-0 place-items-center border",
+                  "grid size-11 shrink-0 place-items-center rounded-xl border",
                   badge.earned
-                    ? "border-transparent bg-photon text-void"
+                    ? cn("border-transparent text-void", tone.solid)
                     : "border-dashed border-edge text-dim",
                 )}
               >
@@ -64,17 +70,17 @@ export function BadgeShelf({ badges = BADGES }: { badges?: BadgeItem[] }) {
                     {badge.name}
                   </span>
                   {badge.earned ? (
-                    <Award className="size-3.5 shrink-0 text-photon" />
+                    <Award className="size-3.5 shrink-0 text-amber-300" />
                   ) : (
                     <Lock className="size-3 shrink-0 text-frost" />
                   )}
                 </p>
-                <p className="mt-1 text-[11.5px] leading-snug text-frost">{badge.detail}</p>
-                <p className="mt-1.5 font-mono text-[11px] tracking-[0.14em] uppercase">
+                <p className="mt-1 text-[12.5px] leading-snug text-frost">{badge.detail}</p>
+                <p className="mt-2">
                   {badge.earned ? (
-                    <span className="text-photon">Earned {badge.earnedOn}</span>
+                    <span className="pill text-ok">Earned {badge.earnedOn}</span>
                   ) : (
-                    <span className="text-frost">Not yet</span>
+                    <span className="pill text-dim">Not yet</span>
                   )}
                 </p>
               </div>

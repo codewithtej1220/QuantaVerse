@@ -8,6 +8,8 @@ import { CHALLENGES, CHALLENGE_BY_SLUG } from "@/lib/challenges";
 import { GATE_BY_ID, MODULES, TRACK_LABEL } from "@/lib/data";
 import { lessonsFor } from "@/lib/lessons";
 import { REPO_URL } from "@/lib/site";
+import { TONE, moduleTone } from "@/lib/tone";
+import { cn } from "@/lib/utils";
 import { LessonBodies } from "@/components/curriculum/lesson-body";
 import { ModuleByline } from "@/components/curriculum/module-byline";
 import { ModuleClassesPanel } from "@/components/curriculum/module-classes";
@@ -70,6 +72,7 @@ export default async function ModulePage({
   const next = MODULES[index + 1];
 
   const written = lessonsFor(slug);
+  const tone = TONE[moduleTone(slug)];
   const challenge = CHALLENGE_BY_SLUG[slug];
   const lab = challenge
     ? {
@@ -101,7 +104,14 @@ export default async function ModulePage({
           <div className="min-w-0">
             <header className="border-b border-edge pb-7">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="ket rounded-lg border border-photon bg-photon/10 px-2.5 py-1 text-[14px] text-photon">
+                <span
+                  className={cn(
+                    "ket rounded-lg px-2.5 py-1 text-[14px] font-medium ring-1",
+                    tone.soft,
+                    tone.text,
+                    tone.ring,
+                  )}
+                >
                   {entry.ket}
                 </span>
                 <span className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
@@ -142,7 +152,7 @@ export default async function ModulePage({
                   href={REPO_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 border border-edge px-3.5 py-2 text-[13px] text-frost transition-colors hover:border-photon hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg border border-edge px-3.5 py-2 text-[13px] text-frost transition-colors hover:border-photon hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
                 >
                   <GitFork className="size-3.5" />
                   Write a lesson with us
@@ -174,7 +184,14 @@ export default async function ModulePage({
                   const known = GATE_BY_ID[key];
                   return (
                     <li key={gate} className="flex items-center gap-3">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-md border border-photon bg-photon/10 font-mono text-[11px] font-semibold text-photon">
+                      <span
+                        className={cn(
+                          "grid size-7 shrink-0 place-items-center rounded-md font-mono text-[11px] font-semibold ring-1",
+                          tone.soft,
+                          tone.text,
+                          tone.ring,
+                        )}
+                      >
                         {gate === "CNOT" ? "CX" : gate}
                       </span>
                       <span className="text-[13px] text-frost">
@@ -213,7 +230,12 @@ export default async function ModulePage({
                         {previous.title}
                       </span>
                     </span>
-                    <span className="ket ml-auto shrink-0 text-[11px] text-photon">
+                    <span
+                      className={cn(
+                        "ket ml-auto shrink-0 text-[11px]",
+                        TONE[moduleTone(previous.slug)].text,
+                      )}
+                    >
                       {previous.ket}
                     </span>
                   </Link>
@@ -236,7 +258,12 @@ export default async function ModulePage({
                         {next.title}
                       </span>
                     </span>
-                    <span className="ket ml-auto shrink-0 text-[11px] text-photon">
+                    <span
+                      className={cn(
+                        "ket ml-auto shrink-0 text-[11px]",
+                        TONE[moduleTone(next.slug)].text,
+                      )}
+                    >
                       {next.ket}
                     </span>
                     <ArrowRight className="size-3.5 shrink-0 text-frost transition-transform group-hover:translate-x-0.5" />

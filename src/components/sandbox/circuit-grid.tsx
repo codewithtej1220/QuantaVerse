@@ -154,7 +154,7 @@ export function CircuitGrid({
           )}
         >
           {expanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
-          {expanded ? "close" : "bench"}
+          {expanded ? "Close" : "Bench"}
         </button>
       )}
 

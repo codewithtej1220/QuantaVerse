@@ -33,6 +33,7 @@ import {
   type PersonCard,
   type Role,
 } from "@/lib/network";
+import { TONE, personTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 /**
@@ -78,20 +79,41 @@ function reasonOf(error: unknown, fallback: string) {
 /* Pieces                                                              */
 /* ------------------------------------------------------------------ */
 
+const SMALL =
+  "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:cursor-not-allowed disabled:opacity-50";
+/* The one to press. */
+const PRIMARY =
+  "border-photon bg-photon font-semibold text-void hover:bg-photon-hi";
+/* Yes, to a person. */
+const GO =
+  "border-emerald-400 bg-emerald-400 font-semibold text-emerald-950 hover:bg-emerald-300";
+/* No, or undo. */
+const STOP =
+  "border-transparent bg-rose-400/10 text-rose-300 hover:bg-rose-400/20";
+const QUIET =
+  "border-edge bg-strata text-paper hover:border-edge-hi hover:bg-[#1a2640]";
+
+/* An interest is coloured by its own name, so "grover" is the same colour on
+   every card it appears on and two people who share one can be seen to. */
 function Chip({
   children,
   tone,
 }: {
   children: React.ReactNode;
-  tone?: "photon" | "warn";
+  tone?: "professor" | "mentor" | "example";
 }) {
+  const hue =
+    !tone && typeof children === "string"
+      ? TONE[personTone(children)].text
+      : null;
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[10.5px] tracking-[0.1em] uppercase",
-        tone === "photon" && "border-photon/50 text-photon",
-        tone === "warn" && "border-edge-hi text-dim",
-        !tone && "border-edge text-frost",
+        "pill",
+        tone === "professor" && "text-grape",
+        tone === "mentor" && "text-teal-300",
+        tone === "example" && "text-dim",
+        hue,
       )}
     >
       {children}
@@ -100,7 +122,8 @@ function Chip({
 }
 
 function Avatar({ person }: { person: PersonCard }) {
-  const ring = person.role === "student" ? "ring-edge-hi" : "ring-photon/45";
+  const tone = TONE[personTone(person.handle)];
+  const ring = person.role === "student" ? "ring-white/15" : tone.ring;
 
   /* A picture where there is one. The example mentors carry portraits of people
      who do not exist — generated faces, not photographs of anybody — because a
@@ -135,11 +158,10 @@ function Avatar({ person }: { person: PersonCard }) {
     <span
       aria-hidden
       className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-full font-mono text-[13px] ring-1 ring-offset-2 ring-offset-nebula",
-        ring,
-        person.role === "student"
-          ? "bg-strata text-frost"
-          : "bg-photon/10 text-photon",
+        "grid size-11 shrink-0 place-items-center rounded-full text-[13.5px] font-semibold ring-1",
+        tone.soft,
+        tone.text,
+        tone.ring,
       )}
     >
       {initials || "?"}
@@ -149,20 +171,22 @@ function Avatar({ person }: { person: PersonCard }) {
 
 function Identity({ person }: { person: PersonCard }) {
   return (
-    <div className="flex min-w-0 gap-3">
+    <div className="flex min-w-0 flex-1 gap-3">
       <Avatar person={person} />
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="truncate text-[15px] font-medium text-paper">
+          <span className="truncate text-[15.5px] font-semibold text-paper">
             {person.display_name}
           </span>
-          {person.role === "mentor" && <Chip tone="photon">mentor</Chip>}
-          {person.role === "professor" && <Chip tone="photon">professor</Chip>}
+          {person.role === "mentor" && <Chip tone="mentor">Mentor</Chip>}
+          {person.role === "professor" && (
+            <Chip tone="professor">Professor</Chip>
+          )}
           {/* Said plainly on the card. A seeded fixture that looks like a real
               academic is the one thing this directory must not do. */}
-          {person.is_demo && <Chip tone="warn">example profile</Chip>}
+          {person.is_demo && <Chip tone="example">Example profile</Chip>}
         </p>
-        <p className="mt-0.5 truncate font-mono text-[11.5px] text-dim">
+        <p className="mt-0.5 truncate text-[12.5px] text-dim">
           @{person.handle}
           {person.institution && (
             <span className="text-frost"> · {person.institution}</span>
@@ -207,9 +231,7 @@ function Detail({
 }) {
   return (
     <div>
-      <p className="font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
-        {label}
-      </p>
+      <p className="text-[12.5px] font-semibold text-frost">{label}</p>
       <p className="mt-1.5 text-[13.5px] leading-relaxed text-frost">
         {children}
       </p>
@@ -248,7 +270,7 @@ function ProfilePanel({ person }: { person: PersonCard }) {
       {/* Said again, in a sentence, because the chip on the card can be cropped
           out of a screenshot and this is the claim that must not travel. */}
       {person.is_demo && (
-        <p className="border-l-2 border-collapse pl-3 text-[12.5px] leading-relaxed text-dim">
+        <p className="border-l-2 border-edge-hi pl-3 text-[12.5px] leading-relaxed text-dim">
           This is an example profile shipped with the instance so the directory
           has something to show. The person is invented and the account cannot
           be signed into.
@@ -272,22 +294,17 @@ function StandingAction({
   onAccept: () => void;
   onWithdraw: () => void;
 }) {
-  const base =
-    "flex shrink-0 items-center gap-1.5 border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:cursor-not-allowed disabled:opacity-50";
+  const base = SMALL;
 
   if (person.standing === "self") {
-    return (
-      <span className="shrink-0 font-mono text-[11.5px] text-dim">
-        this is you
-      </span>
-    );
+    return <span className="pill shrink-0 text-dim">This is you</span>;
   }
 
   if (person.standing === "connected") {
     return (
-      <span className="flex shrink-0 items-center gap-1.5 font-mono text-[11.5px] tracking-[0.1em] text-photon uppercase">
-        <Check className="size-3.5" />
-        connected
+      <span className="pill shrink-0 text-ok">
+        <Check className="size-3" />
+        Connected
       </span>
     );
   }
@@ -298,17 +315,14 @@ function StandingAction({
         type="button"
         onClick={onAccept}
         disabled={busy}
-        className={cn(
-          base,
-          "border-photon bg-photon/10 text-photon hover:bg-photon/20",
-        )}
+        className={cn(base, GO)}
       >
         {busy ? (
           <Loader2 className="size-3.5 animate-spin" />
         ) : (
           <Check className="size-3.5" />
         )}
-        accept
+        Accept
       </button>
     );
   }
@@ -324,7 +338,7 @@ function StandingAction({
         disabled={busy}
         className={cn(
           base,
-          "border-edge text-frost hover:border-edge-hi hover:text-paper",
+          "border-amber-400/40 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20",
         )}
       >
         {busy ? (
@@ -332,7 +346,7 @@ function StandingAction({
         ) : (
           <Clock className="size-3.5" />
         )}
-        waiting
+        Waiting
       </button>
     );
   }
@@ -342,14 +356,14 @@ function StandingAction({
       type="button"
       onClick={onConnect}
       disabled={busy}
-      className={cn(base, "border-photon text-photon hover:bg-photon/10")}
+      className={cn(base, PRIMARY)}
     >
       {busy ? (
         <Loader2 className="size-3.5 animate-spin" />
       ) : (
         <UserPlus className="size-3.5" />
       )}
-      connect
+      Connect
     </button>
   );
 }
@@ -521,9 +535,9 @@ export function ResearchHub() {
 
   if (!ready) {
     return (
-      <p className="flex items-center gap-2 font-mono text-[13px] text-frost">
+      <p className="flex items-center gap-2 text-[14px] text-frost">
         <Loader2 className="size-4 animate-spin" />
-        checking your session
+        Checking your session…
       </p>
     );
   }
@@ -541,13 +555,13 @@ export function ResearchHub() {
         <p className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/login"
-            className="bg-photon px-5 py-2.5 font-mono text-[12px] tracking-[0.12em] text-void uppercase hover:bg-photon-hi"
+            className="rounded-lg bg-photon px-5 py-2.5 text-[13.5px] font-semibold text-void hover:bg-photon-hi"
           >
             Sign in
           </Link>
           <Link
             href="/register"
-            className="border border-edge px-5 py-2.5 font-mono text-[12px] tracking-[0.12em] text-frost uppercase hover:border-paper hover:text-paper"
+            className="rounded-lg border border-edge bg-strata px-5 py-2.5 text-[13.5px] font-medium text-paper hover:border-edge-hi"
           >
             Create an account
           </Link>
@@ -574,7 +588,7 @@ export function ResearchHub() {
       )}
 
       {/* Tabs. */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-edge">
+      <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-edge bg-nebula p-1">
         {(
           [
             ["directory", "Directory", total],
@@ -588,20 +602,25 @@ export function ResearchHub() {
             onClick={() => setTab(id)}
             aria-pressed={tab === id}
             className={cn(
-              "-mb-px flex items-center gap-2 border-b-2 px-3.5 py-2.5 font-mono text-[12px] tracking-[0.12em] uppercase transition-colors",
+              "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
               tab === id
-                ? "border-photon text-photon"
-                : "border-transparent text-frost hover:text-paper",
+                ? "bg-strata text-paper ring-1 ring-edge-hi"
+                : "text-frost hover:text-paper",
             )}
           >
             {label}
-            <span className="font-mono text-[11px] text-dim tabular-nums">
+            <span
+              className={cn(
+                "pill tabular-nums",
+                tab === id ? "text-cyan-300" : "text-dim",
+              )}
+            >
               {count}
             </span>
             {id === "requests" && counts.incoming > 0 && (
               <span
-                className="size-1.5 rounded-full bg-photon"
+                className="size-2 rounded-full bg-amber-400"
                 aria-label="new requests"
               />
             )}
@@ -610,22 +629,22 @@ export function ResearchHub() {
       </div>
 
       {notice && (
-        <p className="flex items-center gap-2 border border-photon/40 bg-photon/5 px-3.5 py-2.5 font-mono text-[12px] text-photon">
+        <p className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-[13.5px] text-emerald-200">
           <Check className="size-3.5 shrink-0" />
           {notice}
         </p>
       )}
       {error && (
-        <p className="flex items-center gap-2 border border-collapse/50 px-3.5 py-2.5 font-mono text-[12px] text-collapse">
+        <p className="flex items-center gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-[13.5px] text-rose-200">
           <AlertTriangle className="size-3.5 shrink-0" />
           {error}
         </p>
       )}
 
       {loading ? (
-        <p className="flex items-center gap-2 py-8 font-mono text-[13px] text-frost">
+        <p className="flex items-center gap-2 py-8 text-[14px] text-frost">
           <Loader2 className="size-4 animate-spin" />
-          reading the directory
+          Reading the directory…
         </p>
       ) : tab === "directory" ? (
         <>
@@ -639,8 +658,8 @@ export function ResearchHub() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="name, institution, or an interest — try “grover”"
-                className="w-full border border-edge bg-strata py-2.5 pr-3 pl-9 font-mono text-[13px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
+                placeholder="Search by name, institution or interest — try “grover”"
+                className="w-full rounded-xl border border-edge bg-nebula py-2.5 pr-3 pl-9 text-[14px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
               />
             </label>
             <div
@@ -655,11 +674,11 @@ export function ResearchHub() {
                   onClick={() => setFilter(entry.id)}
                   aria-pressed={filter === entry.id}
                   className={cn(
-                    "border px-2.5 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors",
+                    "rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
                     filter === entry.id
-                      ? "border-photon bg-photon/10 text-photon"
-                      : "border-edge text-frost hover:border-edge-hi hover:text-paper",
+                      ? "border-photon/50 bg-photon/15 text-photon"
+                      : "border-edge bg-nebula text-frost hover:border-edge-hi hover:text-paper",
                   )}
                 >
                   {entry.label}
@@ -682,7 +701,7 @@ export function ResearchHub() {
               {people.map((person) => (
                 <li
                   key={person.id}
-                  className="panel flex flex-col rounded-xl p-4"
+                  className="panel flex flex-col rounded-2xl p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <button
@@ -742,7 +761,7 @@ export function ResearchHub() {
 
                   {person.standing === "connected" &&
                     person.modules_completed !== null && (
-                      <p className="mt-3 border-t border-edge pt-2.5 font-mono text-[11.5px] text-dim tabular-nums">
+                      <p className="mt-3 border-t border-edge pt-2.5 text-[12.5px] text-dim tabular-nums">
                         {person.modules_completed} lessons finished
                         <span className="mx-2">·</span>
                         {person.badges_earned} badges
@@ -773,8 +792,8 @@ export function ResearchHub() {
         >
           <div className="panel w-full max-w-md rounded-2xl p-5">
             <p className="eyebrow">Connection request</p>
-            <h2 className="mt-2 text-[18px] font-medium text-paper">
-              to {composing.display_name}
+            <h2 className="mt-2 text-[18px] font-semibold text-paper">
+              To {composing.display_name}
             </h2>
             {composing.headline && (
               <p className="mt-2 text-[13px] leading-relaxed text-frost">
@@ -783,8 +802,8 @@ export function ResearchHub() {
             )}
 
             <label className="mt-4 block">
-              <span className="font-mono text-[11.5px] tracking-[0.12em] text-frost uppercase">
-                Say why (optional)
+              <span className="text-[13px] font-medium text-frost">
+                Say why <span className="text-dim">(optional)</span>
               </span>
               <textarea
                 ref={noteBox}
@@ -798,9 +817,9 @@ export function ResearchHub() {
                     void submitNote();
                 }}
                 placeholder="I'm on the entanglement module and stuck on why the Bloch vector vanishes…"
-                className="mt-2 w-full resize-none border border-edge bg-strata p-3 text-[13.5px] leading-relaxed text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
+                className="mt-2 w-full resize-none rounded-lg border border-edge bg-strata p-3 text-[13.5px] leading-relaxed text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
               />
-              <span className="mt-1 block text-right font-mono text-[11px] text-dim tabular-nums">
+              <span className="mt-1 block text-right text-[12px] text-dim tabular-nums">
                 {note.length}/500
               </span>
             </label>
@@ -809,16 +828,16 @@ export function ResearchHub() {
               <button
                 type="button"
                 onClick={() => setComposing(null)}
-                className="border border-edge px-4 py-2 font-mono text-[12px] tracking-[0.1em] text-frost uppercase hover:border-paper hover:text-paper"
+                className={cn(SMALL, QUIET)}
               >
-                cancel
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={submitNote}
-                className="bg-photon px-4 py-2 font-mono text-[12px] font-semibold tracking-[0.1em] text-void uppercase hover:bg-photon-hi"
+                className={cn(SMALL, PRIMARY)}
               >
-                send request
+                Send request
               </button>
             </div>
           </div>
@@ -840,7 +859,7 @@ function RequestRow({
   children: React.ReactNode;
 }) {
   return (
-    <li className="panel rounded-xl p-4">
+    <li className="panel rounded-2xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <Identity person={record.person} />
         <div className={cn("flex shrink-0 gap-2", busy && "opacity-50")}>
@@ -848,20 +867,18 @@ function RequestRow({
         </div>
       </div>
       {record.note && (
-        <p className="mt-3 border-l-2 border-edge-hi pl-3 text-[13.5px] leading-relaxed text-frost italic">
-          {record.note}
+        <p className="mt-3 rounded-xl bg-strata px-3.5 py-2.5 text-[13.5px] leading-relaxed text-paper">
+          &ldquo;{record.note}&rdquo;
         </p>
       )}
-      <p className="mt-3 font-mono text-[11px] text-dim">
-        {record.outgoing ? "you asked" : "they asked"} ·{" "}
+      <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-dim">
+        <Clock className="size-3.5" aria-hidden />
+        {record.outgoing ? "You asked" : "They asked"} ·{" "}
         {when(record.created_at)}
       </p>
     </li>
   );
 }
-
-const SMALL =
-  "flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:cursor-not-allowed disabled:opacity-50";
 
 function RequestLists({
   network,
@@ -882,7 +899,14 @@ function RequestLists({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <p className="eyebrow mb-3">Waiting on you · {incoming.length}</p>
+        <p className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-paper">
+          Waiting on you
+          <span
+            className={cn("pill", incoming.length ? "text-warn" : "text-dim")}
+          >
+            {incoming.length}
+          </span>
+        </p>
         {incoming.length === 0 ? (
           <p className="text-[14px] text-frost">
             Nobody has asked to connect yet.
@@ -904,13 +928,10 @@ function RequestLists({
                       `Connected with ${record.person.display_name}.`,
                     )
                   }
-                  className={cn(
-                    SMALL,
-                    "border-photon bg-photon/10 text-photon hover:bg-photon/20",
-                  )}
+                  className={cn(SMALL, GO)}
                 >
                   <Check className="size-3.5" />
-                  accept
+                  Accept
                 </button>
                 <button
                   type="button"
@@ -921,13 +942,10 @@ function RequestLists({
                       "Request declined.",
                     )
                   }
-                  className={cn(
-                    SMALL,
-                    "border-edge text-frost hover:border-paper hover:text-paper",
-                  )}
+                  className={cn(SMALL, STOP)}
                 >
                   <X className="size-3.5" />
-                  decline
+                  Decline
                 </button>
               </RequestRow>
             ))}
@@ -936,7 +954,10 @@ function RequestLists({
       </section>
 
       <section>
-        <p className="eyebrow mb-3">Waiting on them · {outgoing.length}</p>
+        <p className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-paper">
+          Waiting on them
+          <span className="pill text-info">{outgoing.length}</span>
+        </p>
         {outgoing.length === 0 ? (
           <p className="text-[14px] text-frost">
             You have not asked anyone yet. The directory is the place to start.
@@ -958,13 +979,10 @@ function RequestLists({
                       "Request withdrawn.",
                     )
                   }
-                  className={cn(
-                    SMALL,
-                    "border-edge text-frost hover:border-paper hover:text-paper",
-                  )}
+                  className={cn(SMALL, QUIET)}
                 >
                   <X className="size-3.5" />
-                  withdraw
+                  Withdraw
                 </button>
               </RequestRow>
             ))}
@@ -1003,7 +1021,7 @@ function ConnectionList({
   return (
     <ul className="grid gap-3 lg:grid-cols-2">
       {rows.map((record) => (
-        <li key={record.id} className="panel rounded-xl p-4">
+        <li key={record.id} className="panel rounded-2xl p-5">
           <div className="flex items-start justify-between gap-3">
             <Identity person={record.person} />
             <button
@@ -1016,12 +1034,9 @@ function ConnectionList({
                   "Connection removed.",
                 )
               }
-              className={cn(
-                SMALL,
-                "border-edge text-dim hover:border-collapse hover:text-collapse",
-              )}
+              className={cn(SMALL, STOP)}
             >
-              remove
+              Remove
             </button>
           </div>
           {record.person.headline && (
@@ -1030,12 +1045,12 @@ function ConnectionList({
             </p>
           )}
           <Interests tags={record.person.interests} />
-          <p className="mt-3 border-t border-edge pt-2.5 font-mono text-[11.5px] text-dim tabular-nums">
+          <p className="mt-3 border-t border-edge pt-2.5 text-[12.5px] text-dim tabular-nums">
             {record.person.modules_completed ?? 0} lessons finished
             <span className="mx-2">·</span>
             {record.person.badges_earned ?? 0} badges
             <span className="mx-2">·</span>
-            connected {when(record.responded_at ?? record.created_at)}
+            Connected {when(record.responded_at ?? record.created_at)}
           </p>
         </li>
       ))}
@@ -1105,20 +1120,17 @@ function MyCard({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           {card.open_to_mentoring && (
-            <span className="flex items-center gap-1.5 font-mono text-[11.5px] tracking-[0.1em] text-photon uppercase">
-              <GraduationCap className="size-3.5" />
-              open to mentoring
+            <span className="pill text-teal-300">
+              <GraduationCap className="size-3" />
+              Open to mentoring
             </span>
           )}
           <button
             type="button"
             onClick={() => onEdit(true)}
-            className={cn(
-              SMALL,
-              "border-edge text-frost hover:border-paper hover:text-paper",
-            )}
+            className={cn(SMALL, QUIET)}
           >
-            edit card
+            Edit card
           </button>
         </div>
       </div>
@@ -1135,28 +1147,26 @@ function MyCard({
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="font-mono text-[11.5px] tracking-[0.12em] text-frost uppercase">
-            Headline
-          </span>
+          <span className="text-[13px] font-medium text-frost">Headline</span>
           <input
             value={headline}
             maxLength={140}
             onChange={(event) => setHeadline(event.target.value)}
             placeholder="Second year, working through Grover"
-            className="mt-1.5 w-full border border-edge bg-strata px-3 py-2 text-[13.5px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-edge bg-strata px-3 py-2 text-[13.5px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
           />
         </label>
 
         <label className="block">
-          <span className="font-mono text-[11.5px] tracking-[0.12em] text-frost uppercase">
-            Interests · comma separated
+          <span className="text-[13px] font-medium text-frost">
+            Interests <span className="text-dim">· comma separated</span>
           </span>
           <input
             value={interests}
             maxLength={240}
             onChange={(event) => setInterests(event.target.value)}
             placeholder="grover, error correction, qiskit"
-            className="mt-1.5 w-full border border-edge bg-strata px-3 py-2 text-[13.5px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-edge bg-strata px-3 py-2 text-[13.5px] text-paper placeholder:text-dim focus:border-edge-hi focus:outline-none"
           />
         </label>
       </div>
@@ -1164,7 +1174,7 @@ function MyCard({
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
         {role === "professor" ? (
           <p className="flex items-center gap-2 text-[12.5px] text-frost">
-            <Chip tone="photon">professor</Chip>
+            <Chip tone="professor">Professor</Chip>
             set by your teaching account
           </p>
         ) : (
@@ -1180,10 +1190,10 @@ function MyCard({
                 onClick={() => setRole(option)}
                 aria-pressed={role === option}
                 className={cn(
-                  "border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors",
+                  "rounded-full border px-3.5 py-1.5 text-[13px] font-medium capitalize transition-colors",
                   role === option
-                    ? "border-photon bg-photon/10 text-photon"
-                    : "border-edge text-frost hover:border-edge-hi hover:text-paper",
+                    ? "border-photon/50 bg-photon/15 text-photon"
+                    : "border-edge bg-strata text-frost hover:border-edge-hi hover:text-paper",
                 )}
               >
                 {option}
@@ -1192,44 +1202,39 @@ function MyCard({
           </div>
         )}
 
-        <label className="flex cursor-pointer items-center gap-2 font-mono text-[12px] text-frost">
+        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-frost">
           <input
             type="checkbox"
             checked={mentoring}
             onChange={(event) => setMentoring(event.target.checked)}
             className="size-3.5 accent-[var(--color-photon)]"
           />
-          open to mentoring — listed first in the directory
+          Open to mentoring — listed first in the directory
         </label>
       </div>
 
-      {failed && (
-        <p className="mt-3 font-mono text-[12px] text-collapse">{failed}</p>
-      )}
+      {failed && <p className="mt-3 text-[13px] text-bad">{failed}</p>}
 
       <div className="mt-4 flex justify-end gap-2">
         <button
           type="button"
           onClick={() => onEdit(false)}
-          className={cn(
-            SMALL,
-            "border-edge text-frost hover:border-paper hover:text-paper",
-          )}
+          className={cn(SMALL, QUIET)}
         >
-          cancel
+          Cancel
         </button>
         <button
           type="button"
           onClick={save}
           disabled={saving}
-          className="flex items-center gap-2 bg-photon px-4 py-2 font-mono text-[12px] font-semibold tracking-[0.1em] text-void uppercase hover:bg-photon-hi disabled:opacity-50"
+          className={cn(SMALL, PRIMARY)}
         >
           {saving ? (
             <Loader2 className="size-3.5 animate-spin" />
           ) : (
             <Users className="size-3.5" />
           )}
-          save card
+          Save card
         </button>
       </div>
     </div>

@@ -30,20 +30,26 @@ function Figure({
   label,
   value,
   note,
+  tone = "text-paper",
 }: {
   label: string;
   value: string;
   note?: string;
+  /** The colour of the number — each figure keeps its own. */
+  tone?: string;
 }) {
   return (
     <div>
-      <dt className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
-        {label}
-      </dt>
-      <dd className="font-display mt-1 text-2xl font-extrabold text-paper tabular-nums">
+      <dt className="text-[12.5px] font-medium text-frost">{label}</dt>
+      <dd
+        className={cn(
+          "mt-1 text-[1.65rem] leading-none font-semibold tabular-nums",
+          tone,
+        )}
+      >
         {value}
       </dd>
-      {note && <dd className="mt-1 font-mono text-[11px] text-dim">{note}</dd>}
+      {note && <dd className="mt-1.5 text-[12px] text-dim">{note}</dd>}
     </div>
   );
 }
@@ -117,16 +123,19 @@ export function PathHeader() {
                 label="Mastered"
                 value={`${mastered}/${MODULES.length}`}
                 note="modules"
+                tone="text-violet-300"
               />
               <Figure
                 label="Lessons"
                 value={`${lessons}/${TOTAL_LESSONS}`}
                 note="marked complete"
+                tone="text-cyan-300"
               />
               <Figure
                 label="Labs passed"
                 value={`${labsPassed}/${TOTAL_LABS}`}
                 note="graded by simulation"
+                tone="text-emerald-300"
               />
             </>
           ) : (

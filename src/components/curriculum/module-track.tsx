@@ -13,6 +13,7 @@ import {
 } from "@/lib/data";
 import type { ModuleProgress } from "@/lib/auth";
 import { bySlug, moduleXp, useLiveProgress } from "@/lib/quest";
+import { TONE, moduleTone } from "@/lib/tone";
 import { ModuleByline } from "@/components/curriculum/module-byline";
 import { Reveal } from "@/components/site/reveal";
 import { cn } from "@/lib/utils";
@@ -96,6 +97,7 @@ function ModuleRow({
   const locked = state === "locked";
   const xp = live ? moduleXp(live) : null;
   const percent = live?.percent ?? entry.progress;
+  const tone = TONE[moduleTone(entry.slug)];
 
   return (
     <li className="group relative">
@@ -110,20 +112,18 @@ function ModuleRow({
              state a row is in before any of its words do — and they are the
              only thing on the row that differs by state, so they cannot
              disagree with the number on the right. */
-          done
-            ? "border-photon/70 bg-photon/[0.045] hover:bg-photon/[0.09]"
-            : current
-              ? "border-paper bg-paper/[0.05] hover:bg-paper/[0.08]"
-              : locked
-                ? "border-edge hover:bg-nebula/60"
-                : "border-edge-hi hover:bg-nebula",
+          done || current
+            ? cn(tone.border, "hover:bg-strata/70")
+            : locked
+              ? "border-transparent hover:bg-strata/40"
+              : "border-transparent hover:bg-strata/70",
         )}
       >
         {/* The spine. Every row's ket sits on the same axis. */}
         <span
           className={cn(
             "ket hidden self-center text-right text-[15px] tabular-nums sm:block",
-            done ? "text-photon" : current ? "text-paper" : "text-dim",
+            locked ? "text-dim" : tone.text,
           )}
         >
           {entry.ket}
@@ -134,15 +134,15 @@ function ModuleRow({
           <span
             className={cn(
               "w-px flex-1",
-              isFirst ? "bg-transparent" : done ? "bg-photon" : "bg-edge",
+              isFirst ? "bg-transparent" : done ? tone.solid : "bg-edge",
             )}
           />
           <span
             className={cn(
-              "my-1 grid size-9 shrink-0 place-items-center border font-mono text-[12px] font-semibold",
-              done && "border-photon bg-photon text-void",
-              current && "border-paper text-paper",
-              !done && !current && "border-edge-hi text-dim",
+              "my-1 grid size-9 shrink-0 place-items-center rounded-lg font-mono text-[12px] font-semibold",
+              done && cn(tone.solid, "text-void"),
+              current && cn("ring-1", tone.ring, tone.soft, tone.text),
+              !done && !current && "bg-strata text-dim ring-1 ring-edge",
             )}
           >
             {locked ? (
@@ -154,25 +154,25 @@ function ModuleRow({
           <span
             className={cn(
               "w-px flex-1",
-              isLast ? "bg-transparent" : done ? "bg-photon" : "bg-edge",
+              isLast ? "bg-transparent" : done ? tone.solid : "bg-edge",
             )}
           />
         </span>
 
         <span className="min-w-0 py-0.5">
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="ket text-[13px] text-photon sm:hidden">
+            <span className={cn("ket text-[13px] sm:hidden", tone.text)}>
               {entry.ket}
             </span>
             <h3
               className={cn(
-                "font-display text-[1.35rem] leading-tight font-extrabold tracking-[-0.025em] sm:text-[1.55rem]",
+                "text-[1.3rem] leading-tight font-semibold tracking-[-0.02em] sm:text-[1.45rem]",
                 locked ? "text-frost" : "text-paper",
               )}
             >
               {entry.title}
             </h3>
-            <span className="font-mono text-[11px] tracking-[0.16em] text-dim uppercase">
+            <span className="text-[12.5px] font-medium text-dim">
               {TRACK_LABEL[entry.track]}
             </span>
             {/* The state, said rather than implied. `percent` alone cannot
@@ -180,14 +180,14 @@ function ModuleRow({
                 open yet, and those are very different things to a reader. */}
             <span
               className={cn(
-                "rounded-full border px-2.5 py-0.5 font-mono text-[10px] tracking-[0.14em] uppercase",
+                "pill",
                 done
-                  ? "border-photon/50 bg-photon/10 text-photon"
+                  ? "text-ok"
                   : current
-                    ? "border-paper/40 bg-paper/10 text-paper"
+                    ? "text-info"
                     : locked
-                      ? "border-edge text-dim"
-                      : "border-edge-hi text-frost",
+                      ? "text-dim"
+                      : "text-frost",
               )}
             >
               {done
@@ -215,10 +215,10 @@ function ModuleRow({
                     key={gate}
                     title={`${gateTitle(gate)}${isNew ? " — introduced here" : " — carried forward"}`}
                     className={cn(
-                      "grid h-6 min-w-6 place-items-center px-1.5 font-mono text-[11px] font-medium",
+                      "grid h-6 min-w-6 place-items-center rounded-md px-1.5 font-mono text-[11px] font-semibold",
                       isNew
-                        ? "border border-photon text-photon"
-                        : "border border-edge text-dim",
+                        ? cn("ring-1", tone.ring, tone.soft, tone.text)
+                        : "bg-strata text-dim ring-1 ring-edge",
                     )}
                   >
                     {gate === "CNOT" ? "CX" : gate}
@@ -226,7 +226,7 @@ function ModuleRow({
                 );
               })}
             </span>
-            <span className="font-mono text-[11.5px] text-dim tabular-nums">
+            <span className="text-[12.5px] text-dim tabular-nums">
               {live
                 ? `${live.lessons_completed}/${live.lessons}`
                 : entry.lessons}{" "}
@@ -238,8 +238,8 @@ function ModuleRow({
             {xp && (
               <span
                 className={cn(
-                  "flex items-center gap-1.5 font-mono text-[11.5px] tabular-nums",
-                  xp.earned > 0 ? "text-photon" : "text-dim",
+                  "pill tabular-nums",
+                  xp.earned > 0 ? "text-amber-300" : "text-dim",
                 )}
               >
                 <Zap className="size-3" aria-hidden />
@@ -254,26 +254,26 @@ function ModuleRow({
             {live?.challenge && (
               <span
                 className={cn(
-                  "flex items-center gap-1.5 font-mono text-[11.5px] tabular-nums",
+                  "pill tabular-nums",
                   live.challenge.passed
-                    ? "text-photon"
+                    ? "text-ok"
                     : live.challenge.attempts > 0
-                      ? "text-frost"
+                      ? "text-warn"
                       : "text-dim",
                 )}
               >
                 <FlaskConical className="size-3" aria-hidden />
                 {live.challenge.passed
-                  ? `lab passed · ${Math.round(live.challenge.best_score * 100)}%`
+                  ? `Lab passed · ${Math.round(live.challenge.best_score * 100)}%`
                   : live.challenge.attempts > 0
-                    ? `lab · ${live.challenge.attempts} ${
+                    ? `Lab · ${live.challenge.attempts} ${
                         live.challenge.attempts === 1 ? "try" : "tries"
                       } · best ${Math.round(live.challenge.best_score * 100)}%`
-                    : "lab not attempted"}
+                    : "Lab not attempted"}
               </span>
             )}
             {live?.badge_earned && (
-              <span className="flex items-center gap-1.5 font-mono text-[11.5px] text-photon">
+              <span className={cn("pill", tone.text)}>
                 <Award className="size-3" aria-hidden />
                 {live.badge}
               </span>
@@ -286,23 +286,21 @@ function ModuleRow({
           <span className="flex items-baseline gap-1.5 sm:flex-col sm:items-end sm:gap-0">
             <span
               className={cn(
-                "font-display text-[2rem] leading-none font-extrabold tabular-nums",
-                done ? "text-photon" : percent > 0 ? "text-paper" : "text-dim",
+                "text-[2rem] leading-none font-bold tracking-[-0.03em] tabular-nums",
+                percent > 0 ? tone.text : "text-dim",
               )}
             >
               {percent}
             </span>
-            <span className="font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
-              per cent
-            </span>
+            <span className="text-[12px] font-medium text-dim">per cent</span>
           </span>
 
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11px] tracking-[0.12em] uppercase transition-colors",
+              "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition-colors",
               done || current
-                ? "border-photon text-photon group-hover:bg-photon group-hover:text-void"
-                : "border-edge text-frost group-hover:border-photon group-hover:text-photon",
+                ? "border-photon bg-photon text-void group-hover:bg-photon-hi"
+                : "border-edge bg-strata text-paper group-hover:border-edge-hi",
             )}
           >
             {done ? "Revisit" : percent > 0 ? "Continue" : "Start"}
@@ -339,7 +337,7 @@ export function ModuleTrack() {
     <section>
       <div
         data-tour="curriculum-modules"
-        className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-edge pb-4"
+        className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-edge bg-nebula p-1"
         role="group"
         aria-label="Filter modules by track"
       >
@@ -352,10 +350,10 @@ export function ModuleTrack() {
               onClick={() => setFilter(option.id)}
               aria-pressed={active}
               className={cn(
-                "flex items-baseline gap-2 border-b-2 pb-1 font-mono text-[12px] tracking-[0.14em] uppercase transition-colors",
+                "flex items-baseline gap-2 rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-colors",
                 active
-                  ? "border-photon text-photon"
-                  : "border-transparent text-dim hover:text-paper",
+                  ? "bg-strata text-paper ring-1 ring-edge-hi"
+                  : "text-frost hover:text-paper",
               )}
             >
               {option.label}
@@ -369,7 +367,11 @@ export function ModuleTrack() {
 
       {/* The eight modules arrive in order as the list is reached, which is
           the order they are meant to be read in. */}
-      <Reveal as="ul" className="divide-y divide-edge" step={85}>
+      <Reveal
+        as="ul"
+        className="panel mt-4 divide-y divide-edge overflow-hidden rounded-2xl"
+        step={85}
+      >
         {shown.map((row, i) => (
           <ModuleRow
             key={row.slug}

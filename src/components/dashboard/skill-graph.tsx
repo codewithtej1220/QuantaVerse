@@ -30,9 +30,8 @@ export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
             Eight topics, ranked
           </h2>
         </div>
-        <p className="font-mono text-[12px] text-frost tabular-nums">
-          <span className="text-photon">{ahead}</span> of {skills.length} at or above the cohort
-          median
+        <p className="pill text-[12.5px] text-ok tabular-nums">
+          {ahead} of {skills.length} at or above the cohort median
         </p>
       </div>
 
@@ -45,7 +44,7 @@ export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
               key={skill.short}
               className="grid grid-cols-[3rem_minmax(0,1fr)_3.5rem] items-center gap-x-4 border-b border-edge py-3.5 sm:grid-cols-[3rem_11rem_minmax(0,1fr)_3.5rem_4rem] sm:gap-x-6"
             >
-              <span className="font-mono text-[12px] text-dim">{skill.short}</span>
+              <span className="font-mono text-[12px] font-semibold text-dim">{skill.short}</span>
               <span className="col-start-2 truncate text-[14px] text-paper sm:col-start-2">
                 {skill.label}
               </span>
@@ -53,9 +52,12 @@ export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
               {/* The bar and the median share one track, so the comparison is a
                   distance rather than an act of memory. */}
               <span className="col-span-3 col-start-1 mt-2 sm:col-span-1 sm:col-start-3 sm:mt-0">
-                <span className="relative block h-2 bg-strata">
+                <span className="relative block h-2 rounded-full bg-strata">
                   <span
-                    className={cn("absolute inset-y-0 left-0", leading ? "bg-photon" : "bg-frost")}
+                    className={cn(
+                      "absolute inset-y-0 left-0 rounded-full",
+                      leading ? "bg-emerald-400" : "bg-amber-400",
+                    )}
                     style={{ width: `${skill.value}%` }}
                   />
                   <span
@@ -66,13 +68,13 @@ export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
                 </span>
               </span>
 
-              <span className="col-start-3 text-right font-mono text-[15px] text-paper tabular-nums sm:col-start-4">
+              <span className="col-start-3 text-right text-[15px] font-semibold text-paper tabular-nums sm:col-start-4">
                 {skill.value}
               </span>
               <span
                 className={cn(
-                  "col-start-3 hidden text-right font-mono text-[12px] tabular-nums sm:col-start-5 sm:block",
-                  leading ? "text-photon" : "text-frost",
+                  "col-start-3 hidden text-right text-[13px] font-semibold tabular-nums sm:col-start-5 sm:block",
+                  leading ? "text-ok" : "text-warn",
                 )}
               >
                 {leading ? "+" : ""}
@@ -83,18 +85,18 @@ export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
         })}
       </ul>
 
-      <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11.5px] text-dim">
+      <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-dim">
         <span className="flex items-center gap-2">
-          <span className="h-2 w-6 bg-photon" />
-          you, above median
+          <span className="h-2 w-6 rounded-full bg-emerald-400" />
+          You, above the median
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-2 w-6 bg-frost" />
-          you, below
+          <span className="h-2 w-6 rounded-full bg-amber-400" />
+          You, below it
         </span>
         <span className="flex items-center gap-2">
           <span className="h-3 w-px bg-paper" />
-          cohort median
+          Cohort median
         </span>
       </p>
     </section>

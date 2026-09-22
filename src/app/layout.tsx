@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Archivo, Geist, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 
 import { TutorSidebar } from "@/components/ai/tutor-sidebar";
 import { AuthProvider } from "@/components/auth/auth-provider";
@@ -23,7 +23,22 @@ import "./globals.css";
  *               which is the vernacular of the subject being taught.
  *   Plex Mono — gates, kets, telemetry, code, and the mathematics. Any
  *               value a machine produced is set in the machine's face.
+ *
+ * Those three set the landing page and the site's frame. The working pages —
+ * the curriculum, the lessons, the hub, the dashboards, the teaching page —
+ * are set in a fourth:
+ *
+ *   Geist     — headings, labels and reading text on the working pages. A
+ *               crisp neo-grotesque that stays sharp at 12px on a dark
+ *               ground, which is where those pages spend most of their text.
+ *               See the `surface` tokens in globals.css.
  */
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
@@ -73,7 +88,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`dark ${archivo.variable} ${plexSans.variable} ${plexMono.variable} h-full`}
+      className={`dark ${archivo.variable} ${plexSans.variable} ${plexMono.variable} ${geist.variable} h-full`}
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >

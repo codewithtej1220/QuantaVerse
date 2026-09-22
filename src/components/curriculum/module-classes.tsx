@@ -5,11 +5,12 @@ import Link from "next/link";
 import { ArrowRight, Check, GraduationCap, Loader2, Send, X } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { SMALL, TINT } from "@/components/professor/styles";
+import { PersonAvatar } from "@/components/ui/person-avatar";
 import { ApiError } from "@/lib/api";
 import {
   askToJoin,
   fetchModuleClasses,
-  initialsOf,
   leaveClass,
   sinceWhen,
   type ModuleClasses,
@@ -28,9 +29,6 @@ import { cn } from "@/lib/utils";
  * Nothing is shown to a visitor who is signed out, or on a module nobody
  * teaches here yet — an empty "professors" box on every page would be noise.
  */
-
-const SMALL =
-  "inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11.5px] tracking-[0.1em] uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:cursor-not-allowed disabled:opacity-50";
 
 const reason = (error: unknown, fallback: string) =>
   error instanceof ApiError ? error.message : fallback;
@@ -113,7 +111,7 @@ function TeachingNote({ title }: { title: string }) {
       </p>
       <Link
         href="/professor"
-        className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-photon uppercase hover:text-paper"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-photon hover:text-paper"
       >
         teaching page
         <ArrowRight className="size-3.5" aria-hidden />
@@ -157,22 +155,21 @@ function ProfessorRow({
     <li
       className={cn(
         "rounded-xl border px-4 py-3",
-        status === "accepted" ? "border-photon/60 bg-photon/[0.06]" : "border-edge",
+        status === "accepted" ? "border-emerald-400/40 bg-emerald-400/[0.06]" : "border-edge",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            aria-hidden
-            className="grid size-10 shrink-0 place-items-center rounded-full bg-photon/10 font-mono text-[12.5px] text-photon ring-1 ring-photon/45"
-          >
-            {initialsOf(professor.display_name)}
-          </span>
+          <PersonAvatar
+            name={professor.display_name}
+            toneKey={professor.handle}
+            src={professor.avatar_url}
+          />
           <span className="min-w-0">
             <span className="block truncate text-[15px] font-medium text-paper">
               {professor.display_name}
             </span>
-            <span className="block truncate font-mono text-[11.5px] text-dim">
+            <span className="block truncate text-[12.5px] text-dim">
               {[professor.position, professor.institution].filter(Boolean).join(" · ") ||
                 `@${professor.handle}`}
               {" · "}
@@ -186,33 +183,37 @@ function ProfessorRow({
             <button
               type="button"
               onClick={() => setAsking(true)}
-              className={cn(SMALL, "border-photon bg-photon/10 text-photon hover:bg-photon/20")}
+              className={cn(
+                SMALL,
+                "border-photon bg-photon font-semibold text-void hover:bg-photon-hi",
+              )}
             >
               <Send className="size-3.5" aria-hidden />
-              ask to join
+              Ask to join
             </button>
           )}
           {status === "pending" && membership && (
             <>
-              <span className="font-mono text-[11px] text-frost">
-                asked {sinceWhen(membership.created_at)} · waiting
+              <span className="pill text-warn">Waiting</span>
+              <span className="text-[12.5px] text-dim">
+                asked {sinceWhen(membership.created_at)}
               </span>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => run(() => leaveClass(membership.id))}
-                className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+                className={cn(SMALL, TINT.quiet)}
               >
                 <X className="size-3.5" aria-hidden />
-                withdraw
+                Withdraw
               </button>
             </>
           )}
           {status === "accepted" && membership && (
             <>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.08em] text-photon uppercase">
-                <Check className="size-3.5" aria-hidden />
-                in this class
+              <span className="pill text-ok">
+                <Check className="size-3" aria-hidden />
+                In this class
               </span>
               <button
                 type="button"
@@ -226,21 +227,21 @@ function ProfessorRow({
                     return;
                   void run(() => leaveClass(membership.id));
                 }}
-                className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+                className={cn(SMALL, TINT.quiet)}
               >
-                leave
+                Leave
               </button>
             </>
           )}
           {status === "declined" && !asking && (
             <>
-              <span className="font-mono text-[11px] text-frost">not accepted</span>
+              <span className="pill text-bad">Not accepted</span>
               <button
                 type="button"
                 onClick={() => setAsking(true)}
-                className={cn(SMALL, "border-edge-hi text-paper hover:border-photon")}
+                className={cn(SMALL, TINT.quiet)}
               >
-                ask again
+                Ask again
               </button>
             </>
           )}
@@ -265,20 +266,23 @@ function ProfessorRow({
             rows={2}
             onChange={(event) => setNote(event.target.value)}
             placeholder="Which section you are in, or why you want to join"
-            className="w-full resize-y border border-edge bg-strata px-3 py-2 text-[14px] text-paper placeholder:text-dim outline-none focus:border-photon"
+            className="w-full resize-y rounded-lg border border-edge bg-strata px-3 py-2 text-[14px] text-paper placeholder:text-dim outline-none focus:border-photon"
           />
           <span className="flex gap-2">
             <button
               type="submit"
               disabled={busy}
-              className={cn(SMALL, "border-photon bg-photon text-void hover:bg-photon-hi")}
+              className={cn(
+                SMALL,
+                "border-photon bg-photon font-semibold text-void hover:bg-photon-hi",
+              )}
             >
               {busy ? (
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />
               ) : (
                 <Send className="size-3.5" aria-hidden />
               )}
-              send request
+              Send request
             </button>
             <button
               type="button"
@@ -286,16 +290,16 @@ function ProfessorRow({
                 setAsking(false);
                 setProblem(null);
               }}
-              className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
+              className={cn(SMALL, TINT.quiet)}
             >
-              cancel
+              Cancel
             </button>
           </span>
         </form>
       )}
 
       {problem && (
-        <p role="alert" className="mt-2 text-[12.5px] text-collapse">
+        <p role="alert" className="mt-2 text-[12.5px] text-bad">
           {problem}
         </p>
       )}

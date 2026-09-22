@@ -209,7 +209,7 @@ export function GatePalette({
                         isArmed ? "text-void" : "text-frost",
                       )}
                     >
-                      {gate.arity === 2 ? "2q" : "1q"}
+                      {gate.arity === 2 ? "2Q" : "1Q"}
                     </span>
                   </button>
 

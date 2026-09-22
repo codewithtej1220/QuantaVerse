@@ -308,7 +308,7 @@ export function QuantumLab() {
               className="inline-flex items-center gap-1.5 tracking-[0.14em] uppercase hover:text-paper"
             >
               <RotateCcw className="size-3.5" />
-              clear
+              Clear
             </button>
           </span>
         </div>

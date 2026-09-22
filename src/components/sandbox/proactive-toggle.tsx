@@ -51,7 +51,7 @@ export function ProactiveToggle({
       )}
 
       <span className="font-mono text-[11px] tracking-[0.12em] whitespace-nowrap uppercase">
-        watching
+        Watching
       </span>
 
       {/* A real track, so the state is readable without parsing the label. */}

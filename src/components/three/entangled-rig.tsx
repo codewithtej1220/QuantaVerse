@@ -163,7 +163,7 @@ export function EntangledRig({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between px-4 pb-3">
         <span className="ket text-[13px] text-photon">q0</span>
         <span className="text-center font-mono text-[11px] tracking-[0.14em] text-dim uppercase">
-          concurrence{" "}
+          Concurrence{" "}
           <span className={tension > 0.02 ? "text-photon" : "text-dim"}>{tension.toFixed(2)}</span>
           <span className="mt-0.5 block text-[10px] tracking-[0.1em] normal-case">
             {tension > 0.97

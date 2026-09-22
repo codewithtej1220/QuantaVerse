@@ -20,6 +20,8 @@ type Variant = "primary" | "outline" | "quiet";
 
 const base =
   "group relative inline-flex shrink-0 items-center justify-center gap-2.5 " +
+  /* Square on the landing page, softened on the working pages. */
+  "rounded-[var(--surface-radius-button)] " +
   "font-mono uppercase tracking-[0.16em] " +
   "transition-colors duration-150 " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon " +

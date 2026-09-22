@@ -87,7 +87,7 @@ export function CodePane({
         >
           {edited
             ? "edited · diagram follows the code"
-            : "generated from the diagram"}
+            : "Generated from the diagram"}
         </span>
 
         <div className="ml-auto flex items-center gap-1">
@@ -112,7 +112,7 @@ export function CodePane({
             ) : (
               <Terminal className="size-3.5" />
             )}
-            {building ? "running" : "build from code"}
+            {building ? "Running" : "Build from code"}
           </button>
 
           {edited && (
@@ -136,7 +136,7 @@ export function CodePane({
             ) : (
               <Copy className="size-3.5" />
             )}
-            {copied ? "copied" : "copy"}
+            {copied ? "Copied" : "Copy"}
           </button>
         </div>
       </div>

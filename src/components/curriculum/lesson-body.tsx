@@ -9,6 +9,8 @@ import { useLessonToggle } from "@/components/curriculum/use-lesson-toggle";
 import type { Lesson, TestQuestion } from "@/lib/lessons";
 import type { GradeMode } from "@/lib/challenges";
 import { quizFor } from "@/lib/quizzes";
+import { TONE, moduleTone } from "@/lib/tone";
+import { cn } from "@/lib/utils";
 
 /**
  * The lessons, in reading order: watch it, read it, say you are done.
@@ -114,6 +116,7 @@ export function LessonBodies({
 }) {
   const curriculum = useLessonToggle(slug);
   const { isDone, markDone, pending, signedIn, error } = progress ?? curriculum;
+  const tone = TONE[moduleTone(slug)];
 
   /* A professor's module may be a lab and nothing else. */
   if (!lessons.length && !lab) return null;
@@ -213,8 +216,14 @@ export function LessonBodies({
               )}
 
               {lesson.practice && (
-                <div className="mt-7 rounded-xl border border-photon/30 bg-photon/[0.06] px-5 py-4">
-                  <p className="font-mono text-[10px] tracking-[0.18em] text-photon uppercase">
+                <div
+                  className={cn(
+                    "mt-7 rounded-xl border px-5 py-4",
+                    tone.border,
+                    tone.soft,
+                  )}
+                >
+                  <p className={cn("text-[12.5px] font-semibold", tone.text)}>
                     Try it in the sandbox
                   </p>
                   <p className="mt-2 text-[15px] leading-relaxed text-paper">
@@ -245,7 +254,7 @@ export function LessonBodies({
                    version: a button that says the reader is done. */
                 if (!signedIn) return null;
                 return complete ? (
-                  <p className="mt-7 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-photon uppercase">
+                  <p className="pill mt-7 text-[12.5px] text-ok">
                     <Check className="size-3.5" aria-hidden />
                     Lesson complete
                   </p>
@@ -254,7 +263,7 @@ export function LessonBodies({
                     type="button"
                     disabled={busy}
                     onClick={() => void markDone(index)}
-                    className="mt-7 inline-flex h-10 items-center gap-2 border border-photon px-4 font-mono text-[11.5px] tracking-[0.12em] text-photon uppercase transition-colors hover:bg-photon/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:opacity-50"
+                    className="mt-7 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-400 px-4 text-[13.5px] font-semibold text-emerald-950 transition-colors hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon disabled:opacity-50"
                   >
                     {busy ? (
                       <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -270,7 +279,7 @@ export function LessonBodies({
         })}
       </div>
 
-      {error && <p className="mt-4 text-[13px] text-collapse">{error}</p>}
+      {error && <p className="mt-4 text-[13px] text-bad">{error}</p>}
 
       {lab && (
         /* The assessment, and it says so. Reading a module is self-reported;
@@ -278,9 +287,13 @@ export function LessonBodies({
            the lessons rather than listed as another one of them. */
         <div
           id="module-lab"
-          className="panel mt-12 scroll-mt-28 rounded-2xl p-6"
+          className="panel relative mt-12 scroll-mt-28 overflow-hidden rounded-2xl p-6"
         >
-          <p className="eyebrow flex items-center gap-2 text-photon">
+          <span
+            aria-hidden
+            className={cn("absolute inset-y-0 left-0 w-1.5", tone.solid)}
+          />
+          <p className={cn("eyebrow flex items-center gap-2", tone.text)}>
             <FlaskConical className="size-3.5" aria-hidden />
             {lab.level && lab.of
               ? `Lab ${lab.level} of ${lab.of} · the assessment`
@@ -303,7 +316,7 @@ export function LessonBodies({
           </p>
           <Link
             href={lab.href}
-            className="mt-5 inline-flex h-11 items-center gap-2 bg-photon px-5 text-[13px] font-medium text-void transition-colors hover:bg-photon-hi focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon"
+            className="mt-5 inline-flex h-11 items-center gap-2 rounded-lg bg-photon px-5 text-[13.5px] font-semibold text-void transition-colors hover:bg-photon-hi focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-photon"
           >
             Open the lab
           </Link>

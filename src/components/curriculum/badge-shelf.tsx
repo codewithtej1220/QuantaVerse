@@ -5,6 +5,7 @@ import { Award, Lock } from "lucide-react";
 
 import { MODULES } from "@/lib/data";
 import type { BadgeState } from "@/lib/auth";
+import { TONE, moduleTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 /**
@@ -92,9 +93,13 @@ export function BadgeShelf({
     <div className="panel rounded-2xl p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="eyebrow">Badges</p>
-        <p className="font-mono text-[12px] text-frost tabular-nums">
-          <span className="text-paper">{earned}</span>
-          <span className="text-dim"> / {badges.length} earned</span>
+        <p className="pill text-amber-300 tabular-nums">
+          <Award className="size-3" aria-hidden />
+          {earned}
+          <span className="font-medium text-amber-200/70">
+            {" "}
+            / {badges.length} earned
+          </span>
         </p>
       </div>
 
@@ -103,36 +108,39 @@ export function BadgeShelf({
       </p>
 
       <ul className="mt-4 flex flex-wrap gap-2">
-        {badges.map((badge) => (
-          <li key={badge.id}>
-            <button
-              type="button"
-              aria-describedby={
-                hover?.badge.id === badge.id ? "badge-tip" : undefined
-              }
-              onMouseEnter={(e) => show(badge, e.currentTarget)}
-              onMouseLeave={() => setHover(null)}
-              onFocus={(e) => show(badge, e.currentTarget)}
-              onBlur={() => setHover(null)}
-              className={cn(
-                "flex cursor-help items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
-                badge.earned
-                  ? "border-filament/55 bg-filament/10 text-filament hover:border-filament"
-                  : "border-dashed border-edge-hi bg-strata/40 text-frost hover:border-paper/40 hover:text-paper",
-              )}
-            >
-              {badge.earned ? (
-                <Award className="size-4 shrink-0" aria-hidden />
-              ) : (
-                <Lock className="size-3.5 shrink-0 text-dim" aria-hidden />
-              )}
-              <span className="font-mono text-[12px] whitespace-nowrap">
-                {badge.name}
-              </span>
-            </button>
-          </li>
-        ))}
+        {badges.map((badge) => {
+          const tone = TONE[moduleTone(badge.module_slug)];
+          return (
+            <li key={badge.id}>
+              <button
+                type="button"
+                aria-describedby={
+                  hover?.badge.id === badge.id ? "badge-tip" : undefined
+                }
+                onMouseEnter={(e) => show(badge, e.currentTarget)}
+                onMouseLeave={() => setHover(null)}
+                onFocus={(e) => show(badge, e.currentTarget)}
+                onBlur={() => setHover(null)}
+                className={cn(
+                  "flex cursor-help items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon",
+                  badge.earned
+                    ? cn(tone.border, tone.soft, tone.text)
+                    : "border-dashed border-edge-hi bg-strata/40 text-frost hover:border-paper/40 hover:text-paper",
+                )}
+              >
+                {badge.earned ? (
+                  <Award className="size-4 shrink-0" aria-hidden />
+                ) : (
+                  <Lock className="size-3.5 shrink-0 text-dim" aria-hidden />
+                )}
+                <span className="text-[13px] font-medium whitespace-nowrap">
+                  {badge.name}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
       {hover && (
@@ -150,7 +158,7 @@ export function BadgeShelf({
           <p
             className={cn(
               "font-mono text-[11px] tracking-[0.14em] uppercase",
-              hover.badge.earned ? "text-filament" : "text-dim",
+              hover.badge.earned ? "text-amber-300" : "text-dim",
             )}
           >
             {hover.badge.earned ? "Earned" : "Locked"}

@@ -51,7 +51,7 @@ export function MasteryRing({
         </svg>
         <div className="absolute inset-0 grid place-items-center">
           <span className="font-mono text-[11px] tracking-[0.18em] text-frost uppercase">
-            level
+            Level
           </span>
           <span className="font-mono text-[30px] leading-none text-paper tabular-nums">
             {level}

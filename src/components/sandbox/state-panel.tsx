@@ -33,8 +33,8 @@ function axisValue(value: number) {
 }
 
 function purityNote(length: number) {
-  if (length > 0.999) return { text: "pure state", tone: "text-photon" };
-  if (length < 0.02) return { text: "maximally mixed · fully entangled", tone: "text-collapse" };
+  if (length > 0.999) return { text: "Pure state", tone: "text-photon" };
+  if (length < 0.02) return { text: "Maximally mixed · fully entangled", tone: "text-collapse" };
   return { text: `|r| = ${length.toFixed(2)} · partially entangled`, tone: "text-paper" };
 }
 

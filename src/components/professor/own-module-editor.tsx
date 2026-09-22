@@ -327,7 +327,7 @@ export function OwnModuleEditor({
           className={cn(SMALL, "mt-3 border-edge-hi text-paper hover:border-photon")}
         >
           <Plus className="size-3.5" aria-hidden />
-          add a lesson
+          Add a lesson
         </button>
       </section>
 
@@ -371,7 +371,7 @@ export function OwnModuleEditor({
           the button that saves it should not be at the end of it. */}
       <div className="sticky bottom-0 z-10 -mx-5 mt-8 border-t border-edge bg-nebula/95 px-5 py-3.5 backdrop-blur lg:-mx-6 lg:px-6">
         {problems.length > 0 && (
-          <div role="alert" className="mb-3 text-[13px] text-collapse">
+          <div role="alert" className="mb-3 text-[13px] text-bad">
             <p className="font-medium">Not saved yet — fix these first:</p>
             <ul className="mt-1 list-disc space-y-0.5 pl-5">
               {problems.map((problem) => (
@@ -713,7 +713,7 @@ function QuizEditor({
                       )}
                       aria-hidden
                     >
-                      right
+                      Right
                     </span>
                     <button
                       type="button"
@@ -735,7 +735,7 @@ function QuizEditor({
                   className="inline-flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.12em] text-frost uppercase hover:text-paper"
                 >
                   <Plus className="size-3" aria-hidden />
-                  another answer
+                  Another answer
                 </button>
               )}
             </div>
@@ -761,7 +761,7 @@ function QuizEditor({
           className={cn(SMALL, "border-edge text-frost hover:border-paper hover:text-paper")}
         >
           <Plus className="size-3.5" aria-hidden />
-          add a question
+          Add a question
         </button>
       )}
     </fieldset>
@@ -894,7 +894,7 @@ function LabEditor({
                 className="mt-1 size-3.5 shrink-0 accent-photon"
               />
               <span>
-                <span className="block text-[13.5px] text-paper first-letter:uppercase">
+                <span className="block text-[13.5px] text-paper">
                   {MODE_LABEL[mode].name}
                 </span>
                 <span className="mt-0.5 block text-[12px] leading-relaxed text-frost">
@@ -928,7 +928,7 @@ function LabEditor({
           rather than by a class of students who cannot pass. */}
       <div className="well rounded-lg px-3.5 py-3 text-[12.5px] leading-relaxed">
         {read.problems.length > 0 ? (
-          <ul className="space-y-0.5 text-collapse">
+          <ul className="space-y-0.5 text-bad">
             {read.problems.map((problem) => (
               <li key={problem}>{problem}</li>
             ))}

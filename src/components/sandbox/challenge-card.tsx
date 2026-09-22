@@ -132,11 +132,11 @@ export function ChallengeCard({
             ) : (
               <Target className="size-3.5" />
             )}
-            {grading ? "checking" : "check my circuit"}
+            {grading ? "Checking" : "Check my circuit"}
           </button>
           <span className="font-mono text-[11px] tracking-[0.12em] text-frost uppercase">
             {challenge.qubits} qubits ·{" "}
-            {offline ? "checked in this tab" : "qiskit marks it"}
+            {offline ? "Checked in this tab" : "Qiskit marks it"}
           </span>
         </div>
       </div>

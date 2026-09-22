@@ -6,6 +6,7 @@ import { ArrowRight, Award, Flame, Loader2, Target, Zap } from "lucide-react";
 import { MODULES } from "@/lib/data";
 import { BadgeShelf } from "@/components/curriculum/badge-shelf";
 import { moduleXp, totalXp, useLiveProgress } from "@/lib/quest";
+import { TONE, moduleTone, type Tone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,20 +25,6 @@ import { cn } from "@/lib/utils";
 
 const TOTAL_LESSONS = MODULES.reduce((sum, module) => sum + module.lessons, 0);
 
-const TONES = {
-  filament: {
-    icon: "text-filament",
-    value: "text-filament",
-    ring: "border-filament/35",
-  },
-  photon: {
-    icon: "text-photon",
-    value: "text-photon",
-    ring: "border-photon/35",
-  },
-  quiet: { icon: "text-frost", value: "text-paper", ring: "border-edge" },
-} as const;
-
 /**
  * One counted thing.
  *
@@ -51,27 +38,38 @@ function Tile({
   icon: Icon,
   value,
   label,
-  tone = "quiet",
+  tone,
+  lit,
 }: {
   icon: typeof Flame;
   value: string;
   label: string;
-  tone?: keyof typeof TONES;
+  tone: Tone;
+  /** Nothing counted yet: the tile keeps its colour for the icon only. */
+  lit: boolean;
 }) {
-  const t = TONES[tone];
+  const t = TONE[tone];
   return (
-    <div className={cn("rounded-xl border bg-strata/45 px-3.5 py-3", t.ring)}>
-      <Icon className={cn("size-4 shrink-0", t.icon)} aria-hidden />
+    <div className="rounded-xl border border-edge bg-strata/60 px-4 py-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[12.5px] font-medium text-frost">{label}</p>
+        <span
+          className={cn(
+            "grid size-7 place-items-center rounded-lg",
+            t.soft,
+            t.text,
+          )}
+        >
+          <Icon className="size-3.5 shrink-0" aria-hidden />
+        </span>
+      </div>
       <p
         className={cn(
-          "mt-2.5 font-display text-[1.55rem] leading-none font-extrabold tabular-nums",
-          t.value,
+          "mt-2 text-[1.7rem] leading-none font-semibold tabular-nums",
+          lit ? t.text : "text-paper",
         )}
       >
         {value}
-      </p>
-      <p className="mt-1.5 font-mono text-[10.5px] tracking-[0.14em] text-dim uppercase">
-        {label}
       </p>
     </div>
   );
@@ -88,7 +86,7 @@ export function QuestBoard() {
     return (
       <div
         data-tour="curriculum-deck"
-        className="panel flex items-center gap-2 rounded-2xl px-5 py-4 font-mono text-[12.5px] text-frost"
+        className="panel flex items-center gap-2 rounded-2xl px-5 py-4 text-[13px] text-frost"
       >
         <Loader2 className="size-3.5 animate-spin" />
         reading your record
@@ -111,7 +109,7 @@ export function QuestBoard() {
         </div>
         <Link
           href="/register"
-          className="flex shrink-0 items-center gap-2 bg-photon px-5 py-2.5 font-mono text-[12px] font-semibold tracking-[0.12em] text-void uppercase hover:bg-photon-hi"
+          className="flex shrink-0 items-center gap-2 rounded-lg bg-photon px-5 py-2.5 text-[13.5px] font-semibold text-void hover:bg-photon-hi"
         >
           start tracking
           <ArrowRight className="size-3.5" />
@@ -126,6 +124,7 @@ export function QuestBoard() {
     ? data.modules.find((row) => row.slug === quest.module_slug)
     : null;
   const nextXp = next ? moduleXp(next) : null;
+  const questTone = TONE[moduleTone(quest?.module_slug ?? "")];
 
   return (
     <div className="space-y-4">
@@ -137,29 +136,29 @@ export function QuestBoard() {
               made the one number the whole panel is named after the least
               visible thing on it. It is a numeral in a chip now. */}
           <p data-tour="curriculum-deck" className="flex items-center gap-3.5">
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-photon/45 bg-photon/10 font-display text-[1.4rem] leading-none font-extrabold text-photon tabular-nums">
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-amber-400/15 text-[1.4rem] leading-none font-bold text-amber-300 tabular-nums ring-1 ring-amber-400/40">
               {mastery.level}
             </span>
             <span className="min-w-0">
-              <span className="block font-mono text-[10.5px] tracking-[0.16em] text-dim uppercase">
+              <span className="block text-[12.5px] font-medium text-frost">
                 Level {mastery.level}
               </span>
-              <span className="mt-0.5 block font-display text-[1.5rem] leading-none font-extrabold text-paper">
+              <span className="mt-0.5 block text-[1.5rem] leading-none font-bold tracking-[-0.02em] text-paper">
                 {mastery.title}
               </span>
             </span>
           </p>
-          <p className="flex items-center gap-2 font-mono text-[12px] text-frost tabular-nums">
-            <Zap className="size-3.5 text-photon" aria-hidden />
+          <p className="pill text-[12.5px] text-amber-300 tabular-nums">
+            <Zap className="size-3.5" aria-hidden />
             {xp.earned.toLocaleString("en-IN")}
-            <span className="text-dim">
+            <span className="font-medium text-amber-200/70">
               / {xp.possible.toLocaleString("en-IN")} XP
             </span>
           </p>
         </div>
 
         <div
-          className="mt-5 h-2.5 w-full overflow-hidden rounded-full border border-edge bg-void"
+          className="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-strata"
           role="progressbar"
           aria-valuenow={mastery.percent}
           aria-valuemin={0}
@@ -167,11 +166,11 @@ export function QuestBoard() {
           aria-label={`Progress to ${mastery.next_title ?? "the last level"}`}
         >
           <div
-            className="h-full rounded-full bg-photon transition-[width] duration-700 ease-out"
+            className="h-full rounded-full bg-amber-400 transition-[width] duration-700 ease-out"
             style={{ width: `${Math.max(1.5, mastery.percent)}%` }}
           />
         </div>
-        <p className="mt-2 font-mono text-[11.5px] text-dim">
+        <p className="mt-2 text-[12.5px] text-frost">
           {mastery.next_title
             ? `${mastery.percent}% of the way to ${mastery.next_title}`
             : "top level reached"}
@@ -181,26 +180,30 @@ export function QuestBoard() {
           <Tile
             icon={Flame}
             value={String(stats.streak_days)}
-            label={stats.streak_days === 1 ? "day streak" : "day streak"}
-            tone={stats.streak_days > 0 ? "filament" : "quiet"}
+            label="Day streak"
+            tone="orange"
+            lit={stats.streak_days > 0}
           />
           <Tile
             icon={Target}
             value={`${stats.lessons_completed}/${stats.lessons_total}`}
-            label="lessons"
-            tone={stats.lessons_completed > 0 ? "photon" : "quiet"}
+            label="Lessons"
+            tone="cyan"
+            lit={stats.lessons_completed > 0}
           />
           <Tile
             icon={Award}
             value={`${stats.badges_earned}/${data.badges.length}`}
-            label="badges"
-            tone={stats.badges_earned > 0 ? "filament" : "quiet"}
+            label="Badges"
+            tone="amber"
+            lit={stats.badges_earned > 0}
           />
           <Tile
             icon={Zap}
             value={`${stats.challenges_passed}/${stats.challenges_total}`}
-            label="circuits passed"
-            tone={stats.challenges_passed > 0 ? "photon" : "quiet"}
+            label="Circuits passed"
+            tone="emerald"
+            lit={stats.challenges_passed > 0}
           />
         </dl>
       </div>
@@ -209,46 +212,66 @@ export function QuestBoard() {
       {quest && (
         <Link
           href={`/curriculum/${quest.module_slug}`}
-          className="group relative flex flex-wrap items-center justify-between gap-x-8 gap-y-5 overflow-hidden rounded-2xl border border-photon/70 bg-gradient-to-br from-photon/[0.14] via-nebula to-nebula px-6 py-6 transition-colors hover:from-photon/20"
+          className={cn(
+            "panel group relative flex flex-wrap items-center justify-between gap-x-8 gap-y-5 overflow-hidden rounded-2xl px-6 py-6 transition-colors",
+            questTone.border,
+          )}
         >
+          {/* The module's colour, as a wash from the left edge. */}
+          <span
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-y-0 left-0 w-1.5",
+              questTone.solid,
+            )}
+          />
           <div className="min-w-0">
-            <p className="eyebrow flex items-center gap-2 text-photon">
+            <p
+              className={cn("eyebrow flex items-center gap-2", questTone.text)}
+            >
               <Target className="size-3.5" aria-hidden />
               Current quest
             </p>
             <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="ket text-[15px] text-photon">{quest.ket}</span>
-              <span className="font-display text-[1.75rem] leading-tight font-extrabold text-paper">
+              <span className={cn("ket text-[15px]", questTone.text)}>
+                {quest.ket}
+              </span>
+              <span className="text-[1.75rem] leading-tight font-bold tracking-[-0.02em] text-paper">
                 {quest.title}
               </span>
             </p>
-            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[12.5px] text-frost">
-              <span>{quest.reason}</span>
+            <p className="mt-2.5 flex flex-wrap items-center gap-2 text-[13.5px] text-frost">
+              <span className="mr-1 first-letter:uppercase">
+                {quest.reason}
+              </span>
               {nextXp && (
-                <>
-                  <span className="h-3 w-px bg-edge-hi" />
-                  <span className="text-photon">
-                    +{(nextXp.possible - nextXp.earned).toLocaleString("en-IN")}{" "}
-                    XP left in it
-                  </span>
-                </>
+                <span className="pill text-amber-300">
+                  <Zap className="size-3" aria-hidden />+
+                  {(nextXp.possible - nextXp.earned).toLocaleString("en-IN")} XP
+                  left
+                </span>
               )}
               {next && !next.badge_earned && (
-                <>
-                  <span className="h-3 w-px bg-edge-hi" />
-                  <span>earns {next.badge}</span>
-                </>
+                <span className="pill text-grape">
+                  <Award className="size-3" aria-hidden />
+                  Earns {next.badge}
+                </span>
               )}
             </p>
           </div>
 
           <span className="flex shrink-0 items-center gap-5">
-            <span className="font-display text-[3rem] leading-[0.8] font-extrabold text-photon tabular-nums">
+            <span
+              className={cn(
+                "text-[3rem] leading-[0.8] font-bold tracking-[-0.03em] tabular-nums",
+                questTone.text,
+              )}
+            >
               {quest.percent}
               <span className="text-xl">%</span>
             </span>
-            <span className="inline-flex items-center gap-2 bg-photon px-5 py-2.5 font-mono text-[12px] font-semibold tracking-[0.12em] text-void uppercase">
-              resume
+            <span className="inline-flex items-center gap-2 rounded-lg bg-photon px-5 py-2.5 text-[13.5px] font-semibold text-void">
+              Resume
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </span>

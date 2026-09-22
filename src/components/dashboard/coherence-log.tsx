@@ -154,7 +154,7 @@ export function CoherenceLog({
 
           <div className="mt-3 flex items-center gap-1.5 pl-8">
             <span className="mr-1 font-mono text-[11px] tracking-[0.14em] text-frost uppercase">
-              quiet
+              Quiet
             </span>
             {LEVEL.map((level, i) => (
               <span key={i} className={cn("size-2.5 rounded-[2px]", level)} />
@@ -168,16 +168,16 @@ export function CoherenceLog({
         <dl className="grid shrink-0 grid-cols-3 gap-6 sm:w-[210px] sm:grid-cols-1 sm:gap-4">
           {(
             [
-              ["Active days", `${activeDays}/${log.length}`],
-              ["Sessions", sessions.toLocaleString("en-IN")],
-              ["Longest run", `${longestRun}d`],
+              ["Active days", `${activeDays}/${log.length}`, "text-cyan-300"],
+              ["Sessions", sessions.toLocaleString("en-IN"), "text-violet-300"],
+              ["Longest run", `${longestRun}d`, "text-orange-300"],
             ] as const
-          ).map(([label, value]) => (
-            <div key={label}>
-              <dt className="font-mono text-[11px] tracking-[0.16em] text-frost uppercase">
-                {label}
-              </dt>
-              <dd className="mt-1 font-mono text-[17px] text-paper tabular-nums">{value}</dd>
+          ).map(([label, value, tone]) => (
+            <div key={label} className="panel rounded-xl px-4 py-3">
+              <dt className="text-[12.5px] font-medium text-frost">{label}</dt>
+              <dd className={cn("mt-1 text-[22px] leading-none font-semibold tabular-nums", tone)}>
+                {value}
+              </dd>
             </div>
           ))}
         </dl>

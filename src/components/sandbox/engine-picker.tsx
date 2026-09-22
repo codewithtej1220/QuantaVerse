@@ -242,7 +242,7 @@ export function EnginePicker({
           // A lit contact, the way a rack module shows it is seated.
           <span className="size-1.5 shrink-0 rounded-full bg-photon" aria-hidden />
         )}
-        <span className="font-mono text-[11px] tracking-[0.12em] text-frost uppercase">engine</span>
+        <span className="font-mono text-[11px] tracking-[0.12em] text-frost uppercase">Engine</span>
         <span className="font-mono text-[12px] text-paper">{current.label.toLowerCase()}</span>
         <ChevronDown
           className={cn("size-3 shrink-0 text-frost transition-transform", open && "rotate-180")}

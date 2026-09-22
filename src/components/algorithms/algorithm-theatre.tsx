@@ -292,7 +292,7 @@ function StageRail({
                   </span>
                   <span className="mt-0.5 block font-mono text-[10.5px] tracking-[0.1em] text-dim uppercase">
                     {span.stage.steps === 0
-                      ? "before any gate"
+                      ? "Before any gate"
                       : `${span.stage.steps} step${span.stage.steps === 1 ? "" : "s"}`}
                   </span>
                 </span>
@@ -310,7 +310,7 @@ function StageRail({
           className="flex items-center gap-1 rounded-lg border border-edge px-2.5 py-1.5 font-mono text-[11px] tracking-[0.1em] text-frost uppercase transition-colors hover:border-edge-hi hover:text-paper disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
         >
           <ChevronLeft className="size-3.5" aria-hidden />
-          previous stage
+          Previous stage
         </button>
         <button
           type="button"
@@ -322,7 +322,7 @@ function StageRail({
           ) : (
             <Play className="size-3.5" aria-hidden />
           )}
-          {touring ? "pause" : "play the stages"}
+          {touring ? "Pause" : "Play the stages"}
         </button>
         <button
           type="button"
@@ -330,7 +330,7 @@ function StageRail({
           disabled={!next}
           className="flex items-center gap-1 rounded-lg border border-edge px-2.5 py-1.5 font-mono text-[11px] tracking-[0.1em] text-frost uppercase transition-colors hover:border-edge-hi hover:text-paper disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photon"
         >
-          next stage
+          Next stage
           <ChevronRight className="size-3.5" aria-hidden />
         </button>
       </div>
@@ -391,7 +391,7 @@ function StageCard({
         <p className="mt-3 text-[15px] leading-relaxed text-paper">{span.stage.summary}</p>
         <p className="mt-4 border-l-2 border-filament/60 pl-3 text-[13.5px] leading-relaxed text-frost">
           <span className="font-mono text-[10.5px] tracking-[0.14em] text-filament uppercase">
-            watch
+            Watch
           </span>
           <br />
           {span.stage.watch}
@@ -525,7 +525,7 @@ function Narration({
           {step?.watch && (
             <p className="mt-4 border-l-2 border-filament/60 pl-3 text-[13.5px] leading-relaxed text-frost">
               <span className="font-mono text-[10.5px] tracking-[0.14em] text-filament uppercase">
-                watch
+                Watch
               </span>
               <br />
               {step.watch}
