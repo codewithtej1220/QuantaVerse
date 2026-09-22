@@ -64,10 +64,10 @@ export function MasteryRing({
         <p className="mt-1.5 text-[19px] leading-tight font-semibold tracking-[-0.015em] text-paper">
           {title}
         </p>
-        <p className="mt-2 font-mono text-[11.5px] leading-relaxed text-frost">
+        <p className="mt-2 text-[12.5px] leading-relaxed text-frost">
           {nextTitle ? (
             <>
-              <span className="text-photon">{progress}%</span> of the way to {nextTitle}
+              <span className="font-semibold text-photon">{progress}%</span> of the way to {nextTitle}
             </>
           ) : (
             <span className="text-photon">top of the ladder</span>

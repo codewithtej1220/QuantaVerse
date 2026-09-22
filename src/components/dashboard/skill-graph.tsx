@@ -30,7 +30,12 @@ export function SkillGraph({ skills = SKILLS }: { skills?: Skill[] }) {
             Eight topics, ranked
           </h2>
         </div>
-        <p className="pill text-[12.5px] text-ok tabular-nums">
+        <p
+          className={cn(
+            "pill text-[12.5px] tabular-nums",
+            ahead * 2 >= skills.length ? "text-ok" : "text-warn",
+          )}
+        >
           {ahead} of {skills.length} at or above the cohort median
         </p>
       </div>
