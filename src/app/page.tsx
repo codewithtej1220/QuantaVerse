@@ -1,6 +1,5 @@
 import { Film } from "@/components/landing/film";
 import { Hero } from "@/components/landing/hero";
-import { OpenSource } from "@/components/landing/open-source";
 import { Surfaces } from "@/components/landing/surfaces";
 import { Workflow } from "@/components/landing/workflow";
 import { YourModules } from "@/components/landing/your-modules";
@@ -31,7 +30,6 @@ export default function Home() {
       <Workflow />
       <Surfaces />
       <YourModules />
-      <OpenSource />
     </div>
   );
 }
